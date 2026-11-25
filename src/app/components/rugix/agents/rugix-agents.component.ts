@@ -283,13 +283,13 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       message: () => ''},
     {action: 'rebootSpare', icon: 'swap_horiz', label: 'Reboot (Spare)', caution: true,
       ack: 'I understand that the device reboots into the spare system and falls back if it is not committed.',
-      message: () => 'Reboots into the spare slot. Commit afterwards to make it permanent, otherwise the device falls back to the previous slot on the next reboot.'},
+      message: () => ''},
     {action: 'commit', icon: 'task_alt', label: 'Commit',
       ack: 'I understand that the running system becomes the default and the previous system is no longer the fallback.',
-      message: d => `Make the currently running system the default on "${d.label || d.name}"? A rollback to the previous system is no longer automatic afterwards.`},
+      message: () => ''},
     {action: 'factoryReset', icon: 'delete_forever', label: 'Factory reset', warn: true,
       ack: 'I understand that all persistent state is erased and the device reboots. This cannot be undone.',
-      message: d => `Reset ALL persistent state of "${d.label || d.name}" and reboot? This cannot be undone.`}
+      message: () => ''}
   ];
 
   readonly appActions: { action: RugixAppAction; icon: string; label: string; warn?: boolean }[] = [
