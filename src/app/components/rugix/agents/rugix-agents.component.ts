@@ -62,6 +62,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   pageIndex = 0;
   pageSize = 10;
   busy = new Set<string>();
+  searchOpen = false;
 
   readonly systemActions: SystemActionInfo[] = [
     {action: 'reboot', icon: 'restart_alt', label: 'Reboot',
@@ -176,6 +177,22 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   onPage(e: PageEvent): void {
     this.pageIndex = e.pageIndex;
     this.pageSize = e.pageSize;
+  }
+
+  toggleSearch(): void {
+    this.searchOpen = !this.searchOpen;
+    if (!this.searchOpen) {
+      this.search = '';
+      this.onSearch();
+    }
+  }
+
+  refresh(): void {
+    this.ctx.updateAliases();
+  }
+
+  clearSelection(): void {
+    this.checked.clear();
   }
 
   onSearch(): void {

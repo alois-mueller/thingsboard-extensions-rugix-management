@@ -1,3 +1,5 @@
+// Look & feel follows ThingsBoard's entity tables (Edge management > Agents):
+// 64px toolbar, 56px header row, 52px body rows, hairline dividers, rounded status chips.
 :host {
   display: block;
   container-type: inline-size;
@@ -17,36 +19,35 @@
     font-size: 14px;
   }
 
-  .rugix-header {
+  // ---- toolbar
+  .rugix-toolbar {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 12px;
-    padding: 8px 16px;
-    border-bottom: 1px solid rgba(0, 0, 0, .12);
+    gap: 8px;
+    min-height: 64px;
+    padding: 0 16px 0 24px;
+    box-sizing: border-box;
+
+    &.selection { background: rgba(0, 0, 0, .04); }
   }
 
   .rugix-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
     font-size: 20px;
-    font-weight: 500;
-  }
-
-  .rugix-count {
-    font-size: 12px;
-    padding: 0 8px;
-    border-radius: 10px;
-    background: rgba(0, 0, 0, .08);
+    font-weight: 400;
+    letter-spacing: .1px;
+    padding-right: 20px;
   }
 
   .rugix-search {
     width: 240px;
+    max-width: 100%;
   }
 
+  // ---- table
   .rugix-table-wrap {
     overflow: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .rugix-table {
@@ -54,64 +55,90 @@
     border-collapse: collapse;
 
     th {
+      height: 56px;
+      padding: 0 0 0 12px;
       text-align: left;
+      font-size: 14px;
       font-weight: 500;
-      font-size: 12px;
-      color: rgba(0, 0, 0, .54);
-      padding: 10px 12px;
-      border-bottom: 1px solid rgba(0, 0, 0, .12);
+      line-height: 22px;
+      color: rgba(0, 0, 0, .87);
       white-space: nowrap;
+      border-bottom: 1px solid rgba(0, 0, 0, .12);
     }
 
     td {
-      padding: 8px 12px;
-      border-bottom: 1px solid rgba(0, 0, 0, .06);
+      height: 52px;
+      padding: 0 0 0 12px;
+      font-size: 14px;
+      border-bottom: 1px solid rgba(0, 0, 0, .12);
       vertical-align: middle;
     }
 
     tbody tr {
       cursor: pointer;
-      &:hover { background: rgba(0, 0, 0, .03); }
-      &.selected { background: rgba(48, 86, 128, .1); }
+      &:hover { background: rgba(0, 0, 0, .04); }
+      &.selected { background: rgba(0, 0, 0, .08); }
     }
 
     &.compact tbody tr { cursor: default; }
 
+    th:first-child, td:first-child { padding-left: 12px; }
     .w-check { width: 48px; }
-    .w-status { width: 110px; }
-    .w-actions { width: 56px; text-align: right; }
-    .name { font-weight: 500; }
+    .w-status { width: 120px; }
+    .w-actions { width: 56px; text-align: right; padding-right: 8px; }
+    .name { font-weight: 400; }
   }
 
-  .sub { font-size: 12px; color: rgba(0, 0, 0, .54); }
+  .sub { font-size: 12px; color: rgba(0, 0, 0, .54); line-height: 16px; }
 
   .empty {
-    padding: 24px;
+    padding: 32px 16px;
     text-align: center;
     color: rgba(0, 0, 0, .54);
   }
 
+  // online/offline indicator (same markup/colors as TB's agent status column)
   .status {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    white-space: nowrap;
+    font-size: 13px;
     font-weight: 500;
 
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+    .dot { width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: currentColor; }
     &.online { color: #4caf50; }
     &.offline { color: rgba(0, 0, 0, .38); }
   }
 
-  .pill {
-    display: inline-block;
-    padding: 1px 10px;
-    border-radius: 10px;
-    font-size: 12px;
-    background: rgba(0, 0, 0, .08);
+  // TB-style status chip (.status in entity tables)
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 16px;
+    font-size: 13px;
+    white-space: nowrap;
+    color: rgba(0, 0, 0, .76);
+    background: rgba(0, 0, 0, .06);
 
-    &.ok { color: #2e7d32; background: rgba(76, 175, 80, .15); }
-    &.warn { color: #e65100; background: rgba(255, 152, 0, .18); margin-left: 6px; }
-    &.err { color: #c62828; background: rgba(244, 67, 54, .15); }
+    &.ok { color: rgb(25, 128, 56); background: rgba(25, 128, 56, .08); }
+    &.err { color: rgb(209, 39, 48); background: rgba(209, 39, 48, .08); }
+    &.run { color: #1565c0; background: rgba(33, 150, 243, .1); }
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    height: 22px;
+    padding: 0 10px;
+    border-radius: 11px;
+    font-size: 12px;
+    background: rgba(0, 0, 0, .06);
+
+    &.ok { color: rgb(25, 128, 56); background: rgba(25, 128, 56, .08); }
+    &.err { color: rgb(209, 39, 48); background: rgba(209, 39, 48, .08); }
+    &.warn { color: #b45309; background: rgba(245, 158, 11, .14); margin-left: 8px; }
   }
 
   .rugix-badge {
@@ -120,45 +147,59 @@
     border-radius: 10px;
     font-size: 12px;
     font-weight: 500;
-
-    &.succeeded { color: #2e7d32; background: rgba(76, 175, 80, .15); }
-    &.failed { color: #c62828; background: rgba(244, 67, 54, .15); }
-    &.running, &.queued { color: #1565c0; background: rgba(33, 150, 243, .15); }
-    &.unknown { color: rgba(0, 0, 0, .6); background: rgba(0, 0, 0, .08); }
   }
 
+  mat-paginator {
+    border-top: 1px solid rgba(0, 0, 0, .12);
+  }
+
+  // ---- details (modelled after TB's entity details panel)
   .rugix-details {
-    margin: 12px 16px 16px;
+    margin: 16px 24px 24px;
     border: 1px solid rgba(0, 0, 0, .12);
-    border-radius: 6px;
+    border-radius: 4px;
+    overflow: hidden;
     background: #fff;
   }
 
-  .details-head {
+  .details-toolbar {
+    min-height: 64px;
+    padding: 0 8px 0 24px;
+
+    .details-title {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+      font-size: 20px;
+      font-weight: 400;
+    }
+
+    .details-sub { font-size: 12px; opacity: .8; }
+    .status { color: #fff; margin-right: 8px; &.offline { opacity: .7; } }
+  }
+
+  .details-buttons {
     display: flex;
-    align-items: center;
     flex-wrap: wrap;
     gap: 8px;
-    padding: 12px 16px;
+    padding: 16px 24px;
     border-bottom: 1px solid rgba(0, 0, 0, .12);
-
-    .details-title { font-size: 18px; font-weight: 500; }
   }
 
   .banner {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin: 12px 16px 0;
-    padding: 8px 12px;
+    gap: 12px;
+    margin: 16px 24px 0;
+    padding: 10px 16px;
     border-radius: 4px;
 
-    &.warn { background: rgba(255, 152, 0, .14); color: #8a4600; }
-    &.err { background: rgba(244, 67, 54, .1); color: #b71c1c; }
+    &.warn { background: rgba(245, 158, 11, .12); color: #8a4b00; }
+    &.err { background: rgba(209, 39, 48, .08); color: rgb(160, 30, 38); }
   }
 
   .tab-body {
-    padding: 16px;
+    padding: 16px 24px;
 
     &.grid {
       display: grid;
@@ -169,6 +210,7 @@
 
   .tab-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 12px;
   }
@@ -177,9 +219,9 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
-    margin-bottom: 8px;
 
     span { font-size: 12px; color: rgba(0, 0, 0, .54); }
+    b { font-weight: 500; }
   }
 
   .slots {
@@ -189,11 +231,11 @@
   }
 
   .slot {
-    padding: 12px;
+    padding: 12px 16px;
     border: 1px solid rgba(0, 0, 0, .12);
-    border-radius: 6px;
+    border-radius: 4px;
 
-    &.active { border-color: #4caf50; background: rgba(76, 175, 80, .06); }
+    &.active { border-color: rgb(25, 128, 56); background: rgba(25, 128, 56, .04); }
 
     .slot-head {
       display: flex;
@@ -204,6 +246,7 @@
     }
 
     .hash {
+      max-width: 100%;
       font: 11px/1.4 'Roboto Mono', monospace;
       color: rgba(0, 0, 0, .6);
       overflow: hidden;
@@ -215,6 +258,7 @@
   .json {
     margin: 8px 0 0;
     padding: 10px 12px;
+    max-width: 100%;
     max-height: 360px;
     overflow: auto;
     border-radius: 4px;
@@ -223,32 +267,27 @@
     white-space: pre-wrap;
     word-break: break-word;
   }
-
-  .rugix-search { max-width: 100%; }
-  .rugix-table-wrap { -webkit-overflow-scrolling: touch; }
-  .details-head .details-title { word-break: break-word; }
-  .json, .slot .hash { max-width: 100%; }
 }
 
 // The widget is sized by the dashboard grid, so adapt to the widget width (container), not the viewport.
 @container rugix (max-width: 900px) {
   .c-md { display: none; }
-  .rugix-header { padding: 8px 12px; }
+  .rugix-toolbar { padding: 0 8px 0 16px; }
 }
 
 @container rugix (max-width: 600px) {
   .c-sm { display: none; }
-  .rugix-title { font-size: 18px; width: 100%; }
-  .rugix-search { width: 100%; order: 3; flex: 1 1 100%; }
-  .rugix-header > button { flex: 1 1 auto; justify-content: center; }
-  .rugix-table td, .rugix-table th { padding: 8px 6px; }
-  .rugix-table .w-check { width: 36px; }
+  .rugix-title { font-size: 18px; padding-right: 8px; }
+  .rugix-search { flex: 1 1 100%; order: 3; width: 100%; }
+  .rugix-toolbar.selection { padding-top: 8px; padding-bottom: 8px; }
+  .rugix-table td, .rugix-table th { padding-left: 6px; }
+  .rugix-table .w-check { width: 40px; }
   .rugix-table .w-status { width: auto; }
   .rugix-details { margin: 8px 0 0; border-radius: 0; border-left: 0; border-right: 0; }
-  .details-head { padding: 12px; }
-  .details-head > button[mat-stroked-button], .details-head > button[mat-flat-button] { flex: 1 1 calc(50% - 8px); }
-  .banner { margin: 12px 12px 0; flex-wrap: wrap; }
-  .tab-body { padding: 12px; }
-  .tab-actions { flex-wrap: wrap; }
+  .details-toolbar { padding-left: 16px; }
+  .details-buttons { padding: 12px 16px; }
+  .details-buttons button { flex: 1 1 calc(50% - 8px); }
+  .banner { margin: 12px 16px 0; flex-wrap: wrap; }
+  .tab-body { padding: 12px 16px; }
   .tab-actions button { flex: 1 1 auto; }
 }

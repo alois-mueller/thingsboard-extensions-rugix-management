@@ -1,26 +1,31 @@
 <div class="rugix">
-  <!-- ===== header ===== -->
-  <div class="rugix-header">
-    <div class="rugix-title">
-      <mat-icon>developer_board</mat-icon>
-      <span>{{ settings.title }}</span>
-      <span class="rugix-count">{{ filtered.length }}</span>
-    </div>
-    <span class="flex-1"></span>
-    @if (settings.enableSearch) {
-      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="rugix-search">
-        <mat-icon matPrefix>search</mat-icon>
-        <input matInput placeholder="Search devices" [(ngModel)]="search" (ngModelChange)="onSearch()">
-      </mat-form-field>
+  <!-- ===== toolbar (same structure as TB entity tables) ===== -->
+  <div class="rugix-toolbar" [class.selection]="checked.size">
+    @if (!checked.size) {
+      <span class="rugix-title">{{ settings.title }}</span>
+      <span class="flex-1"></span>
+      @if (searchOpen) {
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="rugix-search">
+          <input matInput placeholder="Search devices" [(ngModel)]="search" (ngModelChange)="onSearch()" #searchInput>
+        </mat-form-field>
+      }
+      <button mat-icon-button type="button" (click)="refresh()" matTooltip="Refresh"><mat-icon>refresh</mat-icon></button>
+      @if (settings.enableSearch) {
+        <button mat-icon-button type="button" (click)="toggleSearch()" matTooltip="Search">
+          <mat-icon>{{ searchOpen ? 'close' : 'search' }}</mat-icon>
+        </button>
+      }
+    } @else {
+      <span class="rugix-title">{{ checked.size }} {{ checked.size === 1 ? 'device' : 'devices' }} selected</span>
+      <span class="flex-1"></span>
+      <button mat-stroked-button color="primary" type="button" (click)="openInstall(checkedDevices, 'system')">
+        <mat-icon>system_update_alt</mat-icon>Update system
+      </button>
+      <button mat-stroked-button color="primary" type="button" (click)="openInstall(checkedDevices, 'app')">
+        <mat-icon>apps</mat-icon>Install app
+      </button>
+      <button mat-icon-button type="button" (click)="clearSelection()" matTooltip="Clear selection"><mat-icon>close</mat-icon></button>
     }
-    <button mat-stroked-button color="primary" [disabled]="!checked.size" (click)="openInstall(checkedDevices, 'system')">
-      <mat-icon>system_update_alt</mat-icon>
-      Update system ({{ checked.size }})
-    </button>
-    <button mat-stroked-button [disabled]="!checked.size" (click)="openInstall(checkedDevices, 'app')">
-      <mat-icon>apps</mat-icon>
-      Install app ({{ checked.size }})
-    </button>
   </div>
 
   <!-- ===== table ===== -->
@@ -60,12 +65,12 @@
               }
             </td>
             <td class="c-sm">
-              <span class="pill" [class.ok]="d.stateStatus === 'active'" [class.err]="d.stateStatus === 'error'">{{ d.stateStatus || '—' }}</span>
+              <span class="chip" [class.ok]="d.stateStatus === 'active'" [class.err]="d.stateStatus === 'error'">{{ d.stateStatus || '—' }}</span>
             </td>
             <td class="c-md">{{ d.apiVersion || '—' }}</td>
             <td class="c-md">
               @if (d.lastJobEvent?.status) {
-                <span class="rugix-badge" [class]="d.lastJobEvent.status">{{ d.lastJobEvent.status }}</span>
+                <span class="chip" [class.ok]="d.lastJobEvent.status === 'succeeded'" [class.err]="d.lastJobEvent.status === 'failed'" [class.run]="d.lastJobEvent.status === 'running' || d.lastJobEvent.status === 'queued'">{{ d.lastJobEvent.status }}</span>
               } @else { — }
             </td>
             <td class="w-actions" (click)="$event.stopPropagation()">
@@ -89,29 +94,29 @@
       </tbody>
     </table>
   </div>
-  <mat-paginator [length]="filtered.length" [pageIndex]="pageIndex" [pageSize]="pageSize" [pageSizeOptions]="[5, 10, 25, 50]" (page)="onPage($event)" hidePageSize="false"></mat-paginator>
+  <mat-paginator showFirstLastButtons [length]="filtered.length" [pageIndex]="pageIndex" [pageSize]="pageSize" [pageSizeOptions]="[5, 10, 25, 50]" (page)="onPage($event)" hidePageSize="false"></mat-paginator>
 
   <!-- ===== details ===== -->
   @if (selected; as d) {
     <div class="rugix-details">
-      <div class="details-head">
-        <div>
-          <div class="details-title">{{ d.label || d.name }}</div>
-          <div class="sub">
-            <span class="status" [class]="statusClass(d)"><span class="dot"></span>{{ d.active ? 'Online' : 'Offline' }}</span>
-            · Rugix {{ d.apiVersion || '?' }}
-          </div>
+      <mat-toolbar color="primary" class="details-toolbar">
+        <div class="details-title">
+          <span>{{ d.label || d.name }}</span>
+          <span class="details-sub">Rugix device details</span>
         </div>
         <span class="flex-1"></span>
+        <span class="status inverse" [class]="statusClass(d)"><span class="dot"></span>{{ d.active ? 'Online' : 'Offline' }}</span>
+        <button mat-icon-button type="button" (click)="selectedId = null" aria-label="Close details"><mat-icon>close</mat-icon></button>
+      </mat-toolbar>
+      <div class="details-buttons">
+        <button mat-stroked-button color="primary" [disabled]="!d.active || busy.has(d.id)" (click)="openInstall([d], 'system')">
+          <mat-icon>system_update_alt</mat-icon>Install update
+        </button>
         @for (a of systemActions; track a.action) {
           <button mat-stroked-button [color]="a.warn ? 'warn' : 'primary'" [disabled]="!d.active || busy.has(d.id)" (click)="runSystemAction(a, d)">
             <mat-icon>{{ a.icon }}</mat-icon>{{ a.label }}
           </button>
         }
-        <button mat-flat-button color="primary" [disabled]="!d.active || busy.has(d.id)" (click)="openInstall([d], 'system')">
-          <mat-icon>system_update_alt</mat-icon>Install update
-        </button>
-        <button mat-icon-button (click)="selectedId = null" aria-label="Close details"><mat-icon>close</mat-icon></button>
       </div>
 
       @if (d.commitPending) {
