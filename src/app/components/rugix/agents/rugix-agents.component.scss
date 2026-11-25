@@ -84,6 +84,10 @@
   .warn-icon.commit-icon { display: inline-block; color: #ef6c00; }
   .warn-icon.insecure-icon { display: inline-block; color: rgb(209, 39, 48); }
 
+  .audit-hint { font-size: 12px; color: rgba(0, 0, 0, .54); align-self: center; }
+  .audit-wrap { overflow-x: auto; }
+  .audit-details { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'Roboto Mono', monospace; font-size: 12px; }
+
   .hint { padding: 8px 24px 0; font-size: 12px; color: rgba(0, 0, 0, .6); }
   .banner.neutral { background: rgba(0, 0, 0, .06); color: rgba(0, 0, 0, .7); }
 

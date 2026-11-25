@@ -412,6 +412,39 @@
             } @else { <div class="empty">No job events received yet.</div> }
           </div>
         }
+
+        @if (tabIndex === 6) {
+          <div class="tab-body">
+            <div class="tab-actions">
+              <button mat-stroked-button (click)="loadAudit(true)" [disabled]="auditLoading"><mat-icon>refresh</mat-icon>Refresh</button>
+              <span class="audit-hint">Last {{ auditDays }} days · ThingsBoard audit log of this device</span>
+            </div>
+            @if (auditLoading) {
+              <div class="empty"><mat-spinner diameter="24" style="margin: 0 auto"></mat-spinner></div>
+            } @else if (auditError) {
+              <div class="banner err"><mat-icon>error_outline</mat-icon><span>{{ auditError }}</span></div>
+            } @else {
+              <div class="rugix-table-wrap audit-wrap">
+                <table class="rugix-table compact">
+                  <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Status</th><th>Details</th></tr></thead>
+                  <tbody>
+                    @for (l of auditLogs; track l.id.id) {
+                      <tr>
+                        <td class="nowrap">{{ l.createdTime | date:'dd/MM/yyyy HH:mm:ss' }}</td>
+                        <td>{{ l.userName || '—' }}</td>
+                        <td class="nowrap">{{ auditAction(l) }}</td>
+                        <td><span class="pill" [class.ok]="l.actionStatus === 'SUCCESS'" [class.err]="l.actionStatus !== 'SUCCESS'" style="margin-left: 0">{{ l.actionStatus === 'SUCCESS' ? 'Success' : 'Failure' }}</span></td>
+                        <td class="audit-details" [matTooltip]="auditDetails(l)">{{ auditDetails(l) || '—' }}</td>
+                      </tr>
+                    } @empty {
+                      <tr><td colspan="5" class="empty">No audit log entries in this period.</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        }
       
     </div>
   }

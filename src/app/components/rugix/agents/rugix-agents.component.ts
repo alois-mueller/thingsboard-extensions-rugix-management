@@ -9,6 +9,8 @@ import { WidgetContext } from '@home/models/widget-component.models';
 import { Observable, Subscription, timer } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
 import { Device } from '@shared/models/device.models';
+import { AuditLogService } from '@core/public-api';
+import { AuditLog, EntityType, TimePageLink } from '@shared/public-api';
 import {
   mergeRugixSettings,
   RugixApp,
@@ -77,6 +79,64 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   searchOpen = false;
   tabIndex = 0;
 
+  // ---- audit log (ThingsBoard audit logs of the device entity)
+  readonly auditTab = 6;
+  auditLogs: AuditLog[] = [];
+  auditLoading = false;
+  auditError = '';
+  auditDeviceId = '';
+  auditDays = 30;
+
+  loadAudit(force = false): void {
+    const id = this.selectedId;
+    if (!id || this.tabIndex !== this.auditTab || (!force && this.auditDeviceId === id)) {
+      return;
+    }
+    this.auditDeviceId = id;
+    this.auditLoading = true;
+    this.auditError = '';
+    const now = Date.now();
+    const link = new TimePageLink(100, 0, null, {property: 'createdTime', direction: 'DESC' as any}, now - this.auditDays * 86400000, now);
+    this.auditService.getAuditLogsByEntityId({entityType: EntityType.DEVICE, id}, link, {ignoreLoading: true, ignoreErrors: true} as any).subscribe({
+      next: page => {
+        if (this.selectedId === id) {
+          this.auditLogs = page.data || [];
+          this.auditLoading = false;
+          this.cd.markForCheck();
+        }
+      },
+      error: err => {
+        this.auditLogs = [];
+        this.auditLoading = false;
+        this.auditError = err?.status === 403
+          ? 'Audit logs are not available for your user role.'
+          : (err?.error?.message || err?.message || 'Audit logs could not be loaded.');
+        this.cd.markForCheck();
+      }
+    });
+  }
+
+  auditAction(l: AuditLog): string {
+    const s = String(l.actionType || '').toLowerCase().replace(/_/g, ' ');
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  auditDetails(l: AuditLog): string {
+    const data = l.actionData || {};
+    const rpc = data.rpcRequest || data;
+    let text = '';
+    if (rpc?.method) {
+      const params = typeof rpc.params === 'string' ? rpc.params : JSON.stringify(rpc.params ?? {});
+      text = rpc.method + (params && !['{}', '{"query":{}}', 'null'].includes(params) ? ' ' + params : '');
+    } else if (Object.keys(data).length) {
+      text = JSON.stringify(data);
+    }
+    if (l.actionFailureDetails) {
+      text = (text ? text + ' – ' : '') + l.actionFailureDetails;
+    }
+    return text;
+  }
+
   // ---- resources (IoT Gateway machineStats)
   readonly resourcesTab = 4;
   readonly statsRanges = RUGIX_STATS_RANGES;
@@ -126,6 +186,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   constructor(private dialog: MatDialog,
               private rpc: RugixRpcService,
+              private auditService: AuditLogService,
               private cd: ChangeDetectorRef,
               private host: ElementRef<HTMLElement>) {
   }
@@ -352,6 +413,8 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   select(d: RugixDevice): void {
     this.selectedId = this.selectedId === d.id ? null : d.id;
+    this.auditDeviceId = '';
+    this.loadAudit();
     this.syncStats();
     setTimeout(() => this.syncDetailsLayout());
   }
@@ -413,7 +476,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   tabLabels(d: RugixDevice): { i: number; label: string }[] {
     return ['Overview', `Slots (${d.slots.length})`, `Apps (${d.apps.length})`, `Components (${d.componentList.length})`,
-      'Resources', 'Last job'].map((label, i) => ({i, label}));
+      'Resources', 'Last job', 'Audit log'].map((label, i) => ({i, label}));
   }
 
   /** Select a tab and scroll it to the middle of the tab bar (clamped at both ends, so first/last stay put). */
@@ -444,6 +507,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   onTabChange(index: number): void {
     this.tabIndex = index;
+    this.loadAudit();
     this.syncStats();
   }
 
