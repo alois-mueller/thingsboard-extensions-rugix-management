@@ -17,6 +17,8 @@ export interface RugixConfirmDialogData {
   acknowledge?: string;
   /** Optional checkbox, e.g. "keep old state as backup" on factory reset. */
   checkbox?: { label: string; checked?: boolean };
+  /** Boot group (slot) change shown for reboots, e.g. A → B. */
+  transition?: { from: string; to: string };
   /** Optional free text input shown when the checkbox is checked. */
   textWhenChecked?: { label: string };
 }

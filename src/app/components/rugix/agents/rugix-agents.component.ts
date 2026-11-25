@@ -280,10 +280,10 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   readonly systemActions: SystemActionInfo[] = [
     {action: 'reboot', icon: 'restart_alt', label: 'Reboot',
       ack: 'I understand that the device is unavailable while it reboots.',
-      message: d => `Reboot the active system of "${d.label || d.name}"?`},
+      message: () => ''},
     {action: 'rebootSpare', icon: 'swap_horiz', label: 'Reboot (Spare)', caution: true,
       ack: 'I understand that the device reboots into the spare system and falls back if it is not committed.',
-      message: d => `Reboot "${d.label || d.name}" into the spare system? Commit afterwards to make it permanent, otherwise the device falls back.`},
+      message: () => 'Reboots into the spare slot. Commit afterwards to make it permanent, otherwise the device falls back to the previous slot on the next reboot.'},
     {action: 'commit', icon: 'task_alt', label: 'Commit',
       ack: 'I understand that the running system becomes the default and the previous system is no longer the fallback.',
       message: d => `Make the currently running system the default on "${d.label || d.name}"? A rollback to the previous system is no longer automatic afterwards.`},
@@ -759,6 +759,19 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Active slot (boot group) before and after a reboot, e.g. A → A for a reboot, A → B for reboot (spare). */
+  private bootTransition(info: SystemActionInfo, d: RugixDevice): { from: string; to: string } | undefined {
+    if (info.action !== 'reboot' && info.action !== 'rebootSpare') {
+      return undefined;
+    }
+    const from = d.activeGroup;
+    if (!from) {
+      return undefined;
+    }
+    const to = info.action === 'reboot' ? from : (d.bootGroups.find(g => g !== from) || '?');
+    return {from: from.toUpperCase(), to: to.toUpperCase()};
+  }
+
   runSystemAction(info: SystemActionInfo, device: RugixDevice): void {
     if (!this.allowed(this.kindOf(info))) {
       return;
@@ -770,6 +783,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       warn: info.warn,
       caution: info.caution,
       acknowledge: info.ack,
+      transition: this.bootTransition(info, device),
       checkbox: info.action === 'factoryReset' ? {label: 'Keep the old state as a backup profile', checked: true} : undefined,
       textWhenChecked: info.action === 'factoryReset' ? {label: 'Backup name (optional)'} : undefined
     };
