@@ -413,6 +413,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   select(d: RugixDevice): void {
     this.selectedId = this.selectedId === d.id ? null : d.id;
+    this.tabIndex = 0;
     this.auditDeviceId = '';
     this.loadAudit();
     this.syncStats();
