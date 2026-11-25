@@ -157,7 +157,7 @@
         @if (tabIndex === 0) {
           @if (d.componentList.length) {
             <div class="group-box">
-            <div class="group-title">Hardware &amp; software</div>
+            <div class="group-title">Hardware</div>
             <div class="tab-body grid tight">
               <div class="kv"><span>Model</span><b>{{ d.hardware.model || '—' }}</b></div>
               <div class="kv"><span>Serial number</span><b>{{ d.hardware.serial || '—' }}</b></div>
@@ -165,6 +165,11 @@
               <div class="kv"><span>Board version</span><b>{{ d.hardware.boardVersion || '—' }}</b></div>
               <div class="kv"><span>CPU module</span><b>{{ d.hardware.cpuModule || '—' }}</b></div>
               <div class="kv"><span>Architecture</span><b>{{ d.hardware.arch || '—' }}</b></div>
+            </div>
+            </div>
+            <div class="group-box">
+            <div class="group-title">Software</div>
+            <div class="tab-body grid tight">
               <div class="kv"><span>Edge OS</span><b>{{ d.hardware.osVersion || '—' }}</b></div>
               <div class="kv"><span>Rugix Ctrl</span><b>{{ d.hardware.rugixCtrl || '—' }}</b></div>
               <div class="kv"><span>Docker</span><b>{{ d.hardware.docker || '—' }}</b></div>
@@ -173,7 +178,7 @@
             </div>
           }
           <div class="group-box">
-            <div class="group-title">Rugix</div>
+            <div class="group-title">Boot-Info</div>
           <div class="tab-body grid tight">
             <div class="kv"><span>Boot flow</span><b>{{ d.bootFlow || '—' }}</b></div>
             <div class="kv"><span>Boot groups</span><b>{{ d.bootGroups.join(', ') || '—' }}</b></div>
