@@ -26,7 +26,7 @@
   .rugix-toolbar {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 8px;
     min-height: 64px;
     padding: 0 16px 0 24px;
@@ -40,7 +40,22 @@
     font-weight: 400;
     letter-spacing: .1px;
     padding-right: 20px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
   }
+
+  .search-toggle { display: none; flex: none; }
+  .rugix-toolbar button { flex: none; }
+
+  .sortable { cursor: pointer; user-select: none; }
+  .sort-icon { width: 18px; height: 18px; font-size: 18px; vertical-align: middle; margin-left: 2px; opacity: 0; transition: opacity .15s; }
+  .sortable:hover .sort-icon { opacity: .4; }
+  .sortable.sorted .sort-icon { opacity: .87; }
+
+  .qa-inline { display: none; white-space: nowrap; }
+  .qa-menu { display: inline; }
 
   .rugix-search {
     width: 240px;
@@ -90,7 +105,7 @@
     th:first-child, td:first-child { padding-left: 12px; }
     .w-check { width: 48px; }
     .w-status { width: 120px; }
-    .w-actions { width: 56px; text-align: right; padding-right: 8px; }
+    .w-actions { width: 56px; text-align: right; padding-right: 8px; white-space: nowrap; }
     .name { font-weight: 400; }
   }
 
@@ -318,6 +333,7 @@
   }
 
   .caution-icon { color: #ef6c00; }
+  button:disabled .caution-icon { color: inherit; }
 
   .banner mat-icon { flex: none; width: 24px; height: 24px; font-size: 24px; }
 
@@ -493,11 +509,23 @@
   .rugix-toolbar { padding: 0 8px 0 16px; }
 }
 
+@container rugix (min-width: 1101px) {
+  :host .qa-inline { display: inline; }
+  :host .qa-menu { display: none; }
+  :host .rugix-table-wrap > .rugix-table .w-actions { width: 260px; }
+}
+
 @container rugix (max-width: 600px) {
   .c-sm { display: none; }
   .rugix-title { font-size: 18px; padding-right: 8px; }
-  .rugix-search { flex: 1 1 100%; order: 3; width: 100%; }
-  .rugix-toolbar.selection { padding-top: 8px; padding-bottom: 8px; }
+  :host .search-toggle { display: inline-flex; }
+  :host .rugix-search { display: none; flex: 1 1 auto; width: auto; }
+  :host .rugix-search.open { display: inline-flex; }
+  :host .rugix-toolbar:has(.rugix-search.open) .rugix-title,
+  :host .rugix-toolbar:has(.rugix-search.open) .flex-1 { display: none; }
+  .rugix-toolbar .lbl { display: none; }
+  .rugix-toolbar.selection button[mat-flat-button] { min-width: 0; padding: 0 12px; }
+  .rugix-toolbar.selection button[mat-flat-button] mat-icon { margin: 0; }
   .rugix-table td, .rugix-table th { padding-left: 6px; }
   .rugix-table .w-check { width: 40px; }
   .rugix-table .w-status { width: auto; }

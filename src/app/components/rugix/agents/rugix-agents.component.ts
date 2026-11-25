@@ -191,10 +191,42 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     this.ctx.detectChanges();
   }
 
+  sortKey = 'name';
+  sortDir: 'asc' | 'desc' = 'asc';
+
+  sortBy(key: string): void {
+    if (this.sortKey === key) {
+      this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortKey = key;
+      this.sortDir = 'asc';
+    }
+    this.pageIndex = 0;
+  }
+
+  private sortValue(d: RugixDevice, key: string): string {
+    switch (key) {
+      case 'status': return d.active ? '1' : '0';
+      case 'os': return d.hardware.osVersion || '';
+      case 'group': return d.activeGroup || '';
+      case 'flow': return d.bootFlow || '';
+      case 'state': return d.stateStatus || '';
+      case 'api': return d.apiVersion || '';
+      case 'job': return d.lastJobEvent?.status || '';
+      default: return d.label || d.name;
+    }
+  }
+
   get filtered(): RugixDevice[] {
     const q = this.search.trim().toLowerCase();
-    return q ? this.devices.filter(d =>
-      [d.name, d.label, d.bootFlow, d.activeGroup, d.apiVersion].some(v => (v || '').toLowerCase().includes(q))) : this.devices;
+    const list = q ? this.devices.filter(d =>
+      [d.name, d.label, d.hardware.osVersion, d.hardware.model, d.hardware.serial, d.bootFlow, d.activeGroup,
+        d.stateStatus, d.apiVersion, d.lastJobEvent?.status, d.active ? 'online' : 'offline']
+        .some(v => (v || '').toLowerCase().includes(q))) : this.devices;
+    const dir = this.sortDir === 'asc' ? 1 : -1;
+    return [...list].sort((a, b) =>
+      dir * this.sortValue(a, this.sortKey).localeCompare(this.sortValue(b, this.sortKey), undefined, {numeric: true, sensitivity: 'base'})
+      || (a.label || a.name).localeCompare(b.label || b.name));
   }
 
   get page(): RugixDevice[] {

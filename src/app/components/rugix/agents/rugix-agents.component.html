@@ -4,25 +4,25 @@
     @if (!checked.size) {
       <span class="rugix-title">{{ settings.title }}</span>
       <span class="flex-1"></span>
-      @if (searchOpen) {
-        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="rugix-search">
-          <input matInput placeholder="Search devices" [(ngModel)]="search" (ngModelChange)="onSearch()" #searchInput>
-        </mat-form-field>
-      }
-      <button mat-icon-button type="button" (click)="refresh()" matTooltip="Refresh"><mat-icon>refresh</mat-icon></button>
-      @if (settings.enableSearch) {
-        <button mat-icon-button type="button" (click)="toggleSearch()" matTooltip="Search">
-          <mat-icon>{{ searchOpen ? 'close' : 'search' }}</mat-icon>
-        </button>
-      }
-    } @else {
-      <span class="rugix-title">{{ checked.size }} {{ checked.size === 1 ? 'device' : 'devices' }} selected</span>
-      <span class="flex-1"></span>
-      <button mat-stroked-button color="primary" type="button" (click)="openInstall(checkedDevices, 'system')">
-        <mat-icon>system_update_alt</mat-icon>Update system
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="rugix-search" [class.open]="searchOpen">
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput placeholder="Search devices" [(ngModel)]="search" (ngModelChange)="onSearch()" #searchInput>
+        @if (search) {
+          <button matSuffix mat-icon-button type="button" aria-label="Clear search" (click)="search = ''; onSearch()"><mat-icon>close</mat-icon></button>
+        }
+      </mat-form-field>
+      <button mat-icon-button type="button" class="search-toggle" (click)="toggleSearch()" matTooltip="Search">
+        <mat-icon>{{ searchOpen ? 'close' : 'search' }}</mat-icon>
       </button>
-      <button mat-stroked-button color="primary" type="button" (click)="openInstall(checkedDevices, 'app')">
-        <mat-icon>apps</mat-icon>Install app
+      <button mat-icon-button type="button" (click)="refresh()" matTooltip="Refresh"><mat-icon>refresh</mat-icon></button>
+    } @else {
+      <span class="rugix-title">{{ checked.size }} selected</span>
+      <span class="flex-1"></span>
+      <button mat-flat-button color="primary" type="button" (click)="openInstall(checkedDevices, 'system')">
+        <mat-icon>system_update_alt</mat-icon><span class="lbl">Update system</span>
+      </button>
+      <button mat-flat-button color="primary" type="button" (click)="openInstall(checkedDevices, 'app')">
+        <mat-icon>apps</mat-icon><span class="lbl">Install app</span>
       </button>
       <button mat-icon-button type="button" (click)="clearSelection()" matTooltip="Clear selection"><mat-icon>close</mat-icon></button>
     }
@@ -34,14 +34,14 @@
       <thead>
         <tr>
           <th class="w-check"><mat-checkbox [checked]="allChecked" (change)="toggleAll()"></mat-checkbox></th>
-          <th>Device</th>
-          <th class="w-status">Status</th>
-          <th>Edge OS</th>
-          <th class="c-l3">Active group</th>
-          <th class="c-l2">Boot flow</th>
-          <th class="c-l2">State</th>
-          <th class="c-l1">Rugix API</th>
-          <th class="c-l1">Last job</th>
+          <th class="sortable" [class.sorted]="sortKey === 'name'" (click)="sortBy('name')">Device<mat-icon class="sort-icon">{{ sortKey === 'name' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable w-status" [class.sorted]="sortKey === 'status'" (click)="sortBy('status')">Status<mat-icon class="sort-icon">{{ sortKey === 'status' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable" [class.sorted]="sortKey === 'os'" (click)="sortBy('os')">Edge OS<mat-icon class="sort-icon">{{ sortKey === 'os' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-l3" [class.sorted]="sortKey === 'group'" (click)="sortBy('group')">Active group<mat-icon class="sort-icon">{{ sortKey === 'group' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-l2" [class.sorted]="sortKey === 'flow'" (click)="sortBy('flow')">Boot flow<mat-icon class="sort-icon">{{ sortKey === 'flow' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-l2" [class.sorted]="sortKey === 'state'" (click)="sortBy('state')">State<mat-icon class="sort-icon">{{ sortKey === 'state' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-l1" [class.sorted]="sortKey === 'api'" (click)="sortBy('api')">Rugix API<mat-icon class="sort-icon">{{ sortKey === 'api' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-l1" [class.sorted]="sortKey === 'job'" (click)="sortBy('job')">Last job<mat-icon class="sort-icon">{{ sortKey === 'job' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
           <th class="w-actions"></th>
         </tr>
       </thead>
@@ -87,14 +87,23 @@
               @if (busy.has(d.id)) {
                 <mat-spinner diameter="20"></mat-spinner>
               } @else {
-                <button mat-icon-button [matMenuTriggerFor]="rowMenu" aria-label="Actions"><mat-icon>more_vert</mat-icon></button>
-                <mat-menu #rowMenu="matMenu">
-                  <button mat-menu-item (click)="openInstall([d], 'system')"><mat-icon>system_update_alt</mat-icon>Install system update…</button>
-                  <button mat-menu-item (click)="openInstall([d], 'app')"><mat-icon>apps</mat-icon>Install app…</button>
+                <span class="qa-inline">
+                  <button mat-icon-button (click)="openInstall([d], 'system')" matTooltip="Install system update…"><mat-icon>system_update_alt</mat-icon></button>
+                  <button mat-icon-button (click)="openInstall([d], 'app')" matTooltip="Install app…"><mat-icon>apps</mat-icon></button>
                   @for (a of systemActions; track a.action) {
-                    <button mat-menu-item [disabled]="!d.active" (click)="runSystemAction(a, d)"><mat-icon [class.caution-icon]="a.caution">{{ a.icon }}</mat-icon>{{ a.label }}</button>
+                    <button mat-icon-button [disabled]="!d.active" (click)="runSystemAction(a, d)" [matTooltip]="a.label"><mat-icon [class.caution-icon]="a.caution">{{ a.icon }}</mat-icon></button>
                   }
-                </mat-menu>
+                </span>
+                <span class="qa-menu">
+                  <button mat-icon-button [matMenuTriggerFor]="rowMenu" aria-label="Actions"><mat-icon>more_vert</mat-icon></button>
+                  <mat-menu #rowMenu="matMenu">
+                    <button mat-menu-item (click)="openInstall([d], 'system')"><mat-icon>system_update_alt</mat-icon>Install system update…</button>
+                    <button mat-menu-item (click)="openInstall([d], 'app')"><mat-icon>apps</mat-icon>Install app…</button>
+                    @for (a of systemActions; track a.action) {
+                      <button mat-menu-item [disabled]="!d.active" (click)="runSystemAction(a, d)"><mat-icon [class.caution-icon]="a.caution">{{ a.icon }}</mat-icon>{{ a.label }}</button>
+                    }
+                  </mat-menu>
+                </span>
               }
             </td>
           </tr>
