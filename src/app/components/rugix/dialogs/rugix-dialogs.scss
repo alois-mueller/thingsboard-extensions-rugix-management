@@ -158,6 +158,24 @@
     }
   }
 
+  .rugix-dialog-actions button[type=submit] .mdc-button__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-spinner {
+    flex: none;
+    display: inline-block;
+    box-sizing: border-box;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(0, 0, 0, .25);
+    border-top-color: rgba(0, 0, 0, .6);
+    border-radius: 50%;
+    animation: rugix-spin .8s linear infinite;
+  }
+
   .rugix-error {
     display: flex;
     align-items: flex-start;
@@ -251,4 +269,8 @@
   --mat-filled-button-disabled-label-text-color: rgba(0, 0, 0, .38);
   background-color: rgba(0, 0, 0, .12);
   color: rgba(0, 0, 0, .38);
+}
+
+@keyframes rugix-spin {
+  to { transform: rotate(360deg); }
 }
