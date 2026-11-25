@@ -222,3 +222,14 @@
   background-color: #ef6c00;
   color: #fff;
 }
+
+.caution:disabled, .caution[disabled] {
+  --mdc-filled-button-disabled-container-color: rgba(0, 0, 0, .12);
+  --mat-button-filled-disabled-container-color: rgba(0, 0, 0, .12);
+  --mat-filled-button-disabled-container-color: rgba(0, 0, 0, .12);
+  --mdc-filled-button-disabled-label-text-color: rgba(0, 0, 0, .38);
+  --mat-button-filled-disabled-label-text-color: rgba(0, 0, 0, .38);
+  --mat-filled-button-disabled-label-text-color: rgba(0, 0, 0, .38);
+  background-color: rgba(0, 0, 0, .12);
+  color: rgba(0, 0, 0, .38);
+}
