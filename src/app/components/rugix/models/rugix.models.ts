@@ -136,6 +136,41 @@ export interface RugixApp {
   metadata?: any;
 }
 
+/** A capability a component provides / requires / claims (`{id, value?, version?}`). */
+export interface RugixCapability {
+  id: string;
+  value?: string;
+  version?: string;
+}
+
+/** One entry of `GET /api/components` (`components` list). */
+export interface RugixComponent {
+  id: string;
+  version?: string;
+  kind: string;
+  path?: string;
+  app?: string;
+  generation?: number;
+  provides: RugixCapability[];
+  requires: RugixCapability[];
+  claims: RugixCapability[];
+  conflicts: RugixCapability[];
+}
+
+/** Facts derived from the components list for the overview tab. */
+export interface RugixHardwareInfo {
+  vendor?: string;
+  model?: string;
+  boardVersion?: string;
+  serial?: string;
+  cpuModule?: string;
+  osVersion?: string;
+  rugixCtrl?: string;
+  arch?: string;
+  docker?: string;
+  picontrol?: string;
+}
+
 export interface RugixComponentProblem {
   type: string;
   detail: any;
@@ -157,6 +192,8 @@ export interface RugixDevice {
   features?: any;
   slots: RugixSlot[];
   components: any;
+  componentList: RugixComponent[];
+  hardware: RugixHardwareInfo;
   componentsConsistent?: boolean;
   componentsProblems: RugixComponentProblem[];
   apps: RugixApp[];

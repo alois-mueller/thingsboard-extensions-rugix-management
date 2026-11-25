@@ -12,11 +12,12 @@ import {
   mergeRugixSettings,
   RugixApp,
   RugixAppAction,
+  RugixComponent,
   RugixDevice,
   RugixSystemAction,
   RugixWidgetSettings
 } from '../models/rugix.models';
-import { appStatusLabel, applyValue, formatBytes, newDevice, parseSlots } from '../models/rugix-parse';
+import { appStatusLabel, applyValue, capabilityLabel, providedIds, formatBytes, newDevice, parseSlots } from '../models/rugix-parse';
 import { RugixJobHandle, RugixRpcService } from '../services/rugix-rpc.service';
 import {
   RugixConfirmDialogComponent,
@@ -85,6 +86,8 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     {action: 'appRemove', icon: 'delete', label: 'Remove', warn: true}
   ];
 
+  readonly capabilityLabel = capabilityLabel;
+  componentFilter = '';
   readonly formatBytes = formatBytes;
   readonly appStatusLabel = appStatusLabel;
 
@@ -293,6 +296,21 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   jsonOf(value: any): string {
     return value === undefined || value === null ? '' : JSON.stringify(value, null, 2);
+  }
+
+  filteredComponents(d: RugixDevice): RugixComponent[] {
+    const q = this.componentFilter.trim().toLowerCase();
+    return q ? d.componentList.filter(c =>
+      [c.id, c.version, c.kind, c.app].some(v => (v || '').toLowerCase().includes(q))) : d.componentList;
+  }
+
+  /** `true` if nothing in the system provides the required capability. */
+  isUnsatisfied(d: RugixDevice, id: string): boolean {
+    return !providedIds(d.componentList).has(id);
+  }
+
+  kindClass(kind: string): string {
+    return 'kind-' + (kind || 'unknown').toLowerCase();
   }
 
   trackById(_: number, d: RugixDevice): string {

@@ -141,6 +141,21 @@
             <div class="kv"><span>Components consistent</span>
               <b>{{ d.componentsConsistent === undefined ? '—' : (d.componentsConsistent ? 'yes' : 'no') }}</b></div>
           </div>
+          @if (d.componentList.length) {
+            <div class="section-title">Hardware &amp; software</div>
+            <div class="tab-body grid tight">
+              <div class="kv"><span>Model</span><b>{{ d.hardware.model || '—' }}</b></div>
+              <div class="kv"><span>Serial number</span><b>{{ d.hardware.serial || '—' }}</b></div>
+              <div class="kv"><span>Vendor</span><b>{{ d.hardware.vendor || '—' }}</b></div>
+              <div class="kv"><span>Board version</span><b>{{ d.hardware.boardVersion || '—' }}</b></div>
+              <div class="kv"><span>CPU module</span><b>{{ d.hardware.cpuModule || '—' }}</b></div>
+              <div class="kv"><span>Architecture</span><b>{{ d.hardware.arch || '—' }}</b></div>
+              <div class="kv"><span>Edge OS</span><b>{{ d.hardware.osVersion || '—' }}</b></div>
+              <div class="kv"><span>Rugix Ctrl</span><b>{{ d.hardware.rugixCtrl || '—' }}</b></div>
+              <div class="kv"><span>Docker</span><b>{{ d.hardware.docker || '—' }}</b></div>
+              <div class="kv"><span>PiControl</span><b>{{ d.hardware.picontrol || '—' }}</b></div>
+            </div>
+          }
         </mat-tab>
 
         <mat-tab label="Slots ({{ d.slots.length }})">
@@ -194,12 +209,53 @@
           </div>
         </mat-tab>
 
-        <mat-tab label="Components">
+        <mat-tab label="Components ({{ d.componentList.length }})">
           <div class="tab-body">
             @for (p of d.componentsProblems; track $index) {
               <div class="banner err"><mat-icon>error_outline</mat-icon><span><b>{{ p.type }}</b> {{ jsonOf(p.detail) }}</span></div>
             }
-            <pre class="json">{{ jsonOf(d.components) || 'No component data.' }}</pre>
+            <div class="tab-actions">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="comp-filter">
+                <input matInput placeholder="Filter components" [(ngModel)]="componentFilter">
+              </mat-form-field>
+              <span class="flex-1"></span>
+              <span class="chip" [class.ok]="d.componentsConsistent === true" [class.err]="d.componentsConsistent === false">
+                {{ d.componentsConsistent === undefined ? 'consistency unknown' : (d.componentsConsistent ? 'consistent' : 'inconsistent') }}
+              </span>
+            </div>
+            <div class="rugix-table-wrap">
+              <table class="rugix-table compact">
+                <thead><tr><th>Component</th><th>Version</th><th>Source</th><th class="c-md">Provides</th><th class="c-md">Requires</th></tr></thead>
+                <tbody>
+                  @for (c of filteredComponents(d); track c.id) {
+                    <tr>
+                      <td><div class="name">{{ c.id }}</div>@if (c.path) { <div class="sub path" [matTooltip]="c.path">{{ c.path }}</div> }</td>
+                      <td class="nowrap">{{ c.version || '—' }}</td>
+                      <td>
+                        <span class="kind" [class]="kindClass(c.kind)">{{ c.kind }}</span>
+                        @if (c.app) { <div class="sub">{{ c.app }}{{ c.generation !== undefined ? ' · gen ' + c.generation : '' }}</div> }
+                      </td>
+                      <td class="c-md">
+                        <div class="caps">
+                          @for (x of c.provides; track $index) { <span class="cap" [matTooltip]="'provides'">{{ capabilityLabel(x) }}</span> }
+                          @if (!c.provides.length) { — }
+                        </div>
+                      </td>
+                      <td class="c-md">
+                        <div class="caps">
+                          @for (x of c.requires; track $index) {
+                            <span class="cap req" [class.bad]="isUnsatisfied(d, x.id)" [matTooltip]="isUnsatisfied(d, x.id) ? 'not provided by any component' : 'requires'">{{ capabilityLabel(x) }}</span>
+                          }
+                          @if (!c.requires.length) { — }
+                        </div>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr><td colspan="5" class="empty">No component data.</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           </div>
         </mat-tab>
 

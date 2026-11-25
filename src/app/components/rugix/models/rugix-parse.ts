@@ -4,6 +4,9 @@
 
 import {
   RugixApp,
+  RugixCapability,
+  RugixComponent,
+  RugixHardwareInfo,
   RugixComponentProblem,
   RugixDevice,
   RugixJobEvent,
@@ -56,6 +59,70 @@ export function parseApps(value: any): RugixApp[] {
   }));
 }
 
+const cap = (c: any): RugixCapability => ({id: c?.id, value: c?.value, version: c?.version});
+
+/** `GET /api/components` -> `components` (array of `{source, component}`), tolerant against wrappers. */
+export function parseComponents(value: any): RugixComponent[] {
+  let parsed = parseJson<any>(value, []);
+  if (parsed && !Array.isArray(parsed)) {
+    parsed = parsed.components ?? [];
+  }
+  return (Array.isArray(parsed) ? parsed : []).map((e: any) => {
+    const c = e.component || e;
+    const s = e.source || {};
+    return {
+      id: c.id,
+      version: c.version,
+      kind: s.kind || 'Unknown',
+      path: s.path,
+      app: s.app,
+      generation: s.generation,
+      provides: (c.provides || []).map(cap),
+      requires: (c.requires || []).map(cap),
+      claims: (c.claims || []).map(cap),
+      conflicts: (c.conflicts || []).map(cap)
+    };
+  }).filter((c: RugixComponent) => !!c.id);
+}
+
+export function capabilityLabel(c: RugixCapability): string {
+  return c.id + (c.value !== undefined && c.value !== null ? ' = ' + c.value : '') + (c.version ? ' ' + c.version : '');
+}
+
+/** All capabilities provided anywhere, used to flag unsatisfied requirements. */
+export function providedIds(list: RugixComponent[]): Set<string> {
+  const ids = new Set<string>();
+  list.forEach(c => { ids.add(c.id); c.provides.forEach(p => ids.add(p.id)); });
+  return ids;
+}
+
+export function deriveHardware(list: RugixComponent[]): RugixHardwareInfo {
+  const provided = (id: string) => {
+    for (const c of list) {
+      const p = c.provides.find(x => x.id === id);
+      if (p) {
+        return p;
+      }
+    }
+    return undefined;
+  };
+  const val = (id: string) => provided(id)?.value;
+  const ver = (id: string) => provided(id)?.version;
+  const byId = (id: string) => list.find(c => c.id === id);
+  return {
+    vendor: val('hardware.revpi.vendor'),
+    model: val('hardware.revpi.model'),
+    boardVersion: ver('hardware.revpi.version'),
+    serial: val('hardware.revpi.id'),
+    cpuModule: val('hardware.rpi.model'),
+    osVersion: byId('system.edge-os')?.version,
+    rugixCtrl: ver('rugix.ctrl'),
+    arch: val('host.arch'),
+    docker: byId('runtime.docker')?.version,
+    picontrol: ver('runtime.revpi.picontrol')
+  };
+}
+
 export function parseProblems(value: any): RugixComponentProblem[] {
   const parsed = parseJson<any>(value, []);
   if (!Array.isArray(parsed)) {
@@ -86,6 +153,8 @@ export function newDevice(id: string, name: string, label: string): RugixDevice 
     bootGroups: [],
     slots: [],
     components: undefined,
+    componentList: [],
+    hardware: {},
     componentsProblems: [],
     apps: [],
     commitPending: false
@@ -115,6 +184,8 @@ export function applyValue(device: RugixDevice, key: string, raw: any, keys: Rug
     device.features = parseJson(raw);
   } else if (key === keys.components) {
     device.components = parseJson(raw);
+    device.componentList = parseComponents(raw);
+    device.hardware = deriveHardware(device.componentList);
   } else if (key === keys.componentsConsistent) {
     const v = parseJson<any>(raw);
     device.componentsConsistent = typeof v === 'boolean' ? v : (v === null || v === undefined ? undefined : toBoolean(v));

@@ -9,11 +9,11 @@ for (const l of lines) {
   const attrs = () => c.publish('v1/devices/me/attributes', JSON.stringify({
     'boot.bootFlow': 'tryboot', 'boot.groups': {a: {}, b: {}}, 'state.status': 'active', 'state.dataPartition': '/dev/mmcblk0p4',
     'api.version': '0.1.4', 'daemon.features': {}, 'components.consistent': true, 'components.problems': [],
-    'components.components': {'rugix.system': {version: '0.8.3'}},
+    'components.components': require('./components.json'),
     'slots.boot-a': {active: st.ag === 'a', size: 70254592}, 'slots.boot-b': {active: st.ag === 'b', size: 70254592},
     'slots.system-a': {active: st.ag === 'a', size: 1288490188, updated_at: '2026-11-20T10:00:00Z', hashes: {sha256: '9f2c4be1a7d03c55e0'}},
     'slots.system-b': {active: st.ag === 'b', size: 1395864371, updated_at: '2026-11-24T09:12:00Z', hashes: {sha256: '3b77aa01c9e2f4d8'}},
-    'apps.apps': [{name: 'node-red', status: 'running', generation: 3, orchestrator: 'compose'}, {name: 'modbus-bridge', status: 'stopped', generation: 1, orchestrator: 'systemd'}]
+    'apps.apps': [{name: 'tb-iot-gateway', status: 'running', generation: 23, orchestrator: 'compose'}, {name: 'pangolin-newt', status: 'running', generation: 11, orchestrator: 'compose'}]
   }));
   const pushState = () => { tel({'boot.activeGroup': st.ag, 'boot.defaultGroup': st.dg}); attrs(); };
   const sleep = ms => new Promise(r => setTimeout(r, ms));
