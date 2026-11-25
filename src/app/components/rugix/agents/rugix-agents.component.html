@@ -92,7 +92,7 @@
                   <button mat-menu-item (click)="openInstall([d], 'system')"><mat-icon>system_update_alt</mat-icon>Install system update…</button>
                   <button mat-menu-item (click)="openInstall([d], 'app')"><mat-icon>apps</mat-icon>Install app…</button>
                   @for (a of systemActions; track a.action) {
-                    <button mat-menu-item [disabled]="!d.active" (click)="runSystemAction(a, d)"><mat-icon>{{ a.icon }}</mat-icon>{{ a.label }}</button>
+                    <button mat-menu-item [disabled]="!d.active" (click)="runSystemAction(a, d)"><mat-icon [class.caution-icon]="a.caution">{{ a.icon }}</mat-icon>{{ a.label }}</button>
                   }
                 </mat-menu>
               }
@@ -121,11 +121,12 @@
         <button mat-icon-button type="button" (click)="closeDetails()" aria-label="Close details"><mat-icon>close</mat-icon></button>
       </mat-toolbar>
       <div class="details-buttons">
-        <button mat-stroked-button color="primary" [disabled]="!d.active || busy.has(d.id)" (click)="openInstall([d], 'system')">
+        <button mat-flat-button color="primary" [disabled]="!d.active || busy.has(d.id)" (click)="openInstall([d], 'system')">
           <mat-icon>system_update_alt</mat-icon>Install update
         </button>
         @for (a of systemActions; track a.action) {
-          <button mat-stroked-button [color]="a.warn ? 'warn' : 'primary'" [disabled]="!d.active || busy.has(d.id)" (click)="runSystemAction(a, d)">
+          <button mat-flat-button [color]="a.warn ? 'warn' : (a.caution ? undefined : 'primary')" [class.caution]="a.caution"
+                  [disabled]="!d.active || busy.has(d.id)" (click)="runSystemAction(a, d)">
             <mat-icon>{{ a.icon }}</mat-icon>{{ a.label }}
           </button>
         }
@@ -140,8 +141,12 @@
         </div>
       }
 
-      <mat-tab-group animationDuration="0ms" mat-stretch-tabs="false" mat-align-tabs="start" [selectedIndex]="tabIndex" (selectedIndexChange)="onTabChange($event)">
-        <mat-tab label="Overview">
+      <div class="tabbar">
+        @for (tb of tabLabels(d); track tb.i) {
+          <button type="button" class="tab" [class.active]="tabIndex === tb.i" (click)="selectTab(tb.i, $event)">{{ tb.label }}</button>
+        }
+      </div>
+        @if (tabIndex === 0) {
           <div class="tab-body grid">
             <div class="kv"><span>Boot flow</span><b>{{ d.bootFlow || '—' }}</b></div>
             <div class="kv"><span>Boot groups</span><b>{{ d.bootGroups.join(', ') || '—' }}</b></div>
@@ -168,9 +173,9 @@
               <div class="kv"><span>PiControl</span><b>{{ d.hardware.picontrol || '—' }}</b></div>
             </div>
           }
-        </mat-tab>
+        }
 
-        <mat-tab label="Slots ({{ d.slots.length }})">
+        @if (tabIndex === 1) {
           <div class="tab-body">
             <div class="slots">
               @for (s of d.slots; track s.name) {
@@ -187,9 +192,9 @@
               } @empty { <div class="empty">No slot information.</div> }
             </div>
           </div>
-        </mat-tab>
+        }
 
-        <mat-tab label="Apps ({{ d.apps.length }})">
+        @if (tabIndex === 2) {
           <div class="tab-body">
             <div class="tab-actions">
               <button mat-stroked-button [disabled]="!d.active" (click)="openInstall([d], 'app')"><mat-icon>add</mat-icon>Install app</button>
@@ -220,9 +225,9 @@
               </tbody>
             </table>
           </div>
-        </mat-tab>
+        }
 
-        <mat-tab label="Components ({{ d.componentList.length }})">
+        @if (tabIndex === 3) {
           <div class="tab-body">
             @for (p of d.componentsProblems; track $index) {
               <div class="banner err"><mat-icon>error_outline</mat-icon><span><b>{{ p.type }}</b> {{ jsonOf(p.detail) }}</span></div>
@@ -270,9 +275,9 @@
               </table>
             </div>
           </div>
-        </mat-tab>
+        }
 
-        <mat-tab label="Resources">
+        @if (tabIndex === 4) {
           <div class="tab-body">
             <div class="stats-head">
               <div class="sub">
@@ -323,9 +328,9 @@
               </div>
             </div>
           </div>
-        </mat-tab>
+        }
 
-        <mat-tab label="Last job">
+        @if (tabIndex === 5) {
           <div class="tab-body">
             @if (d.lastJobEvent) {
               <div class="kv"><span>Event</span><b>{{ d.lastJobEvent.type }}</b></div>
@@ -336,8 +341,8 @@
               }
             } @else { <div class="empty">No job events received yet.</div> }
           </div>
-        </mat-tab>
-      </mat-tab-group>
+        }
+      
     </div>
   }
 </div>

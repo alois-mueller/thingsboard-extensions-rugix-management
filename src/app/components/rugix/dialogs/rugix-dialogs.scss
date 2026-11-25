@@ -159,3 +159,15 @@
   &.running, &.queued { color: #1565c0; background: rgba(33, 150, 243, .15); }
   &.unknown { color: rgba(0, 0, 0, .6); background: rgba(0, 0, 0, .08); }
 }
+
+// amber 'caution' button (warns before risky but reversible actions)
+.caution {
+  --mdc-filled-button-container-color: #ef6c00;
+  --mdc-filled-button-label-text-color: #fff;
+  --mat-button-filled-container-color: #ef6c00;
+  --mat-button-filled-label-text-color: #fff;
+  --mat-filled-button-container-color: #ef6c00;
+  --mat-filled-button-label-text-color: #fff;
+  background-color: #ef6c00;
+  color: #fff;
+}

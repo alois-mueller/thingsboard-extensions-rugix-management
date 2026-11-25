@@ -43,6 +43,8 @@ interface SystemActionInfo {
   label: string;
   message: (d: RugixDevice) => string;
   warn?: boolean;
+  /** Visually pre-warns the user (amber) before a risky but reversible action. */
+  caution?: boolean;
   /** Text of the checkbox the user has to tick before the action can be confirmed. */
   ack: string;
 }
@@ -93,10 +95,10 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     {action: 'reboot', icon: 'restart_alt', label: 'Reboot',
       ack: 'I understand that the device is unavailable while it reboots.',
       message: d => `Reboot the active system of "${d.label || d.name}"?`},
-    {action: 'rebootSpare', icon: 'swap_horiz', label: 'Reboot into spare',
+    {action: 'rebootSpare', icon: 'swap_horiz', label: 'Reboot (Spare)', caution: true,
       ack: 'I understand that the device reboots into the spare system and falls back if it is not committed.',
       message: d => `Reboot "${d.label || d.name}" into the spare system? Commit afterwards to make it permanent, otherwise the device falls back.`},
-    {action: 'commit', icon: 'task_alt', label: 'Commit running system',
+    {action: 'commit', icon: 'task_alt', label: 'Commit',
       ack: 'I understand that the running system becomes the default and the previous system is no longer the fallback.',
       message: d => `Make the currently running system the default on "${d.label || d.name}"? A rollback to the previous system is no longer automatic afterwards.`},
     {action: 'factoryReset', icon: 'delete_forever', label: 'Factory reset', warn: true,
@@ -220,6 +222,19 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   closeDetails(): void {
     this.selectedId = null;
     this.syncStats();
+  }
+
+  tabLabels(d: RugixDevice): { i: number; label: string }[] {
+    return ['Overview', `Slots (${d.slots.length})`, `Apps (${d.apps.length})`, `Components (${d.componentList.length})`,
+      'Resources', 'Last job'].map((label, i) => ({i, label}));
+  }
+
+  /** Select a tab and scroll it to the middle of the tab bar (clamped at both ends, so first/last stay put). */
+  selectTab(i: number, ev: Event): void {
+    const el = ev.currentTarget as HTMLElement;
+    const bar = el.parentElement;
+    bar.scrollTo({left: el.offsetLeft - (bar.clientWidth - el.offsetWidth) / 2, behavior: 'smooth'});
+    this.onTabChange(i);
   }
 
   onTabChange(index: number): void {
@@ -347,6 +362,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       message: info.message(device),
       confirmLabel: info.label,
       warn: info.warn,
+      caution: info.caution,
       acknowledge: info.ack,
       checkbox: info.action === 'factoryReset' ? {label: 'Keep the old state as a backup profile', checked: true} : undefined,
       textWhenChecked: info.action === 'factoryReset' ? {label: 'Backup name (optional)'} : undefined

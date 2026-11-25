@@ -11,6 +11,8 @@ export interface RugixConfirmDialogData {
   confirmLabel: string;
   /** Style the confirm button as destructive. */
   warn?: boolean;
+  /** Amber confirm button for risky but reversible actions. */
+  caution?: boolean;
   /** Text of a checkbox that must be ticked before the confirm button is enabled. */
   acknowledge?: string;
   /** Optional checkbox, e.g. "keep old state as backup" on factory reset. */
