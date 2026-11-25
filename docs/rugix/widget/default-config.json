@@ -116,6 +116,12 @@
           "type": "timeseries",
           "label": "jobEvent",
           "settings": {}
+        },
+        {
+          "name": "lastActivityTime",
+          "type": "attribute",
+          "label": "lastActivityTime",
+          "settings": {}
         }
       ]
     }
