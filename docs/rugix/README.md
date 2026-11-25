@@ -32,6 +32,11 @@ The *Resources* tab charts the `machineStats` telemetry of the **TB IoT Gateway 
 Widget settings (JSON, all optional) allow renaming RPC methods and data keys, see `DEFAULT_RUGIX_SETTINGS` in
 [`rugix.models.ts`](../../src/app/components/rugix/models/rugix.models.ts).
 
+### Views
+The widget has two views in the top menu: **Overview** (fleet donuts for device status, Edge OS versions and last job, plus
+recent alerts such as offline, commit pending, failed jobs, security bypasses) and **Devices** (the table). Set
+`{"defaultView": "devices"}` in the widget settings to open on the table.
+
 ### Role restrictions and last seen
 `access` in the widget settings limits which ThingsBoard user authorities may use an action class
 (`SYS_ADMIN`, `TENANT_ADMIN`, `CUSTOMER_USER`). Default: install and reboot/commit for everyone, factory reset for

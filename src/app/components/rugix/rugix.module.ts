@@ -8,6 +8,7 @@ import { SharedModule } from '@shared/public-api';
 import { RugixAgentsComponent } from './agents/rugix-agents.component';
 import { RugixConfirmDialogComponent } from './dialogs/rugix-confirm-dialog.component';
 import { RugixInstallDialogComponent } from './dialogs/rugix-install-dialog.component';
+import { RugixDonutComponent } from './charts/rugix-donut.component';
 import { RugixLineChartComponent } from './charts/rugix-line-chart.component';
 import { RugixJobDialogComponent } from './dialogs/rugix-job-dialog.component';
 
@@ -17,7 +18,8 @@ import { RugixJobDialogComponent } from './dialogs/rugix-job-dialog.component';
     RugixConfirmDialogComponent,
     RugixInstallDialogComponent,
     RugixJobDialogComponent,
-    RugixLineChartComponent
+    RugixLineChartComponent,
+    RugixDonutComponent
   ],
   imports: [
     CommonModule,
@@ -28,7 +30,8 @@ import { RugixJobDialogComponent } from './dialogs/rugix-job-dialog.component';
     RugixConfirmDialogComponent,
     RugixInstallDialogComponent,
     RugixJobDialogComponent,
-    RugixLineChartComponent
+    RugixLineChartComponent,
+    RugixDonutComponent
   ]
 })
 export class RugixModule {

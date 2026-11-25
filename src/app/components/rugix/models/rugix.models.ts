@@ -7,6 +7,8 @@ export interface RugixWidgetSettings {
   title: string;
   enableSearch: boolean;
   defaultPageSize: number;
+  /** View shown when the widget opens. */
+  defaultView: 'overview' | 'devices';
   gatewayRelationType: string;
   maxRelationDepth: number;
   rpc: RugixRpcSettings;
@@ -83,6 +85,7 @@ export const DEFAULT_RUGIX_SETTINGS: RugixWidgetSettings = {
   title: 'Rugix Management',
   enableSearch: true,
   defaultPageSize: 10,
+  defaultView: 'overview',
   gatewayRelationType: 'Created',
   maxRelationDepth: 10,
   rpc: {

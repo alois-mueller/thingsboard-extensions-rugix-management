@@ -1,4 +1,45 @@
 <div class="rugix">
+  <!-- ===== view tabs ===== -->
+  <div class="view-tabs">
+    <button type="button" class="view-tab" [class.active]="view === 'overview'" (click)="setView('overview')"><mat-icon>space_dashboard</mat-icon>Overview</button>
+    <button type="button" class="view-tab" [class.active]="view === 'devices'" (click)="view = 'devices'"><mat-icon>developer_board</mat-icon>Devices<span class="count">{{ devices.length }}</span></button>
+  </div>
+
+  @if (view === 'overview') {
+    <div class="overview">
+      <div class="overview-head">
+        <span class="rugix-title">Fleet overview</span>
+        <span class="flex-1"></span>
+        <button mat-icon-button type="button" (click)="refresh()" matTooltip="Refresh"><mat-icon>refresh</mat-icon></button>
+      </div>
+      <div class="donuts">
+        <tb-rugix-donut title="Device status" [segments]="overviewStatus" [clickable]="true" (segmentClick)="onStatusSegment($event)"></tb-rugix-donut>
+        <tb-rugix-donut title="Edge OS versions" [segments]="overviewOs"></tb-rugix-donut>
+        <tb-rugix-donut title="Last job" [segments]="overviewJobs"></tb-rugix-donut>
+      </div>
+      <div class="alerts-card">
+        <div class="donut-title">Recent alerts <span class="alert-count">{{ alerts.length }}</span></div>
+        @for (a of shownAlerts; track $index) {
+          <div class="alert-row" (click)="openAlert(a)" role="button" tabindex="0" (keydown.enter)="openAlert(a)">
+            <mat-icon [class]="'alert-icon ' + a.severity">{{ alertIcon(a) }}</mat-icon>
+            <span class="alert-device">{{ a.device }}</span>
+            <span class="alert-cat">{{ a.category }}</span>
+            <span class="alert-msg">{{ a.message }}</span>
+            <span class="alert-time">{{ a.ts ? ago(a.ts) : '' }}</span>
+          </div>
+        } @empty {
+          <div class="empty">No alerts – all devices look healthy.</div>
+        }
+        @if (alerts.length > alertLimit) {
+          <button mat-button type="button" class="alerts-more" (click)="alertsExpanded = !alertsExpanded">
+            {{ alertsExpanded ? 'Show less' : 'Show all ' + alerts.length }}
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  @if (view === 'devices') {
   <!-- ===== toolbar (same structure as TB entity tables) ===== -->
   <div class="rugix-toolbar" [class.selection]="checked.size">
     @if (!checked.size) {
@@ -53,7 +94,7 @@
       <thead>
         <tr>
           <th class="w-check"><mat-checkbox [checked]="allChecked" (change)="toggleAll()"></mat-checkbox></th>
-          <th class="sortable" [class.sorted]="sortKey === 'name'" (click)="sortBy('name')">Device<mat-icon class="sort-icon">{{ sortKey === 'name' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-dev" [class.sorted]="sortKey === 'name'" (click)="sortBy('name')">Device<mat-icon class="sort-icon">{{ sortKey === 'name' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
           <th class="sortable w-status" [class.sorted]="sortKey === 'status'" (click)="sortBy('status')">Status<mat-icon class="sort-icon">{{ sortKey === 'status' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
           <th class="sortable c-os" [class.sorted]="sortKey === 'os'" (click)="sortBy('os')">Edge OS<mat-icon class="sort-icon">{{ sortKey === 'os' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
           <th class="sortable c-l3 c-group" [class.sorted]="sortKey === 'group'" (click)="sortBy('group')">Active group<mat-icon class="sort-icon">{{ sortKey === 'group' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
@@ -73,9 +114,9 @@
             <td>
               <div class="device">
                 @if (isRevPi(d)) { <img class="device-icon" [src]="revpiIcon" alt="Revolution Pi" matTooltip="Revolution Pi"> }
-                <div class="device-text">
+                <div class="device-text" [matTooltip]="d.label ? d.label + ' (' + d.name + ')' : d.name" matTooltipShowDelay="300">
                   <div class="name">
-                    {{ d.label || d.name }}
+                    <span class="name-text">{{ d.label || d.name }}</span>
                     @if (d.commitPending) { <mat-icon class="warn-icon commit-icon" matTooltip="Warning: Commit pending – running a non-default system. Commit to keep it, otherwise the device falls back on next boot.">warning</mat-icon> }
                     @if (d.insecure) { <mat-icon class="warn-icon insecure-icon" matTooltip="Warning: Rugix Ctrl security bypasses enabled (development only)">warning</mat-icon> }
                   </div>
@@ -132,6 +173,8 @@
     </table>
   </div>
   <mat-paginator showFirstLastButtons [length]="filtered.length" [pageIndex]="pageIndex" [pageSize]="pageSize" [pageSizeOptions]="[5, 10, 25, 50]" (page)="onPage($event)" hidePageSize="false"></mat-paginator>
+
+  }
 
   <!-- ===== details ===== -->
   @if (selected; as d) {

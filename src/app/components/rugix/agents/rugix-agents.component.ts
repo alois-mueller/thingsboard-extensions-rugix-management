@@ -25,6 +25,7 @@ import {
   RugixWidgetSettings
 } from '../models/rugix.models';
 import { RugixDaemonFeature, RugixJobEvent } from '../models/rugix.models';
+import { RugixDonutSegment } from '../charts/rugix-donut.component';
 import { fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots } from '../models/rugix-parse';
 import { REVPI_ICON } from '../models/rugix-icons';
 import { RugixJobHandle, RugixRpcService } from '../services/rugix-rpc.service';
@@ -39,6 +40,15 @@ import {
   RugixInstallDialogResult
 } from '../dialogs/rugix-install-dialog.component';
 import { RugixJobDialogComponent, RugixJobDialogData } from '../dialogs/rugix-job-dialog.component';
+
+interface FleetAlert {
+  severity: 'error' | 'warning';
+  category: string;
+  deviceId: string;
+  device: string;
+  message: string;
+  ts?: number;
+}
 
 interface JobGroup {
   id: string;
@@ -90,6 +100,113 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   busy = new Set<string>();
   searchOpen = false;
   tabIndex = 0;
+
+  // ---- fleet overview
+  view: 'overview' | 'devices' = 'overview';
+  overviewStatus: RugixDonutSegment[] = [];
+  overviewOs: RugixDonutSegment[] = [];
+  overviewJobs: RugixDonutSegment[] = [];
+  alerts: FleetAlert[] = [];
+  readonly alertLimit = 8;
+  alertsExpanded = false;
+
+  get shownAlerts(): FleetAlert[] {
+    return this.alertsExpanded ? this.alerts : this.alerts.slice(0, this.alertLimit);
+  }
+
+  setView(v: 'overview' | 'devices'): void {
+    this.view = v;
+    if (v === 'overview') {
+      this.closeDetails();
+    }
+  }
+
+  /** Devices tab pre-filtered, e.g. from a donut legend or an alert. */
+  showDevices(filter?: 'online' | 'offline' | 'pending'): void {
+    this.clearFilters();
+    if (filter === 'online' || filter === 'offline') {
+      this.statusFilter = filter;
+    } else if (filter === 'pending') {
+      this.pendingOnly = true;
+    }
+    this.view = 'devices';
+  }
+
+  openAlert(a: FleetAlert): void {
+    const d = this.devices.find(x => x.id === a.deviceId);
+    if (d) {
+      this.select(d);
+    }
+  }
+
+  onStatusSegment(key: string): void {
+    this.showDevices(key === 'offline' ? 'offline' : (key === 'warning' ? 'pending' : 'online'));
+  }
+
+  private computeOverview(): void {
+    const OK = '#198038', WARN = '#ef6c00', ERR = '#d12730', OFF = '#9e9e9e';
+    const count = {healthy: 0, warning: 0, error: 0, offline: 0};
+    const alerts: FleetAlert[] = [];
+    const os = new Map<string, number>();
+    const jobs = {succeeded: 0, running: 0, failed: 0, none: 0};
+    const push = (d: RugixDevice, severity: 'error' | 'warning', category: string, message: string, ts?: number) =>
+      alerts.push({severity, category, deviceId: d.id, device: d.label || d.name, message, ts});
+    for (const d of this.devices) {
+      let level: 'healthy' | 'warning' | 'error' | 'offline' = 'healthy';
+      const raise = (l: 'warning' | 'error') => { if (level !== 'error') { level = (l === 'error' || level === 'healthy') ? l : level; } };
+      if (!d.active) {
+        level = 'offline';
+        push(d, 'warning', 'connectivity', 'Device is offline', d.lastSeen);
+      } else {
+        if (d.insecure) {
+          raise('error'); push(d, 'error', 'security', 'Rugix Ctrl security bypasses enabled');
+        }
+        if (d.stateStatus === 'error') {
+          raise('error'); push(d, 'error', 'state', 'State management reports an error');
+        }
+        if (d.componentsConsistent === false) {
+          raise('warning'); push(d, 'warning', 'components', 'Component set is inconsistent');
+        }
+        if (d.commitPending) {
+          raise('warning');
+          push(d, 'warning', 'update', `Running boot group ${d.activeGroup}, default is ${d.defaultGroup} – commit pending`);
+        }
+      }
+      if (d.lastJobEvent?.status === 'failed') {
+        push(d, 'error', 'job', `Job failed: ${d.lastJobEvent.failureMessage || d.lastJobEvent.title || ''}`.trim(), d.lastJobEvent.ts);
+        if (d.active) { raise('error'); }
+      }
+      count[level]++;
+      const v = d.hardware.osVersion || 'unknown';
+      os.set(v, (os.get(v) || 0) + 1);
+      const js = d.lastJobEvent?.status;
+      if (js === 'succeeded') { jobs.succeeded++; } else if (js === 'running' || js === 'queued') { jobs.running++; }
+      else if (js === 'failed') { jobs.failed++; } else { jobs.none++; }
+    }
+    this.overviewStatus = [
+      {key: 'healthy', label: 'Healthy', value: count.healthy, color: OK},
+      {key: 'warning', label: 'Warning', value: count.warning, color: WARN},
+      {key: 'error', label: 'Error', value: count.error, color: ERR},
+      {key: 'offline', label: 'Offline', value: count.offline, color: OFF}
+    ];
+    const palette = ['#2f6fd1', '#7b4fd1', '#1aa5a5', '#e0a800', '#c2528b'];
+    const sorted = Array.from(os.entries()).sort((a, b) => b[1] - a[1]);
+    this.overviewOs = sorted.slice(0, 5).map(([v, n], i) => ({key: v, label: v, value: n, color: palette[i]}));
+    const rest = sorted.slice(5).reduce((a, [, n]) => a + n, 0);
+    if (rest) { this.overviewOs.push({key: 'other', label: 'Other', value: rest, color: OFF}); }
+    this.overviewJobs = [
+      {key: 'running', label: 'Running', value: jobs.running, color: '#2f6fd1'},
+      {key: 'succeeded', label: 'Succeeded', value: jobs.succeeded, color: OK},
+      {key: 'failed', label: 'Failed', value: jobs.failed, color: ERR},
+      {key: 'none', label: 'No job yet', value: jobs.none, color: OFF}
+    ];
+    const rank = (a: FleetAlert) => a.severity === 'error' ? 0 : 1;
+    this.alerts = alerts.sort((a, b) => rank(a) - rank(b) || (b.ts || 0) - (a.ts || 0) || a.device.localeCompare(b.device));
+  }
+
+  alertIcon(a: FleetAlert): string {
+    return a.severity === 'error' ? 'error' : 'warning';
+  }
 
   // ---- job log (jobEvent telemetry of the last 30 days, grouped by job id)
   readonly jobsTab = 5;
@@ -335,6 +452,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     }, 400);
     this.settings = mergeRugixSettings(this.ctx.settings);
     this.pageSize = this.settings.defaultPageSize;
+    this.view = this.settings.defaultView === 'devices' ? 'devices' : 'overview';
     this.onDataUpdated();
   }
 
@@ -376,6 +494,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       d.commitPending = !!d.activeGroup && !!d.defaultGroup && d.activeGroup !== d.defaultGroup;
       return d;
     }).sort((a, b) => (a.label || a.name).localeCompare(b.label || b.name));
+    this.computeOverview();
     const sel = this.selected;
     if (sel && this.tabIndex === this.jobsTab && (sel.lastJobEvent?.ts || 0) !== this.jobsLastTs) {
       this.loadJobs(true);
