@@ -39,6 +39,7 @@
           <th class="c-md">Boot flow</th>
           <th>Active group</th>
           <th class="c-sm">State</th>
+          <th class="c-md">Edge OS</th>
           <th class="c-md">Rugix API</th>
           <th class="c-md">Last job</th>
           <th class="w-actions"></th>
@@ -67,6 +68,7 @@
             <td class="c-sm">
               <span class="chip" [class.ok]="d.stateStatus === 'active'" [class.err]="d.stateStatus === 'error'">{{ d.stateStatus || '—' }}</span>
             </td>
+            <td class="c-md">{{ d.hardware.osVersion || '—' }}</td>
             <td class="c-md">{{ d.apiVersion || '—' }}</td>
             <td class="c-md">
               @if (d.lastJobEvent?.status) {
@@ -89,7 +91,7 @@
             </td>
           </tr>
         } @empty {
-          <tr><td colspan="9" class="empty">No Rugix devices found. Add a device alias with the Rugix device type to the widget datasource.</td></tr>
+          <tr><td colspan="10" class="empty">No Rugix devices found. Add a device alias with the Rugix device type to the widget datasource.</td></tr>
         }
       </tbody>
     </table>
@@ -185,14 +187,15 @@
               <button mat-stroked-button [disabled]="!d.active" (click)="garbageCollectApps(d)"><mat-icon>cleaning_services</mat-icon>Clean up all apps</button>
             </div>
             <table class="rugix-table compact">
-              <thead><tr><th>App</th><th>Status</th><th>Generation</th><th>Orchestrator</th><th class="w-actions"></th></tr></thead>
+              <thead><tr><th>App</th><th>Version</th><th>Generation</th><th>Status</th><th class="c-md">Orchestrator</th><th class="w-actions"></th></tr></thead>
               <tbody>
                 @for (a of d.apps; track a.name) {
                   <tr>
                     <td><b>{{ a.name }}</b></td>
-                    <td><span class="pill" [class.ok]="appStatusLabel(a.status) === 'running'">{{ appStatusLabel(a.status) }}</span></td>
+                    <td class="nowrap">{{ a.version || '—' }}</td>
                     <td>{{ a.generation ?? '—' }}</td>
-                    <td>{{ a.orchestrator || '—' }}</td>
+                    <td><span class="pill" [class.ok]="appStatusLabel(a.status) === 'running'">{{ appStatusLabel(a.status) }}</span></td>
+                    <td class="c-md">{{ a.orchestrator || '—' }}</td>
                     <td class="w-actions">
                       <button mat-icon-button [matMenuTriggerFor]="appMenu" [disabled]="!d.active"><mat-icon>more_vert</mat-icon></button>
                       <mat-menu #appMenu="matMenu">
@@ -203,7 +206,7 @@
                     </td>
                   </tr>
                 } @empty {
-                  <tr><td colspan="5" class="empty">No apps reported. Add the <code>/api/apps</code> mapping to the gateway connector (see README).</td></tr>
+                  <tr><td colspan="6" class="empty">No apps reported.</td></tr>
                 }
               </tbody>
             </table>

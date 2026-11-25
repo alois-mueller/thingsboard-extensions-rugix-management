@@ -11,6 +11,8 @@ export interface RugixConfirmDialogData {
   confirmLabel: string;
   /** Style the confirm button as destructive. */
   warn?: boolean;
+  /** Text of a checkbox that must be ticked before the confirm button is enabled. */
+  acknowledge?: string;
   /** Optional checkbox, e.g. "keep old state as backup" on factory reset. */
   checkbox?: { label: string; checked?: boolean };
   /** Optional free text input shown when the checkbox is checked. */
@@ -30,6 +32,7 @@ export interface RugixConfirmDialogResult {
 })
 export class RugixConfirmDialogComponent {
   checked = false;
+  acknowledged = false;
   text = '';
 
   constructor(@Inject(MAT_DIALOG_DATA) public data: RugixConfirmDialogData,
@@ -37,7 +40,14 @@ export class RugixConfirmDialogComponent {
     this.checked = !!data.checkbox?.checked;
   }
 
+  get canConfirm(): boolean {
+    return !this.data.acknowledge || this.acknowledged;
+  }
+
   confirm(): void {
+    if (!this.canConfirm) {
+      return;
+    }
     this.dialogRef.close({checked: this.checked, text: this.text.trim()});
   }
 

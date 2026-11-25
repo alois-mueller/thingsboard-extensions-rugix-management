@@ -265,3 +265,23 @@ export function uuidv4(): string {
     return (ch === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
   });
 }
+
+/**
+ * Apps from `GET /api/apps` enriched with the version of their app component. Apps that only exist in the
+ * components list (no `/api/apps` mapping in the gateway) are added, so the list is never empty for devices
+ * that run apps.
+ */
+export function mergeApps(apps: RugixApp[], components: RugixComponent[]): RugixApp[] {
+  const byApp = new Map<string, RugixComponent>();
+  components.filter(c => c.kind === 'App' && c.app).forEach(c => byApp.set(c.app, c));
+  const result = apps.map(a => {
+    const c = byApp.get(a.name);
+    return {...a, version: a.version ?? c?.version, generation: a.generation ?? c?.generation};
+  });
+  byApp.forEach((c, name) => {
+    if (!result.some(a => a.name === name)) {
+      result.push({name, version: c.version, generation: c.generation});
+    }
+  });
+  return result.sort((a, b) => a.name.localeCompare(b.name));
+}

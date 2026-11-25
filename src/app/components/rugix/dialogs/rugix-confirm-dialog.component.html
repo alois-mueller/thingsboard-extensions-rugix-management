@@ -14,9 +14,12 @@
       <input matInput [(ngModel)]="text">
     </mat-form-field>
   }
+  @if (data.acknowledge) {
+    <mat-checkbox class="rugix-ack" [(ngModel)]="acknowledged">{{ data.acknowledge }}</mat-checkbox>
+  }
 </div>
 <div mat-dialog-actions class="rugix-dialog-actions">
   <span class="flex-1"></span>
   <button mat-button type="button" (click)="cancel()">Cancel</button>
-  <button mat-flat-button type="button" [color]="data.warn ? 'warn' : 'primary'" (click)="confirm()">{{ data.confirmLabel }}</button>
+  <button mat-flat-button type="button" [color]="data.warn ? 'warn' : 'primary'" [disabled]="!canConfirm" (click)="confirm()">{{ data.confirmLabel }}</button>
 </div>

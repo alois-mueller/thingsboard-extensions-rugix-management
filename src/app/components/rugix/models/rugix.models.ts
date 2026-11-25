@@ -130,6 +130,8 @@ export interface RugixSlot {
 
 export interface RugixApp {
   name: string;
+  /** Version of the app component of the active generation (from the components list). */
+  version?: string;
   status?: any;
   generation?: number;
   orchestrator?: string;

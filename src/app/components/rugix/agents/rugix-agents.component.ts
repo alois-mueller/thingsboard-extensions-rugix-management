@@ -17,7 +17,7 @@ import {
   RugixSystemAction,
   RugixWidgetSettings
 } from '../models/rugix.models';
-import { appStatusLabel, applyValue, capabilityLabel, providedIds, formatBytes, newDevice, parseSlots } from '../models/rugix-parse';
+import { appStatusLabel, applyValue, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots } from '../models/rugix-parse';
 import { RugixJobHandle, RugixRpcService } from '../services/rugix-rpc.service';
 import {
   RugixConfirmDialogComponent,
@@ -37,6 +37,8 @@ interface SystemActionInfo {
   label: string;
   message: (d: RugixDevice) => string;
   warn?: boolean;
+  /** Text of the checkbox the user has to tick before the action can be confirmed. */
+  ack: string;
 }
 
 /**
@@ -67,12 +69,16 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   readonly systemActions: SystemActionInfo[] = [
     {action: 'reboot', icon: 'restart_alt', label: 'Reboot',
+      ack: 'I understand that the device is unavailable while it reboots.',
       message: d => `Reboot the active system of "${d.label || d.name}"?`},
     {action: 'rebootSpare', icon: 'swap_horiz', label: 'Reboot into spare',
+      ack: 'I understand that the device reboots into the spare system and falls back if it is not committed.',
       message: d => `Reboot "${d.label || d.name}" into the spare system? Commit afterwards to make it permanent, otherwise the device falls back.`},
     {action: 'commit', icon: 'task_alt', label: 'Commit running system',
+      ack: 'I understand that the running system becomes the default and the previous system is no longer the fallback.',
       message: d => `Make the currently running system the default on "${d.label || d.name}"? A rollback to the previous system is no longer automatic afterwards.`},
     {action: 'factoryReset', icon: 'delete_forever', label: 'Factory reset', warn: true,
+      ack: 'I understand that all persistent state is erased and the device reboots. This cannot be undone.',
       message: d => `Reset ALL persistent state of "${d.label || d.name}" and reboot? This cannot be undone.`}
   ];
 
@@ -139,6 +145,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     }
     this.devices = Array.from(byId.values()).map(d => {
       d.slots = parseSlots(slotRaw.get(d.id));
+      d.apps = mergeApps(d.apps, d.componentList);
       d.commitPending = !!d.activeGroup && !!d.defaultGroup && d.activeGroup !== d.defaultGroup;
       return d;
     }).sort((a, b) => (a.label || a.name).localeCompare(b.label || b.name));
@@ -236,6 +243,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       message: info.message(device),
       confirmLabel: info.label,
       warn: info.warn,
+      acknowledge: info.ack,
       checkbox: info.action === 'factoryReset' ? {label: 'Keep the old state as a backup profile', checked: true} : undefined,
       textWhenChecked: info.action === 'factoryReset' ? {label: 'Backup name (optional)'} : undefined
     };
@@ -257,7 +265,8 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     }
     this.dialog.open<RugixConfirmDialogComponent, RugixConfirmDialogData, RugixConfirmDialogResult>(
       RugixConfirmDialogComponent, {
-        data: {title: label, message: `${label} app "${app.name}" on "${device.label || device.name}"?`, confirmLabel: label, warn},
+        data: {title: label, message: `${label} app "${app.name}" on "${device.label || device.name}"?`, confirmLabel: label, warn,
+          acknowledge: warn ? `I understand that this affects app "${app.name}" on the device.` : 'I understand that this changes the active generation of the app.'},
         autoFocus: false, maxWidth: '95vw'
       }).afterClosed().subscribe(r => r && run());
   }
