@@ -139,6 +139,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.ctx.$scope.rugixAgentsComponent = this;
     this.arrowTimer = setInterval(() => {
+      this.syncDetailsLayout();
       const bar = this.host.nativeElement.querySelector('.tabbar') as HTMLElement;
       if (bar) { this.updateTabArrows(bar); } else if (this.tabCanLeft || this.tabCanRight) {
         this.tabCanLeft = this.tabCanRight = false; this.cd.markForCheck();
@@ -151,6 +152,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     clearInterval(this.arrowTimer);
+    this.restoreClip();
     this.statsTimer?.unsubscribe();
     delete this.ctx.$scope.rugixAgentsComponent;
   }
@@ -330,11 +332,62 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   select(d: RugixDevice): void {
     this.selectedId = this.selectedId === d.id ? null : d.id;
     this.syncStats();
+    setTimeout(() => this.syncDetailsLayout());
   }
 
   closeDetails(): void {
     this.selectedId = null;
     this.syncStats();
+    setTimeout(() => this.syncDetailsLayout());
+  }
+
+  private clipSaved: { el: HTMLElement; overflow: string; zIndex: string }[] = [];
+
+  /**
+   * The dashboard grid leaves a gap around every widget. While the details panel is open it is stretched to the edges
+   * of the dashboard area (top, right, bottom) by letting it overflow the widget and its clipping ancestors.
+   */
+  private syncDetailsLayout(): void {
+    const root = this.host.nativeElement;
+    const panel = root.querySelector('.rugix-details') as HTMLElement;
+    const backdrop = root.querySelector('.rugix-backdrop') as HTMLElement;
+    const grid = root.closest('gridster') as HTMLElement;
+    if (!panel || !grid || !this.selectedId) {
+      this.restoreClip();
+      return;
+    }
+    if (!this.clipSaved.length) {
+      let el: HTMLElement | null = root.querySelector('.rugix') as HTMLElement;
+      while (el && el !== grid) {
+        this.clipSaved.push({el, overflow: el.style.overflow, zIndex: el.style.zIndex});
+        el.style.overflow = 'visible';
+        if (el.tagName.toLowerCase() === 'gridster-item') {
+          el.style.zIndex = '1000';
+        }
+        el = el.parentElement;
+      }
+    }
+    const w = (root.querySelector('.rugix') as HTMLElement).getBoundingClientRect();
+    const g = grid.getBoundingClientRect();
+    const top = g.top - w.top;
+    const bottom = w.bottom - g.bottom;
+    const right = w.right - g.right;
+    const left = g.left - w.left;
+    panel.style.top = top + 'px';
+    panel.style.bottom = bottom + 'px';
+    panel.style.right = right + 'px';
+    panel.style.width = Math.min(780, g.width) + 'px';
+    if (backdrop) {
+      backdrop.style.inset = `${top}px ${right}px ${bottom}px ${left}px`;
+    }
+  }
+
+  private restoreClip(): void {
+    for (const s of this.clipSaved) {
+      s.el.style.overflow = s.overflow;
+      s.el.style.zIndex = s.zIndex;
+    }
+    this.clipSaved = [];
   }
 
   tabLabels(d: RugixDevice): { i: number; label: string }[] {
