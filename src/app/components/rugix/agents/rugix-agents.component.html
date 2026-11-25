@@ -1,0 +1,216 @@
+<div class="rugix">
+  <!-- ===== header ===== -->
+  <div class="rugix-header">
+    <div class="rugix-title">
+      <mat-icon>developer_board</mat-icon>
+      <span>{{ settings.title }}</span>
+      <span class="rugix-count">{{ filtered.length }}</span>
+    </div>
+    <span class="flex-1"></span>
+    @if (settings.enableSearch) {
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="rugix-search">
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput placeholder="Search devices" [(ngModel)]="search" (ngModelChange)="onSearch()">
+      </mat-form-field>
+    }
+    <button mat-stroked-button color="primary" [disabled]="!checked.size" (click)="openInstall(checkedDevices, 'system')">
+      <mat-icon>system_update_alt</mat-icon>
+      Update system ({{ checked.size }})
+    </button>
+    <button mat-stroked-button [disabled]="!checked.size" (click)="openInstall(checkedDevices, 'app')">
+      <mat-icon>apps</mat-icon>
+      Install app ({{ checked.size }})
+    </button>
+  </div>
+
+  <!-- ===== table ===== -->
+  <div class="rugix-table-wrap">
+    <table class="rugix-table">
+      <thead>
+        <tr>
+          <th class="w-check"><mat-checkbox [checked]="allChecked" (change)="toggleAll()"></mat-checkbox></th>
+          <th>Device</th>
+          <th class="w-status">Status</th>
+          <th>Boot flow</th>
+          <th>Active group</th>
+          <th>State</th>
+          <th>Rugix API</th>
+          <th>Last job</th>
+          <th class="w-actions"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (d of page; track trackById($index, d)) {
+          <tr [class.selected]="d.id === selectedId" (click)="select(d)">
+            <td class="w-check" (click)="$event.stopPropagation()">
+              <mat-checkbox [checked]="checked.has(d.id)" (change)="toggle(d)"></mat-checkbox>
+            </td>
+            <td>
+              <div class="name">{{ d.label || d.name }}</div>
+              @if (d.label) { <div class="sub">{{ d.name }}</div> }
+            </td>
+            <td>
+              <span class="status" [class]="statusClass(d)"><span class="dot"></span>{{ d.active ? 'Online' : 'Offline' }}</span>
+            </td>
+            <td>{{ d.bootFlow || '—' }}</td>
+            <td>
+              {{ d.activeGroup || '—' }}
+              @if (d.commitPending) {
+                <span class="pill warn" matTooltip="Running a non-default system – commit to keep it, otherwise the device falls back on next boot.">commit pending</span>
+              }
+            </td>
+            <td>
+              <span class="pill" [class.ok]="d.stateStatus === 'active'" [class.err]="d.stateStatus === 'error'">{{ d.stateStatus || '—' }}</span>
+            </td>
+            <td>{{ d.apiVersion || '—' }}</td>
+            <td>
+              @if (d.lastJobEvent?.status) {
+                <span class="rugix-badge" [class]="d.lastJobEvent.status">{{ d.lastJobEvent.status }}</span>
+              } @else { — }
+            </td>
+            <td class="w-actions" (click)="$event.stopPropagation()">
+              @if (busy.has(d.id)) {
+                <mat-spinner diameter="20"></mat-spinner>
+              } @else {
+                <button mat-icon-button [matMenuTriggerFor]="rowMenu" aria-label="Actions"><mat-icon>more_vert</mat-icon></button>
+                <mat-menu #rowMenu="matMenu">
+                  <button mat-menu-item (click)="openInstall([d], 'system')"><mat-icon>system_update_alt</mat-icon>Install system update…</button>
+                  <button mat-menu-item (click)="openInstall([d], 'app')"><mat-icon>apps</mat-icon>Install app…</button>
+                  @for (a of systemActions; track a.action) {
+                    <button mat-menu-item [disabled]="!d.active" (click)="runSystemAction(a, d)"><mat-icon>{{ a.icon }}</mat-icon>{{ a.label }}</button>
+                  }
+                </mat-menu>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="9" class="empty">No Rugix devices found. Add a device alias with the Rugix device type to the widget datasource.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <mat-paginator [length]="filtered.length" [pageIndex]="pageIndex" [pageSize]="pageSize" [pageSizeOptions]="[5, 10, 25, 50]" (page)="onPage($event)" hidePageSize="false"></mat-paginator>
+
+  <!-- ===== details ===== -->
+  @if (selected; as d) {
+    <div class="rugix-details">
+      <div class="details-head">
+        <div>
+          <div class="details-title">{{ d.label || d.name }}</div>
+          <div class="sub">
+            <span class="status" [class]="statusClass(d)"><span class="dot"></span>{{ d.active ? 'Online' : 'Offline' }}</span>
+            · Rugix {{ d.apiVersion || '?' }}
+          </div>
+        </div>
+        <span class="flex-1"></span>
+        @for (a of systemActions; track a.action) {
+          <button mat-stroked-button [color]="a.warn ? 'warn' : 'primary'" [disabled]="!d.active || busy.has(d.id)" (click)="runSystemAction(a, d)">
+            <mat-icon>{{ a.icon }}</mat-icon>{{ a.label }}
+          </button>
+        }
+        <button mat-flat-button color="primary" [disabled]="!d.active || busy.has(d.id)" (click)="openInstall([d], 'system')">
+          <mat-icon>system_update_alt</mat-icon>Install update
+        </button>
+        <button mat-icon-button (click)="selectedId = null" aria-label="Close details"><mat-icon>close</mat-icon></button>
+      </div>
+
+      @if (d.commitPending) {
+        <div class="banner warn">
+          <mat-icon>info</mat-icon>
+          <span>The device runs boot group <b>{{ d.activeGroup }}</b>, the default is <b>{{ d.defaultGroup }}</b>. Commit to keep the new system, otherwise it falls back on the next reboot.</span>
+          <span class="flex-1"></span>
+          <button mat-flat-button color="primary" [disabled]="!d.active" (click)="runSystemAction(systemActions[2], d)">Commit</button>
+        </div>
+      }
+
+      <mat-tab-group animationDuration="0ms" mat-stretch-tabs="false" mat-align-tabs="start">
+        <mat-tab label="Overview">
+          <div class="tab-body grid">
+            <div class="kv"><span>Boot flow</span><b>{{ d.bootFlow || '—' }}</b></div>
+            <div class="kv"><span>Boot groups</span><b>{{ d.bootGroups.join(', ') || '—' }}</b></div>
+            <div class="kv"><span>Active group</span><b>{{ d.activeGroup || '—' }}</b></div>
+            <div class="kv"><span>Default group</span><b>{{ d.defaultGroup || '—' }}</b></div>
+            <div class="kv"><span>State management</span><b>{{ d.stateStatus || '—' }}</b></div>
+            <div class="kv"><span>Data partition</span><b>{{ d.dataPartition || '—' }}</b></div>
+            <div class="kv"><span>Active slot</span><b>{{ slotCount(d) }}</b></div>
+            <div class="kv"><span>Components consistent</span>
+              <b>{{ d.componentsConsistent === undefined ? '—' : (d.componentsConsistent ? 'yes' : 'no') }}</b></div>
+          </div>
+        </mat-tab>
+
+        <mat-tab label="Slots ({{ d.slots.length }})">
+          <div class="tab-body">
+            <div class="slots">
+              @for (s of d.slots; track s.name) {
+                <div class="slot" [class.active]="s.active">
+                  <div class="slot-head"><mat-icon>{{ s.name.startsWith('boot') ? 'memory' : 'storage' }}</mat-icon>{{ s.name }}
+                    @if (s.active) { <span class="pill ok">active</span> }
+                  </div>
+                  <div class="sub">{{ formatBytes(s.size) }}
+                    @if (s.updatedAt) { · updated {{ s.updatedAt | date:'short' }} }</div>
+                  @for (h of s.hashes | keyvalue; track h.key) {
+                    <div class="hash" [matTooltip]="h.value">{{ h.key }}: {{ h.value }}</div>
+                  }
+                </div>
+              } @empty { <div class="empty">No slot information.</div> }
+            </div>
+          </div>
+        </mat-tab>
+
+        <mat-tab label="Apps ({{ d.apps.length }})">
+          <div class="tab-body">
+            <div class="tab-actions">
+              <button mat-stroked-button [disabled]="!d.active" (click)="openInstall([d], 'app')"><mat-icon>add</mat-icon>Install app</button>
+              <button mat-stroked-button [disabled]="!d.active" (click)="garbageCollectApps(d)"><mat-icon>cleaning_services</mat-icon>Clean up all apps</button>
+            </div>
+            <table class="rugix-table compact">
+              <thead><tr><th>App</th><th>Status</th><th>Generation</th><th>Orchestrator</th><th class="w-actions"></th></tr></thead>
+              <tbody>
+                @for (a of d.apps; track a.name) {
+                  <tr>
+                    <td><b>{{ a.name }}</b></td>
+                    <td><span class="pill" [class.ok]="appStatusLabel(a.status) === 'running'">{{ appStatusLabel(a.status) }}</span></td>
+                    <td>{{ a.generation ?? '—' }}</td>
+                    <td>{{ a.orchestrator || '—' }}</td>
+                    <td class="w-actions">
+                      <button mat-icon-button [matMenuTriggerFor]="appMenu" [disabled]="!d.active"><mat-icon>more_vert</mat-icon></button>
+                      <mat-menu #appMenu="matMenu">
+                        @for (x of appActions; track x.action) {
+                          <button mat-menu-item (click)="runAppAction(d, a, x.action, x.label, x.warn)"><mat-icon>{{ x.icon }}</mat-icon>{{ x.label }}</button>
+                        }
+                      </mat-menu>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr><td colspan="5" class="empty">No apps reported. Add the <code>/api/apps</code> mapping to the gateway connector (see README).</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </mat-tab>
+
+        <mat-tab label="Components">
+          <div class="tab-body">
+            @for (p of d.componentsProblems; track $index) {
+              <div class="banner err"><mat-icon>error_outline</mat-icon><span><b>{{ p.type }}</b> {{ jsonOf(p.detail) }}</span></div>
+            }
+            <pre class="json">{{ jsonOf(d.components) || 'No component data.' }}</pre>
+          </div>
+        </mat-tab>
+
+        <mat-tab label="Last job">
+          <div class="tab-body">
+            @if (d.lastJobEvent) {
+              <div class="kv"><span>Event</span><b>{{ d.lastJobEvent.type }}</b></div>
+              <div class="kv"><span>Job</span><b>{{ d.lastJobEvent.title || d.lastJobEvent.jobId }}</b></div>
+              <div class="kv"><span>Status</span><b><span class="rugix-badge" [class]="d.lastJobEvent.status || 'unknown'">{{ d.lastJobEvent.status || '—' }}</span></b></div>
+              @if (d.lastJobEvent.jobId) {
+                <button mat-stroked-button (click)="openJob(d, d.lastJobEvent.jobId, 'Job ' + d.lastJobEvent.jobId, 0)"><mat-icon>list_alt</mat-icon>Open job log</button>
+              }
+            } @else { <div class="empty">No job events received yet.</div> }
+          </div>
+        </mat-tab>
+      </mat-tab-group>
+    </div>
+  }
+</div>
