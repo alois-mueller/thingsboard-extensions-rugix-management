@@ -76,6 +76,19 @@
     &.on { background: rgba(var(--tb-primary-rgb, 48, 86, 128), .12); border-color: var(--tb-primary-500, #305680); color: var(--tb-primary-500, #305680); font-weight: 500; }
   }
 
+  // compact (40px) search inputs
+  .rugix-search, .comp-filter {
+    --mat-form-field-container-height: 40px;
+    --mat-form-field-container-vertical-padding: 8px;
+    --mdc-outlined-text-field-container-height: 40px;
+
+    ::ng-deep .mat-mdc-text-field-wrapper { height: 40px; }
+    ::ng-deep .mat-mdc-form-field-infix { min-height: 40px; padding-top: 8px !important; padding-bottom: 8px !important; }
+    ::ng-deep .mat-mdc-form-field-icon-prefix > .mat-icon { padding: 0 8px 0 12px; }
+    ::ng-deep .mat-mdc-form-field-icon-suffix button { width: 32px; height: 32px; padding: 4px; }
+    ::ng-deep .mat-mdc-form-field-icon-suffix { padding-right: 4px; }
+  }
+
   .os-filter { width: 200px; ::ng-deep .mat-mdc-form-field-infix { min-height: 32px; padding-top: 4px; padding-bottom: 4px; } }
 
   .kv b.bad { color: rgb(209, 39, 48); }
