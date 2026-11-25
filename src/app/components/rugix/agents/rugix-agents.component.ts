@@ -174,6 +174,9 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       }
       const last = item.data?.length ? item.data[item.data.length - 1] : null;
       if (last) {
+        if (item.dataKey.name === this.settings.keys.active && last[0] && !device.lastSeen) {
+          device.lastSeen = last[0];
+        }
         applyValue(device, item.dataKey.name, last[1], this.settings.keys, slotRaw.get(id));
       }
     }
@@ -189,6 +192,64 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     [...this.checked].filter(id => !byId.has(id)).forEach(id => this.checked.delete(id));
     this.cd.markForCheck();
     this.ctx.detectChanges();
+  }
+
+  statusFilter: 'all' | 'online' | 'offline' = 'all';
+  pendingOnly = false;
+  osFilter = '';
+
+  get osOptions(): string[] {
+    return Array.from(new Set(this.devices.map(d => d.hardware.osVersion).filter(v => !!v))).sort((a, b) => a.localeCompare(b, undefined, {numeric: true}));
+  }
+
+  get filtersActive(): boolean {
+    return this.statusFilter !== 'all' || this.pendingOnly || !!this.osFilter;
+  }
+
+  setStatusFilter(v: 'all' | 'online' | 'offline'): void {
+    this.statusFilter = v;
+    this.pageIndex = 0;
+  }
+
+  clearFilters(): void {
+    this.statusFilter = 'all';
+    this.pendingOnly = false;
+    this.osFilter = '';
+    this.pageIndex = 0;
+  }
+
+  // ---- access control (UI level)
+  allowed(kind: 'install' | 'power' | 'factoryReset'): boolean {
+    const authority = this.ctx.currentUser?.authority;
+    return (this.settings.access[kind] || []).includes(authority);
+  }
+
+  kindOf(a: SystemActionInfo): 'power' | 'factoryReset' {
+    return a.action === 'factoryReset' ? 'factoryReset' : 'power';
+  }
+
+  blocked(d: RugixDevice, kind: 'install' | 'power' | 'factoryReset'): boolean {
+    return !d.active || !this.allowed(kind);
+  }
+
+  get restrictionNote(): string {
+    const missing = (['install', 'power', 'factoryReset'] as const).filter(k => !this.allowed(k));
+    if (!missing.length) {
+      return '';
+    }
+    const names = {install: 'install updates/apps', power: 'reboot/commit', factoryReset: 'factory reset'};
+    return 'Your user role is not allowed to ' + missing.map(k => names[k]).join(', ') + '.';
+  }
+
+  ago(ts?: number): string {
+    if (!ts) {
+      return '';
+    }
+    const s = Math.max(0, (Date.now() - ts) / 1000);
+    if (s < 90) { return 'just now'; }
+    if (s < 5400) { return Math.round(s / 60) + ' min ago'; }
+    if (s < 129600) { return Math.round(s / 3600) + ' h ago'; }
+    return Math.round(s / 86400) + ' d ago';
   }
 
   sortKey = 'name';
@@ -219,10 +280,14 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   get filtered(): RugixDevice[] {
     const q = this.search.trim().toLowerCase();
-    const list = q ? this.devices.filter(d =>
+    const base = this.devices.filter(d =>
+      (this.statusFilter === 'all' || (this.statusFilter === 'online') === d.active)
+      && (!this.pendingOnly || d.commitPending)
+      && (!this.osFilter || d.hardware.osVersion === this.osFilter));
+    const list = q ? base.filter(d =>
       [d.name, d.label, d.hardware.osVersion, d.hardware.model, d.hardware.serial, d.bootFlow, d.activeGroup,
         d.stateStatus, d.apiVersion, d.lastJobEvent?.status, d.active ? 'online' : 'offline']
-        .some(v => (v || '').toLowerCase().includes(q))) : this.devices;
+        .some(v => (v || '').toLowerCase().includes(q))) : base;
     const dir = this.sortDir === 'asc' ? 1 : -1;
     return [...list].sort((a, b) =>
       dir * this.sortValue(a, this.sortKey).localeCompare(this.sortValue(b, this.sortKey), undefined, {numeric: true, sensitivity: 'base'})
@@ -405,7 +470,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   // ------------------------------------------------------------------ actions
 
   openInstall(devices: RugixDevice[], mode: 'system' | 'app'): void {
-    if (!devices.length) {
+    if (!devices.length || !this.allowed('install')) {
       return;
     }
     this.dialog.open<RugixInstallDialogComponent, RugixInstallDialogData, RugixInstallDialogResult>(
@@ -423,6 +488,9 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   }
 
   runSystemAction(info: SystemActionInfo, device: RugixDevice): void {
+    if (!this.allowed(this.kindOf(info))) {
+      return;
+    }
     const data: RugixConfirmDialogData = {
       title: info.label,
       message: info.message(device),
@@ -444,6 +512,9 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   }
 
   runAppAction(device: RugixDevice, app: RugixApp, action: RugixAppAction, label: string, warn?: boolean): void {
+    if (!this.allowed('install')) {
+      return;
+    }
     const ack: { [a in RugixAppAction]: string } = {
       appStart: `I understand that app "${app.name}" is started on the device.`,
       appStop: `I understand that app "${app.name}" is stopped and its service is interrupted.`,

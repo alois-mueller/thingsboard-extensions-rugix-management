@@ -12,6 +12,19 @@ export interface RugixWidgetSettings {
   rpc: RugixRpcSettings;
   keys: RugixKeySettings;
   sse: RugixSseSettings;
+  access: RugixAccessSettings;
+}
+
+/**
+ * Which ThingsBoard user authorities may use which action class (UI-level gate; the server side RPC permission is
+ * still decided by ThingsBoard). Values: SYS_ADMIN, TENANT_ADMIN, CUSTOMER_USER.
+ */
+export interface RugixAccessSettings {
+  /** Install system update / install app / app actions. */
+  install: string[];
+  /** Reboot, Reboot (Spare), Commit. */
+  power: string[];
+  factoryReset: string[];
 }
 
 /** Names of the server side RPC methods configured in the gateway connector. */
@@ -51,6 +64,8 @@ export interface RugixKeySettings {
   jobEvent: string;
   /** Telemetry key of the IoT Gateway statistics (read from the related gateway device). */
   machineStats: string;
+  /** Optional device attribute (ms epoch) used for "last seen"; falls back to the timestamp of the `active` attribute. */
+  lastActivityTime: string;
   slotPrefix: string;
 }
 
@@ -101,7 +116,13 @@ export const DEFAULT_RUGIX_SETTINGS: RugixWidgetSettings = {
     apps: 'apps.apps',
     jobEvent: 'jobEvent',
     machineStats: 'machineStats',
+    lastActivityTime: 'lastActivityTime',
     slotPrefix: 'slots.'
+  },
+  access: {
+    install: ['SYS_ADMIN', 'TENANT_ADMIN', 'CUSTOMER_USER'],
+    power: ['SYS_ADMIN', 'TENANT_ADMIN', 'CUSTOMER_USER'],
+    factoryReset: ['SYS_ADMIN', 'TENANT_ADMIN']
   },
   sse: {
     rpcMethod: 'request_startSse',
@@ -119,7 +140,8 @@ export function mergeRugixSettings(settings: Partial<RugixWidgetSettings> | unde
     ...s,
     rpc: {...DEFAULT_RUGIX_SETTINGS.rpc, ...(s.rpc || {})},
     keys: {...DEFAULT_RUGIX_SETTINGS.keys, ...(s.keys || {})},
-    sse: {...DEFAULT_RUGIX_SETTINGS.sse, ...(s.sse || {})}
+    sse: {...DEFAULT_RUGIX_SETTINGS.sse, ...(s.sse || {})},
+    access: {...DEFAULT_RUGIX_SETTINGS.access, ...(s.access || {})}
   };
 }
 
@@ -206,6 +228,8 @@ export interface RugixDevice {
   commitPending: boolean;
   /** Latest `jobEvent` telemetry. */
   lastJobEvent?: RugixJobEvent;
+  /** ms epoch of the last known activity (offline since / last seen). */
+  lastSeen?: number;
 }
 
 export type RugixJobStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'unknown';

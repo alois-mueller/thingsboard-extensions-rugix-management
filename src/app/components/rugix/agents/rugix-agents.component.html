@@ -18,13 +18,32 @@
     } @else {
       <span class="rugix-title">{{ checked.size }} selected</span>
       <span class="flex-1"></span>
-      <button mat-flat-button color="primary" type="button" [disabled]="!checkedOnline.length" [matTooltip]="checkedOnline.length < checked.size ? 'Only online devices are updated' : ''" (click)="openInstall(checkedOnline, 'system')">
+      <button mat-flat-button color="primary" type="button" [disabled]="!checkedOnline.length || !allowed('install')" [matTooltip]="checkedOnline.length < checked.size ? 'Only online devices are updated' : ''" (click)="openInstall(checkedOnline, 'system')">
         <mat-icon>system_update_alt</mat-icon><span class="lbl">Update system</span>
       </button>
-      <button mat-flat-button color="primary" type="button" [disabled]="!checkedOnline.length" [matTooltip]="checkedOnline.length < checked.size ? 'Only online devices are updated' : ''" (click)="openInstall(checkedOnline, 'app')">
+      <button mat-flat-button color="primary" type="button" [disabled]="!checkedOnline.length || !allowed('install')" [matTooltip]="checkedOnline.length < checked.size ? 'Only online devices are updated' : ''" (click)="openInstall(checkedOnline, 'app')">
         <mat-icon>apps</mat-icon><span class="lbl">Install app</span>
       </button>
       <button mat-icon-button type="button" (click)="clearSelection()" matTooltip="Clear selection"><mat-icon>close</mat-icon></button>
+    }
+  </div>
+
+  <!-- ===== filters ===== -->
+  <div class="rugix-filters">
+    <span class="fchip" [class.on]="statusFilter === 'all'" (click)="setStatusFilter('all')">All</span>
+    <span class="fchip" [class.on]="statusFilter === 'online'" (click)="setStatusFilter('online')"><span class="dot ok"></span>Online</span>
+    <span class="fchip" [class.on]="statusFilter === 'offline'" (click)="setStatusFilter('offline')"><span class="dot"></span>Offline</span>
+    <span class="fchip" [class.on]="pendingOnly" (click)="pendingOnly = !pendingOnly; pageIndex = 0"><mat-icon>sync_problem</mat-icon>Commit pending</span>
+    @if (osOptions.length > 1) {
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="os-filter">
+        <mat-select [(ngModel)]="osFilter" (ngModelChange)="pageIndex = 0" placeholder="Edge OS" aria-label="Edge OS filter">
+          <mat-option value="">All Edge OS versions</mat-option>
+          @for (v of osOptions; track v) { <mat-option [value]="v">{{ v }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+    }
+    @if (filtersActive) {
+      <button mat-button type="button" class="fclear" (click)="clearFilters()">Clear</button>
     }
   </div>
 
@@ -65,6 +84,7 @@
             </td>
             <td>
               <span class="status" [class]="statusClass(d)"><span class="dot"></span>{{ d.active ? 'Online' : 'Offline' }}</span>
+              @if (!d.active && d.lastSeen) { <div class="sub" [matTooltip]="'Offline since ' + (d.lastSeen | date:'dd/MM/yyyy HH:mm')">{{ ago(d.lastSeen) }}</div> }
             </td>
             <td class="nowrap">{{ d.hardware.osVersion || '—' }}</td>
             <td class="c-l3">
@@ -88,19 +108,19 @@
                 <mat-spinner diameter="20"></mat-spinner>
               } @else {
                 <span class="qa-inline">
-                  <button mat-icon-button [disabled]="!d.active" (click)="openInstall([d], 'system')" matTooltip="Install system update…"><mat-icon>system_update_alt</mat-icon></button>
-                  <button mat-icon-button [disabled]="!d.active" (click)="openInstall([d], 'app')" matTooltip="Install app…"><mat-icon>apps</mat-icon></button>
+                  <button mat-icon-button [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'system')" matTooltip="Install system update…"><mat-icon>system_update_alt</mat-icon></button>
+                  <button mat-icon-button [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'app')" matTooltip="Install app…"><mat-icon>apps</mat-icon></button>
                   @for (a of tableActions; track a.action) {
-                    <button mat-icon-button [disabled]="!d.active" (click)="runSystemAction(a, d)" [matTooltip]="a.label"><mat-icon [class.caution-icon]="a.caution">{{ a.icon }}</mat-icon></button>
+                    <button mat-icon-button [disabled]="blocked(d, kindOf(a))" (click)="runSystemAction(a, d)" [matTooltip]="a.label"><mat-icon [class.caution-icon]="a.caution">{{ a.icon }}</mat-icon></button>
                   }
                 </span>
                 <span class="qa-menu">
                   <button mat-icon-button [matMenuTriggerFor]="rowMenu" aria-label="Actions"><mat-icon>more_vert</mat-icon></button>
                   <mat-menu #rowMenu="matMenu">
-                    <button mat-menu-item [disabled]="!d.active" (click)="openInstall([d], 'system')"><mat-icon>system_update_alt</mat-icon>Install system update…</button>
-                    <button mat-menu-item [disabled]="!d.active" (click)="openInstall([d], 'app')"><mat-icon>apps</mat-icon>Install app…</button>
+                    <button mat-menu-item [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'system')"><mat-icon>system_update_alt</mat-icon>Install system update…</button>
+                    <button mat-menu-item [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'app')"><mat-icon>apps</mat-icon>Install app…</button>
                     @for (a of tableActions; track a.action) {
-                      <button mat-menu-item [disabled]="!d.active" (click)="runSystemAction(a, d)"><mat-icon [class.caution-icon]="a.caution">{{ a.icon }}</mat-icon>{{ a.label }}</button>
+                      <button mat-menu-item [disabled]="blocked(d, kindOf(a))" (click)="runSystemAction(a, d)"><mat-icon [class.caution-icon]="a.caution">{{ a.icon }}</mat-icon>{{ a.label }}</button>
                     }
                   </mat-menu>
                 </span>
@@ -108,7 +128,7 @@
             </td>
           </tr>
         } @empty {
-          <tr><td colspan="10" class="empty">No Rugix devices found. Add a device alias with the Rugix device type to the widget datasource.</td></tr>
+          <tr><td colspan="10" class="empty">{{ devices.length ? 'No devices match the current search or filters.' : 'No Rugix devices found. Add a device alias with the Rugix device type to the widget datasource.' }}</td></tr>
         }
       </tbody>
     </table>
@@ -130,23 +150,31 @@
         <button mat-icon-button type="button" (click)="closeDetails()" aria-label="Close details"><mat-icon>close</mat-icon></button>
       </mat-toolbar>
       <div class="details-buttons">
-        <button mat-flat-button color="primary" [disabled]="!d.active || busy.has(d.id)" (click)="openInstall([d], 'system')">
+        <button mat-flat-button color="primary" [disabled]="blocked(d, 'install') || busy.has(d.id)" (click)="openInstall([d], 'system')">
           <mat-icon>system_update_alt</mat-icon>Install update
         </button>
         @for (a of systemActions; track a.action) {
           <button mat-flat-button [color]="a.warn ? 'warn' : (a.caution ? undefined : 'primary')" [class.caution]="a.caution"
-                  [disabled]="!d.active || busy.has(d.id)" (click)="runSystemAction(a, d)">
+                  [disabled]="blocked(d, kindOf(a)) || busy.has(d.id)" (click)="runSystemAction(a, d)">
             <mat-icon>{{ a.icon }}</mat-icon>{{ a.label }}
           </button>
         }
       </div>
+
+      @if (restrictionNote) { <div class="hint">{{ restrictionNote }}</div> }
+      @if (!d.active) {
+        <div class="banner neutral">
+          <mat-icon>cloud_off</mat-icon>
+          <span>Device is offline{{ d.lastSeen ? ' since ' + (d.lastSeen | date:'dd/MM/yyyy HH:mm') + ' (' + ago(d.lastSeen) + ')' : '' }}. Values shown are from the last connection; actions are disabled.</span>
+        </div>
+      }
 
       @if (d.commitPending) {
         <div class="banner warn">
           <mat-icon>info</mat-icon>
           <span>The device runs boot group <b>{{ d.activeGroup }}</b>, the default is <b>{{ d.defaultGroup }}</b>. Commit to keep the new system, otherwise it falls back on the next reboot.</span>
           <span class="flex-1"></span>
-          <button mat-flat-button color="primary" [disabled]="!d.active" (click)="runSystemAction(systemActions[2], d)">Commit</button>
+          <button mat-flat-button color="primary" [disabled]="blocked(d, 'power')" (click)="runSystemAction(systemActions[2], d)">Commit</button>
         </div>
       }
 
@@ -224,8 +252,8 @@
         @if (tabIndex === 2) {
           <div class="tab-body">
             <div class="tab-actions">
-              <button mat-stroked-button [disabled]="!d.active" (click)="openInstall([d], 'app')"><mat-icon>add</mat-icon>Install app</button>
-              <button mat-stroked-button [disabled]="!d.active" (click)="garbageCollectApps(d)"><mat-icon>cleaning_services</mat-icon>Clean up all apps</button>
+              <button mat-stroked-button [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'app')"><mat-icon>add</mat-icon>Install app</button>
+              <button mat-stroked-button [disabled]="blocked(d, 'install')" (click)="garbageCollectApps(d)"><mat-icon>cleaning_services</mat-icon>Clean up all apps</button>
             </div>
             <table class="rugix-table compact">
               <thead><tr><th>App</th><th>Version</th><th>Generation</th><th>Status</th><th class="c-md">Orchestrator</th><th class="w-actions"></th></tr></thead>
@@ -238,7 +266,7 @@
                     <td><span class="pill" [class.ok]="appStatusLabel(a.status) === 'running'">{{ appStatusLabel(a.status) }}</span></td>
                     <td class="c-md">{{ a.orchestrator || '—' }}</td>
                     <td class="w-actions">
-                      <button mat-icon-button [matMenuTriggerFor]="appMenu" [disabled]="!d.active"><mat-icon>more_vert</mat-icon></button>
+                      <button mat-icon-button [matMenuTriggerFor]="appMenu" [disabled]="blocked(d, 'install')"><mat-icon>more_vert</mat-icon></button>
                       <mat-menu #appMenu="matMenu">
                         @for (x of appActions; track x.action) {
                           <button mat-menu-item (click)="runAppAction(d, a, x.action, x.label, x.warn)"><mat-icon>{{ x.icon }}</mat-icon>{{ x.label }}</button>

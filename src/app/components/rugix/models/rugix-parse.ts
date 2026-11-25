@@ -166,6 +166,9 @@ export function newDevice(id: string, name: string, label: string): RugixDevice 
 export function applyValue(device: RugixDevice, key: string, raw: any, keys: RugixKeySettings, slotRaw: { [name: string]: any }): void {
   if (key === keys.active) {
     device.active = toBoolean(raw);
+  } else if (key === keys.lastActivityTime) {
+    const n = Number(raw);
+    device.lastSeen = isFinite(n) && n > 0 ? n : device.lastSeen;
   } else if (key === keys.bootFlow) {
     device.bootFlow = raw;
   } else if (key === keys.bootGroups) {

@@ -32,6 +32,21 @@ The *Resources* tab charts the `machineStats` telemetry of the **TB IoT Gateway 
 Widget settings (JSON, all optional) allow renaming RPC methods and data keys, see `DEFAULT_RUGIX_SETTINGS` in
 [`rugix.models.ts`](../../src/app/components/rugix/models/rugix.models.ts).
 
+### Role restrictions and last seen
+`access` in the widget settings limits which ThingsBoard user authorities may use an action class
+(`SYS_ADMIN`, `TENANT_ADMIN`, `CUSTOMER_USER`). Default: install and reboot/commit for everyone, factory reset for
+tenant/system administrators only:
+
+```json
+{"access": {"install": ["TENANT_ADMIN", "CUSTOMER_USER"], "power": ["TENANT_ADMIN"], "factoryReset": ["TENANT_ADMIN"]}}
+```
+
+This is a **UI-level** gate. The server side RPC permission is still decided by ThingsBoard (customer roles /
+dashboard access), so restrict who may open the dashboard or send RPC as well.
+
+Offline devices show "offline since" taken from the timestamp of the `active` attribute. Add the device attribute
+`lastActivityTime` as an optional data key to use the real last activity time instead.
+
 ## Gateway connector – recommended changes
 Derived from `rugix-request-connector-v1-0`:
 
