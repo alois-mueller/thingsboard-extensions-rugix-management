@@ -8,7 +8,7 @@ for (const l of lines) {
   const tel = (o) => c.publish('v1/devices/me/telemetry', JSON.stringify(o));
   const attrs = () => c.publish('v1/devices/me/attributes', JSON.stringify({
     'boot.bootFlow': 'tryboot', 'boot.groups': {a: {}, b: {}}, 'state.status': 'active', 'state.dataPartition': '/dev/mmcblk0p4',
-    'api.version': '0.1.4', 'daemon.features': {}, 'components.consistent': true, 'components.problems': [],
+    'api.version': '0.1.4', 'daemon.features': name.includes('Nord') ? {factory_reset: false, system_commit: true, system_reboot: true, app_lifecycle: true, dangerously_insecure: true} : {factory_reset: true, system_commit: true, system_reboot: true, app_lifecycle: true}, 'admin.version': '0.6.0', 'components.consistent': true, 'components.problems': [],
     'components.components': require('./components.json'),
     'slots.boot-a': {active: st.ag === 'a', size: 70254592}, 'slots.boot-b': {active: st.ag === 'b', size: 70254592},
     'slots.system-a': {active: st.ag === 'a', size: 1288490188, updated_at: '2026-11-20T10:00:00Z', hashes: {sha256: '9f2c4be1a7d03c55e0'}},

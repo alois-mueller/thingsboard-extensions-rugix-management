@@ -9,6 +9,8 @@ import {
   RugixComponent,
   RugixHardwareInfo,
   RugixComponentProblem,
+  RugixDaemonFeature,
+  RugixDaemonFeatures,
   RugixDevice,
   RugixJobEvent,
   RugixJobStatus,
@@ -151,6 +153,32 @@ export function appStatusLabel(status: any): string {
   return keys.length ? keys[0] : 'unknown';
 }
 
+const FEATURE_KEYS: RugixDaemonFeature[] = ['factory_reset', 'system_commit', 'system_reboot', 'app_lifecycle'];
+
+/**
+ * Accepts the whole `GET /api/daemon` body (`{dangerously_insecure, features: {…}}`) or only its `features` object,
+ * in snake_case or camelCase. Unknown/missing flags stay `undefined`.
+ */
+export function parseDaemon(value: any): { features?: RugixDaemonFeatures; insecure?: boolean } {
+  const v = parseJson<any>(value);
+  if (!v || typeof v !== 'object') {
+    return {};
+  }
+  const f = v.features && typeof v.features === 'object' ? v.features : v;
+  const features: RugixDaemonFeatures = {};
+  let any = false;
+  for (const k of FEATURE_KEYS) {
+    const camel = k.replace(/_(\w)/g, (_, c) => c.toUpperCase());
+    const flag = f[k] ?? f[camel];
+    if (flag !== undefined) {
+      features[k] = toBoolean(flag);
+      any = true;
+    }
+  }
+  const ins = v.dangerously_insecure ?? v.dangerouslyInsecure ?? f.dangerously_insecure;
+  return {features: any ? features : undefined, insecure: ins === undefined ? undefined : toBoolean(ins)};
+}
+
 export function appStatusMessage(status: any): string {
   return (status && typeof status === 'object' && typeof status.message === 'string') ? status.message : '';
 }
@@ -194,6 +222,13 @@ export function applyValue(device: RugixDevice, key: string, raw: any, keys: Rug
     device.apiVersion = raw;
   } else if (key === keys.daemonFeatures) {
     device.features = parseJson(raw);
+    const daemon = parseDaemon(device.features);
+    device.daemon = daemon.features;
+    if (daemon.insecure !== undefined) {
+      device.insecure = daemon.insecure;
+    }
+  } else if (key === keys.adminVersion) {
+    device.adminVersion = typeof raw === 'string' ? raw : (parseJson<any>(raw)?.version ?? undefined);
   } else if (key === keys.components) {
     device.components = parseJson(raw);
     device.componentList = parseComponents(raw);

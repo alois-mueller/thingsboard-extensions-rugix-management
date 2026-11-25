@@ -22,6 +22,7 @@ import {
   RugixStatsRange,
   RugixWidgetSettings
 } from '../models/rugix.models';
+import { RugixDaemonFeature } from '../models/rugix.models';
 import { appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots } from '../models/rugix-parse';
 import { REVPI_ICON } from '../models/rugix-icons';
 import { RugixJobHandle, RugixRpcService } from '../services/rugix-rpc.service';
@@ -231,8 +232,30 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     return a.action === 'factoryReset' ? 'factoryReset' : 'power';
   }
 
-  blocked(d: RugixDevice, kind: 'install' | 'power' | 'factoryReset'): boolean {
-    return !d.active || !this.allowed(kind);
+  /** Disabled when offline, not allowed for the user's role, or switched off in the device's Rugix Ctrl daemon. */
+  blocked(d: RugixDevice, kind: 'install' | 'power' | 'factoryReset', feature?: RugixDaemonFeature): boolean {
+    return !d.active || !this.allowed(kind) || (!!feature && !this.featureOn(d, feature));
+  }
+
+  /** Unknown (attribute not provided) counts as enabled. */
+  featureOn(d: RugixDevice, feature: RugixDaemonFeature): boolean {
+    return d.daemon?.[feature] !== false;
+  }
+
+  featureOf(a: SystemActionInfo): RugixDaemonFeature {
+    switch (a.action) {
+      case 'factoryReset': return 'factory_reset';
+      case 'commit': return 'system_commit';
+      default: return 'system_reboot';
+    }
+  }
+
+  daemonNote(d: RugixDevice): string {
+    const names: { [K in RugixDaemonFeature]: string } = {
+      factory_reset: 'factory reset', system_commit: 'commit', system_reboot: 'reboot', app_lifecycle: 'app start/stop/activate/remove'
+    };
+    const off = (Object.keys(names) as RugixDaemonFeature[]).filter(k => !this.featureOn(d, k));
+    return off.length ? 'Disabled in the device\'s Rugix Ctrl daemon: ' + off.map(k => names[k]).join(', ') + '.' : '';
   }
 
   get restrictionNote(): string {

@@ -60,4 +60,5 @@ Derived from `rugix-request-connector-v1-0`:
 | 6 | RPC URLs lack leading `/` (`api/system/...`) while mappings have it | Make consistent (`/api/...`) |
 | 7 | `jobEvent` telemetry gets one row per output line | Set a telemetry TTL / retention for the device profile |
 | 8 | `auto_commit` toggle in the old dashboard only stores an attribute | Nothing consumes it – add a rule chain (activeGroup ≠ defaultGroup & auto_commit → RPC `commit`) |
+| 10 | Daemon policy and Admin version are not polled | Add `GET /api/daemon` → attribute `daemon.features = ${features}` (+ optionally `daemon.dangerouslyInsecure = ${dangerously_insecure}`; the whole response body also works) and `GET /api/info` → attribute `admin.version = ${version}`. Used to disable actions the daemon switched off, to show the "security bypasses enabled" warning and the Rugix Admin version |
 | 9 | `anonymous` security + `SSLVerify: false` | OK for tests; protect Rugix Admin / use TLS in production |

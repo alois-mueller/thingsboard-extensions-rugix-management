@@ -46,6 +46,12 @@
           "settings": {}
         },
         {
+          "name": "admin.version",
+          "type": "attribute",
+          "label": "admin.version",
+          "settings": {}
+        },
+        {
           "name": "components.components",
           "type": "attribute",
           "label": "components.components",

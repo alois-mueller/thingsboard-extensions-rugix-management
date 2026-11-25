@@ -77,6 +77,7 @@
                   <div class="name">
                     {{ d.label || d.name }}
                     @if (d.commitPending) { <mat-icon class="warn-icon" matTooltip="Commit pending">sync_problem</mat-icon> }
+                    @if (d.insecure) { <mat-icon class="warn-icon insecure-icon" matTooltip="Rugix Ctrl security bypasses enabled (development only)">gpp_maybe</mat-icon> }
                   </div>
                   @if (d.label) { <div class="sub">{{ d.name }}</div> }
                 </div>
@@ -111,7 +112,7 @@
                   <button mat-icon-button [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'system')" matTooltip="Install system update…"><mat-icon>system_update_alt</mat-icon></button>
                   <button mat-icon-button [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'app')" matTooltip="Install app…"><mat-icon>apps</mat-icon></button>
                   @for (a of tableActions; track a.action) {
-                    <button mat-icon-button [disabled]="blocked(d, kindOf(a))" (click)="runSystemAction(a, d)" [matTooltip]="a.label"><mat-icon [class.caution-icon]="a.caution">{{ a.icon }}</mat-icon></button>
+                    <button mat-icon-button [disabled]="blocked(d, kindOf(a), featureOf(a))" (click)="runSystemAction(a, d)" [matTooltip]="a.label"><mat-icon [class.caution-icon]="a.caution">{{ a.icon }}</mat-icon></button>
                   }
                 </span>
                 <span class="qa-menu">
@@ -120,7 +121,7 @@
                     <button mat-menu-item [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'system')"><mat-icon>system_update_alt</mat-icon>Install system update…</button>
                     <button mat-menu-item [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'app')"><mat-icon>apps</mat-icon>Install app…</button>
                     @for (a of tableActions; track a.action) {
-                      <button mat-menu-item [disabled]="blocked(d, kindOf(a))" (click)="runSystemAction(a, d)"><mat-icon [class.caution-icon]="a.caution">{{ a.icon }}</mat-icon>{{ a.label }}</button>
+                      <button mat-menu-item [disabled]="blocked(d, kindOf(a), featureOf(a))" (click)="runSystemAction(a, d)"><mat-icon [class.caution-icon]="a.caution">{{ a.icon }}</mat-icon>{{ a.label }}</button>
                     }
                   </mat-menu>
                 </span>
@@ -155,13 +156,20 @@
         </button>
         @for (a of systemActions; track a.action) {
           <button mat-flat-button [color]="a.warn ? 'warn' : (a.caution ? undefined : 'primary')" [class.caution]="a.caution"
-                  [disabled]="blocked(d, kindOf(a)) || busy.has(d.id)" (click)="runSystemAction(a, d)">
+                  [disabled]="blocked(d, kindOf(a), featureOf(a)) || busy.has(d.id)" (click)="runSystemAction(a, d)">
             <mat-icon>{{ a.icon }}</mat-icon>{{ a.label }}
           </button>
         }
       </div>
 
       @if (restrictionNote) { <div class="hint">{{ restrictionNote }}</div> }
+      @if (daemonNote(d)) { <div class="hint">{{ daemonNote(d) }}</div> }
+      @if (d.insecure) {
+        <div class="banner err insecure">
+          <mat-icon>gpp_maybe</mat-icon>
+          <span><b>Rugix Ctrl security bypasses enabled.</b> The privileged daemon lets callers bypass bundle verification and compatibility checks. Suitable only for development.</span>
+        </div>
+      }
       @if (!d.active) {
         <div class="banner neutral">
           <mat-icon>cloud_off</mat-icon>
@@ -174,7 +182,7 @@
           <mat-icon>info</mat-icon>
           <span>The device runs boot group <b>{{ d.activeGroup }}</b>, the default is <b>{{ d.defaultGroup }}</b>. Commit to keep the new system, otherwise it falls back on the next reboot.</span>
           <span class="flex-1"></span>
-          <button mat-flat-button color="primary" [disabled]="blocked(d, 'power')" (click)="runSystemAction(systemActions[2], d)">Commit</button>
+          <button mat-flat-button color="primary" [disabled]="blocked(d, 'power', 'system_commit')" (click)="runSystemAction(systemActions[2], d)">Commit</button>
         </div>
       }
 
@@ -209,6 +217,7 @@
             <div class="tab-body grid tight">
               <div class="kv"><span>Edge OS</span><b>{{ d.hardware.osVersion || '—' }}</b></div>
               <div class="kv"><span>Rugix Ctrl</span><b>{{ d.hardware.rugixCtrl || '—' }}</b></div>
+              <div class="kv"><span>Rugix Admin</span><b>{{ d.adminVersion || '—' }}</b></div>
               <div class="kv"><span>Docker</span><b>{{ d.hardware.docker || '—' }}</b></div>
               <div class="kv"><span>PiControl</span><b>{{ d.hardware.picontrol || '—' }}</b></div>
             </div>
@@ -253,7 +262,7 @@
           <div class="tab-body">
             <div class="tab-actions">
               <button mat-stroked-button [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'app')"><mat-icon>add</mat-icon>Install app</button>
-              <button mat-stroked-button [disabled]="blocked(d, 'install')" (click)="garbageCollectApps(d)"><mat-icon>cleaning_services</mat-icon>Clean up all apps</button>
+              <button mat-stroked-button [disabled]="blocked(d, 'install', 'app_lifecycle')" (click)="garbageCollectApps(d)"><mat-icon>cleaning_services</mat-icon>Clean up all apps</button>
             </div>
             <table class="rugix-table compact">
               <thead><tr><th>App</th><th>Version</th><th>Generation</th><th>Status</th><th class="c-md">Orchestrator</th><th class="w-actions"></th></tr></thead>
@@ -266,7 +275,7 @@
                     <td><span class="pill" [class.ok]="appStatusLabel(a.status) === 'running'" [class.warn]="appStatusLabel(a.status) === 'unhealthy'" [class.err]="appStatusLabel(a.status) === 'failed'" [matTooltip]="appStatusMessage(a.status)">{{ appStatusLabel(a.status) }}</span></td>
                     <td class="c-md">{{ a.orchestrator || '—' }}</td>
                     <td class="w-actions">
-                      <button mat-icon-button [matMenuTriggerFor]="appMenu" [disabled]="blocked(d, 'install')"><mat-icon>more_vert</mat-icon></button>
+                      <button mat-icon-button [matMenuTriggerFor]="appMenu" [disabled]="blocked(d, 'install', 'app_lifecycle')"><mat-icon>more_vert</mat-icon></button>
                       <mat-menu #appMenu="matMenu">
                         @for (x of appActions; track x.action) {
                           <button mat-menu-item (click)="runAppAction(d, a, x.action, x.label, x.warn)"><mat-icon>{{ x.icon }}</mat-icon>{{ x.label }}</button>

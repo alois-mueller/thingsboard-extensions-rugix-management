@@ -57,6 +57,8 @@ export interface RugixKeySettings {
   dataPartition: string;
   apiVersion: string;
   daemonFeatures: string;
+  /** Optional: Rugix Admin build version (`GET /api/info` → `version`). */
+  adminVersion: string;
   components: string;
   componentsConsistent: string;
   componentsProblems: string;
@@ -110,6 +112,7 @@ export const DEFAULT_RUGIX_SETTINGS: RugixWidgetSettings = {
     dataPartition: 'state.dataPartition',
     apiVersion: 'api.version',
     daemonFeatures: 'daemon.features',
+    adminVersion: 'admin.version',
     components: 'components.components',
     componentsConsistent: 'components.consistent',
     componentsProblems: 'components.problems',
@@ -144,6 +147,10 @@ export function mergeRugixSettings(settings: Partial<RugixWidgetSettings> | unde
     access: {...DEFAULT_RUGIX_SETTINGS.access, ...(s.access || {})}
   };
 }
+
+export type RugixDaemonFeature = 'factory_reset' | 'system_commit' | 'system_reboot' | 'app_lifecycle';
+
+export type RugixDaemonFeatures = { [K in RugixDaemonFeature]?: boolean };
 
 export interface RugixSlot {
   name: string;
@@ -217,6 +224,11 @@ export interface RugixDevice {
   dataPartition?: string;
   apiVersion?: string;
   features?: any;
+  /** Privileged operation families enabled in the Rugix Ctrl daemon (`undefined` = unknown, treated as enabled). */
+  daemon?: RugixDaemonFeatures;
+  /** Daemon allows bypassing bundle verification / compatibility checks (development only). */
+  insecure?: boolean;
+  adminVersion?: string;
   slots: RugixSlot[];
   components: any;
   componentList: RugixComponent[];
