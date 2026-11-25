@@ -98,6 +98,7 @@
 
   <!-- ===== details ===== -->
   @if (selected; as d) {
+    <div class="rugix-backdrop" (click)="selectedId = null"></div>
     <div class="rugix-details">
       <mat-toolbar color="primary" class="details-toolbar">
         <div class="details-title">

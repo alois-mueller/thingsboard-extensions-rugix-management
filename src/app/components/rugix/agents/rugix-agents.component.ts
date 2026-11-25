@@ -2,7 +2,7 @@
 /// Rugix management extension for ThingsBoard
 ///
 
-import { ChangeDetectorRef, Component, Input, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, Input, OnDestroy, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { PageEvent } from '@angular/material/paginator';
 import { WidgetContext } from '@home/models/widget-component.models';
@@ -94,6 +94,14 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   constructor(private dialog: MatDialog,
               private rpc: RugixRpcService,
               private cd: ChangeDetectorRef) {
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.selectedId && !this.dialog.openDialogs.length) {
+      this.selectedId = null;
+      this.cd.markForCheck();
+    }
   }
 
   ngOnInit(): void {
