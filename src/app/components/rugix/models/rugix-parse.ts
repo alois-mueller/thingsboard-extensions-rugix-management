@@ -402,3 +402,20 @@ export function formatDate(ts: number): string {
   const d = new Date(ts);
   return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`;
 }
+
+
+/** Repairs UTF-8 text that was decoded as Latin-1 somewhere on the way (e.g. box-drawing characters in rugix-ctrl output). */
+export function fixMojibake(text: string): string {
+  if (!text || !/[\u00c2-\u00f4][\u0080-\u00bf]/.test(text)) {
+    return text;
+  }
+  try {
+    const bytes = Uint8Array.from(Array.from(text).map(c => c.charCodeAt(0)));
+    if (Array.from(text).some(c => c.charCodeAt(0) > 255)) {
+      return text;
+    }
+    return new TextDecoder('utf-8', {fatal: true}).decode(bytes);
+  } catch {
+    return text;
+  }
+}

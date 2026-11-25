@@ -402,14 +402,59 @@
 
         @if (tabIndex === 5) {
           <div class="tab-body">
-            @if (d.lastJobEvent) {
-              <div class="kv"><span>Event</span><b>{{ d.lastJobEvent.type }}</b></div>
-              <div class="kv"><span>Job</span><b>{{ d.lastJobEvent.title || d.lastJobEvent.jobId }}</b></div>
-              <div class="kv"><span>Status</span><b><span class="rugix-badge" [class]="d.lastJobEvent.status || 'unknown'">{{ d.lastJobEvent.status || '—' }}</span></b></div>
-              @if (d.lastJobEvent.jobId) {
-                <button mat-stroked-button (click)="openJob(d, d.lastJobEvent.jobId, 'Job ' + d.lastJobEvent.jobId, 0)"><mat-icon>list_alt</mat-icon>Open job log</button>
-              }
-            } @else { <div class="empty">No job events received yet.</div> }
+            <div class="tab-actions">
+              <button mat-stroked-button (click)="loadJobs(true)" [disabled]="jobsLoading"><mat-icon>refresh</mat-icon>Refresh</button>
+              <span class="audit-hint">{{ jobGroups.length }} {{ jobGroups.length === 1 ? 'job' : 'jobs' }} in the last {{ jobsDays }} days · {{ jobEventCount }} events</span>
+            </div>
+            @if (jobsLoading && !jobGroups.length) {
+              <div class="empty"><mat-spinner diameter="24" style="margin: 0 auto"></mat-spinner></div>
+            }
+            @if (!jobsLoading || jobGroups.length) {
+              <div class="rugix-table-wrap audit-wrap">
+                <table class="rugix-table compact">
+                  <thead><tr><th class="w-exp"></th><th>Time</th><th>Job</th><th>Status</th><th>Duration</th><th>Job ID</th></tr></thead>
+                  <tbody>
+                    @for (j of jobGroups; track j.id; let i = $index) {
+                      <tr class="job-row" [class.open]="jobOpen(j, i)" (click)="toggleJob(j)">
+                        <td class="w-exp"><mat-icon>{{ jobOpen(j, i) ? 'expand_less' : 'expand_more' }}</mat-icon></td>
+                        <td class="nowrap">{{ j.start | date:'dd/MM/yyyy HH:mm:ss' }}</td>
+                        <td class="nowrap"><mat-icon class="job-icon">{{ jobIcon(j.kind) }}</mat-icon>{{ j.title || 'Job' }}</td>
+                        <td><span class="pill" [class.ok]="j.status === 'succeeded'" [class.err]="j.status === 'failed'" [class.run]="j.status === 'running' || j.status === 'queued'">{{ j.status }}</span></td>
+                        <td class="nowrap">{{ jobDuration(j) || '—' }}</td>
+                        <td class="job-id-cell" [matTooltip]="j.id"><span class="id-text">{{ j.id }}</span>
+                          <button mat-icon-button type="button" class="copy" matTooltip="Copy job id" (click)="$event.stopPropagation(); copy(j.id)"><mat-icon>content_copy</mat-icon></button>
+                        </td>
+                      </tr>
+                      @if (jobOpen(j, i)) {
+                        <tr class="job-detail">
+                          <td colspan="6">
+                            <div class="job-body">
+                              @if (j.progress !== null) {
+                                <div class="job-progress"><div class="bar"><span [style.width.%]="j.progress"></span></div><b>{{ j.progress | number:'1.0-1' }} %</b></div>
+                              }
+                              @if (j.failure) {
+                                <div class="banner err"><mat-icon>error_outline</mat-icon><span>{{ j.failure }}</span></div>
+                              }
+                              @if (j.lines.length) {
+                                <div class="job-log">
+                                  @for (l of j.lines; track $index) {
+                                    <div class="ln" [class]="l.kind"><span class="ts">{{ l.ts | date:'HH:mm:ss' }}</span>{{ l.text }}</div>
+                                  }
+                                </div>
+                              } @else if (!j.failure) {
+                                <div class="empty small">No output recorded.</div>
+                              }
+                            </div>
+                          </td>
+                        </tr>
+                      }
+                    } @empty {
+                      <tr><td colspan="6" class="empty">No jobs recorded in the last {{ jobsDays }} days.</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
           </div>
         }
 

@@ -97,6 +97,31 @@
   .warn-icon.commit-icon { display: inline-block; color: #ef6c00; }
   .warn-icon.insecure-icon { display: inline-block; color: rgb(209, 39, 48); }
 
+  .w-exp { width: 36px; padding-right: 0 !important; mat-icon { color: rgba(0, 0, 0, .54); vertical-align: middle; } }
+  .job-row { cursor: pointer; &.open td { border-bottom-color: transparent; } }
+  .job-icon { width: 18px; height: 18px; font-size: 18px; vertical-align: middle; margin-right: 6px; color: var(--tb-primary-500, #305680); }
+  .job-id-cell { white-space: nowrap; font: 11px/16px 'Roboto Mono', monospace; color: rgba(0, 0, 0, .6); .id-text { display: inline-block; max-width: 96px; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; } .copy { width: 24px; height: 24px; padding: 2px; vertical-align: middle; mat-icon { width: 14px; height: 14px; font-size: 14px; } } }
+  .job-detail > td { max-width: 0; padding: 0 12px 12px 12px; height: auto; background: rgba(0, 0, 0, .02); }
+
+  .job-body { padding-top: 4px; display: flex; flex-direction: column; gap: 10px; .banner { margin: 0; } }
+
+  .job-progress {
+    display: flex; align-items: center; gap: 10px; font-size: 12px;
+    .bar { flex: 1; height: 6px; border-radius: 3px; background: rgba(0, 0, 0, .1); overflow: hidden;
+      span { display: block; height: 100%; min-width: 2px; background: var(--tb-primary-500, #305680); } }
+  }
+
+  .job-log {
+    max-height: 280px; overflow: auto; padding: 8px 10px; border-radius: 4px;
+    background: #1f2430; color: #d6deeb; font: 12px/1.55 'Roboto Mono', monospace;
+    .ln { white-space: pre-wrap; word-break: break-word; }
+    .ln.stderr { color: #ff9e8f; }
+    .ln.meta { color: #82aaff; }
+    .ts { color: #7f8aa3; margin-right: 8px; }
+  }
+
+  .empty.small { padding: 4px 0; font-size: 12px; }
+
   .audit-hint { font-size: 12px; color: rgba(0, 0, 0, .54); align-self: center; }
   .audit-wrap { overflow-x: auto; }
   .audit-details { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'Roboto Mono', monospace; font-size: 12px; }
@@ -200,6 +225,7 @@
     color: rgba(0, 0, 0, .76);
     background: rgba(0, 0, 0, .06);
 
+    &.run { color: #1565c0; background: rgba(33, 150, 243, .12); }
     &.ok { color: rgb(25, 128, 56); background: rgba(25, 128, 56, .08); }
     &.err { color: rgb(209, 39, 48); background: rgba(209, 39, 48, .08); }
     &.run { color: #1565c0; background: rgba(33, 150, 243, .1); }

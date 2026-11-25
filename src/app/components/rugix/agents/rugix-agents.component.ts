@@ -24,8 +24,8 @@ import {
   RugixStatsRange,
   RugixWidgetSettings
 } from '../models/rugix.models';
-import { RugixDaemonFeature } from '../models/rugix.models';
-import { appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots } from '../models/rugix-parse';
+import { RugixDaemonFeature, RugixJobEvent } from '../models/rugix.models';
+import { fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots } from '../models/rugix-parse';
 import { REVPI_ICON } from '../models/rugix-icons';
 import { RugixJobHandle, RugixRpcService } from '../services/rugix-rpc.service';
 import {
@@ -39,6 +39,18 @@ import {
   RugixInstallDialogResult
 } from '../dialogs/rugix-install-dialog.component';
 import { RugixJobDialogComponent, RugixJobDialogData } from '../dialogs/rugix-job-dialog.component';
+
+interface JobGroup {
+  id: string;
+  title: string;
+  kind: string;
+  status: string;
+  start: number;
+  end: number;
+  progress: number | null;
+  failure: string;
+  lines: { ts: number; text: string; kind: 'stdout' | 'stderr' | 'meta' }[];
+}
 
 interface SystemActionInfo {
   action: RugixSystemAction;
@@ -78,6 +90,107 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   busy = new Set<string>();
   searchOpen = false;
   tabIndex = 0;
+
+  // ---- job log (jobEvent telemetry of the last 30 days, grouped by job id)
+  readonly jobsTab = 5;
+  jobGroups: JobGroup[] = [];
+  jobEventCount = 0;
+  jobsLoading = false;
+  jobsDeviceId = '';
+  jobsLastTs = 0;
+  jobsDays = 30;
+  private jobToggled = new Set<string>();
+
+  loadJobs(force = false): void {
+    const d = this.selected;
+    if (!d || this.tabIndex !== this.jobsTab || (!force && this.jobsDeviceId === d.id)) {
+      return;
+    }
+    this.jobsDeviceId = d.id;
+    this.jobsLastTs = d.lastJobEvent?.ts || 0;
+    this.jobsLoading = true;
+    this.rpc.loadJobEvents(this.settings, d, 5000, Date.now() - this.jobsDays * 86400000).subscribe(events => {
+      if (this.selectedId !== d.id) {
+        return;
+      }
+      this.jobEventCount = events.length;
+      this.jobGroups = this.groupJobs(events);
+      this.jobsLoading = false;
+      this.cd.markForCheck();
+    });
+  }
+
+  private groupJobs(events: RugixJobEvent[]): JobGroup[] {
+    const groups = new Map<string, JobGroup>();
+    for (const e of [...events].sort((a, b) => a.ts - b.ts)) {
+      if (!e.jobId) {
+        continue;
+      }
+      let g = groups.get(e.jobId);
+      if (!g) {
+        g = {id: e.jobId, title: '', kind: '', status: 'unknown', start: e.ts, end: e.ts, progress: null, failure: '', lines: []};
+        groups.set(e.jobId, g);
+      }
+      g.end = e.ts;
+      switch (e.type) {
+        case 'job-changed':
+          g.title = e.title || g.title;
+          g.kind = e.kind || g.kind;
+          g.status = e.status || g.status;
+          if (e.failureMessage) {
+            g.failure = e.failureMessage;
+          }
+          break;
+        case 'install-progress':
+          if (e.progress !== undefined && !isNaN(e.progress)) {
+            g.progress = Math.max(0, Math.min(100, e.progress));
+          }
+          break;
+        case 'job-output':
+          if ((e.line || '').trim()) {
+            g.lines.push({ts: e.ts, text: fixMojibake(e.line), kind: e.stream === 'stderr' ? 'stderr' : 'stdout'});
+          }
+          break;
+        default:
+          if (e.message) {
+            g.lines.push({ts: e.ts, text: e.message, kind: 'meta'});
+          }
+      }
+    }
+    return Array.from(groups.values()).sort((a, b) => b.start - a.start);
+  }
+
+  jobOpen(j: JobGroup, index: number): boolean {
+    const dflt = index === 0 || j.status === 'running';
+    return dflt !== this.jobToggled.has(j.id);
+  }
+
+  toggleJob(j: JobGroup): void {
+    if (this.jobToggled.has(j.id)) {
+      this.jobToggled.delete(j.id);
+    } else {
+      this.jobToggled.add(j.id);
+    }
+  }
+
+  jobIcon(kind: string): string {
+    switch (kind) {
+      case 'system-update': return 'system_update_alt';
+      case 'app-install': return 'apps';
+      case 'app-action': return 'tune';
+      default: return 'settings';
+    }
+  }
+
+  jobDuration(j: JobGroup): string {
+    const s = Math.round((j.end - j.start) / 1000);
+    if (s < 1) { return ''; }
+    return s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${s % 60} s`;
+  }
+
+  copy(text: string): void {
+    try { navigator.clipboard?.writeText(text); } catch { /* ignore */ }
+  }
 
   // ---- audit log (ThingsBoard audit logs of the device entity)
   readonly auditTab = 6;
@@ -251,6 +364,10 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       d.commitPending = !!d.activeGroup && !!d.defaultGroup && d.activeGroup !== d.defaultGroup;
       return d;
     }).sort((a, b) => (a.label || a.name).localeCompare(b.label || b.name));
+    const sel = this.selected;
+    if (sel && this.tabIndex === this.jobsTab && (sel.lastJobEvent?.ts || 0) !== this.jobsLastTs) {
+      this.loadJobs(true);
+    }
     if (this.selectedId && !byId.has(this.selectedId)) {
       this.selectedId = null;
     }
@@ -415,6 +532,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     this.selectedId = this.selectedId === d.id ? null : d.id;
     this.tabIndex = 0;
     this.auditDeviceId = '';
+    this.jobsDeviceId = '';
     this.loadAudit();
     this.syncStats();
     setTimeout(() => this.syncDetailsLayout());
@@ -477,7 +595,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   tabLabels(d: RugixDevice): { i: number; label: string }[] {
     return ['Overview', `Slots (${d.slots.length})`, `Apps (${d.apps.length})`, `Components (${d.componentList.length})`,
-      'Resources', 'Last job', 'Audit log'].map((label, i) => ({i, label}));
+      'Resources', 'Job log', 'Audit log'].map((label, i) => ({i, label}));
   }
 
   /** Select a tab and scroll it to the middle of the tab bar (clamped at both ends, so first/last stay put). */
@@ -509,6 +627,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   onTabChange(index: number): void {
     this.tabIndex = index;
     this.loadAudit();
+    this.loadJobs();
     this.syncStats();
   }
 
