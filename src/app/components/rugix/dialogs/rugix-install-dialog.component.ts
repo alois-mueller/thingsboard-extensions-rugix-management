@@ -6,8 +6,8 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { OtaPackageService } from '@core/public-api';
 import { OtaPackageInfo, OtaUpdateType, PageLink } from '@shared/public-api';
-import { forkJoin, Observable } from 'rxjs';
-import { mergeMap } from 'rxjs/operators';
+import { forkJoin, Observable, of } from 'rxjs';
+import { catchError, mergeMap } from 'rxjs/operators';
 import { RugixDevice, RugixInstallOptions, RugixWidgetSettings, RUGIX_REBOOT_MODES } from '../models/rugix.models';
 import { RugixJobHandle, RugixRpcService } from '../services/rugix-rpc.service';
 
@@ -112,6 +112,7 @@ export class RugixInstallDialogComponent implements OnInit {
       return start$.pipe(
         mergeMap(handle => this.rpc.startJobStream(this.data.settings, device, handle.jobId).pipe(
           // starting the live stream is best-effort, the install itself is already running
+          catchError(() => of(null)),
           mergeMap(() => [{device, handle}])
         ))
       );
