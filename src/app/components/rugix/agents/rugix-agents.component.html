@@ -76,7 +76,7 @@
                 <div class="device-text">
                   <div class="name">
                     {{ d.label || d.name }}
-                    @if (d.commitPending) { <mat-icon class="warn-icon" matTooltip="Commit pending">sync_problem</mat-icon> }
+                    @if (d.commitPending) { <mat-icon class="warn-icon commit-icon" matTooltip="Warning: Commit pending – running a non-default system. Commit to keep it, otherwise the device falls back on next boot.">warning</mat-icon> }
                     @if (d.insecure) { <mat-icon class="warn-icon insecure-icon" matTooltip="Warning: Rugix Ctrl security bypasses enabled (development only)">warning</mat-icon> }
                   </div>
                   @if (d.label) { <div class="sub">{{ d.name }}</div> }
@@ -90,9 +90,6 @@
             <td class="nowrap">{{ d.hardware.osVersion || '—' }}</td>
             <td class="c-l3">
               {{ d.activeGroup || '—' }}
-              @if (d.commitPending) {
-                <span class="pill warn" matTooltip="Running a non-default system – commit to keep it, otherwise the device falls back on next boot.">commit pending</span>
-              }
             </td>
             <td class="c-l2">{{ d.bootFlow || '—' }}</td>
             <td class="c-l2">
