@@ -18,6 +18,7 @@ import {
   RugixWidgetSettings
 } from '../models/rugix.models';
 import { appStatusLabel, applyValue, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots } from '../models/rugix-parse';
+import { REVPI_ICON } from '../models/rugix-icons';
 import { RugixJobHandle, RugixRpcService } from '../services/rugix-rpc.service';
 import {
   RugixConfirmDialogComponent,
@@ -92,6 +93,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     {action: 'appRemove', icon: 'delete', label: 'Remove', warn: true}
   ];
 
+  readonly revpiIcon = REVPI_ICON;
   readonly capabilityLabel = capabilityLabel;
   componentFilter = '';
   readonly formatBytes = formatBytes;
@@ -328,6 +330,11 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   kindClass(kind: string): string {
     return 'kind-' + (kind || 'unknown').toLowerCase();
+  }
+
+  /** Revolution Pi devices are recognized by their hardware component (or the device name as fallback). */
+  isRevPi(d: RugixDevice): boolean {
+    return d.componentList.some(c => c.id === 'hardware.revpi') || /revpi|revolution.?pi/i.test(`${d.name} ${d.label}`);
   }
 
   trackById(_: number, d: RugixDevice): string {

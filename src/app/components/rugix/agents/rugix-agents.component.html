@@ -36,12 +36,12 @@
           <th class="w-check"><mat-checkbox [checked]="allChecked" (change)="toggleAll()"></mat-checkbox></th>
           <th>Device</th>
           <th class="w-status">Status</th>
-          <th class="c-md">Boot flow</th>
-          <th>Active group</th>
-          <th class="c-sm">State</th>
-          <th class="c-md">Edge OS</th>
-          <th class="c-md">Rugix API</th>
-          <th class="c-md">Last job</th>
+          <th>Edge OS</th>
+          <th class="c-l3">Active group</th>
+          <th class="c-l2">Boot flow</th>
+          <th class="c-l2">State</th>
+          <th class="c-l1">Rugix API</th>
+          <th class="c-l1">Last job</th>
           <th class="w-actions"></th>
         </tr>
       </thead>
@@ -52,25 +52,33 @@
               <mat-checkbox [checked]="checked.has(d.id)" (change)="toggle(d)"></mat-checkbox>
             </td>
             <td>
-              <div class="name">{{ d.label || d.name }}</div>
-              @if (d.label) { <div class="sub">{{ d.name }}</div> }
+              <div class="device">
+                @if (isRevPi(d)) { <img class="device-icon" [src]="revpiIcon" alt="Revolution Pi" matTooltip="Revolution Pi"> }
+                <div class="device-text">
+                  <div class="name">
+                    {{ d.label || d.name }}
+                    @if (d.commitPending) { <mat-icon class="warn-icon" matTooltip="Commit pending">sync_problem</mat-icon> }
+                  </div>
+                  @if (d.label) { <div class="sub">{{ d.name }}</div> }
+                </div>
+              </div>
             </td>
             <td>
               <span class="status" [class]="statusClass(d)"><span class="dot"></span>{{ d.active ? 'Online' : 'Offline' }}</span>
             </td>
-            <td class="c-md">{{ d.bootFlow || '—' }}</td>
-            <td>
+            <td class="nowrap">{{ d.hardware.osVersion || '—' }}</td>
+            <td class="c-l3">
               {{ d.activeGroup || '—' }}
               @if (d.commitPending) {
                 <span class="pill warn" matTooltip="Running a non-default system – commit to keep it, otherwise the device falls back on next boot.">commit pending</span>
               }
             </td>
-            <td class="c-sm">
+            <td class="c-l2">{{ d.bootFlow || '—' }}</td>
+            <td class="c-l2">
               <span class="chip" [class.ok]="d.stateStatus === 'active'" [class.err]="d.stateStatus === 'error'">{{ d.stateStatus || '—' }}</span>
             </td>
-            <td class="c-md">{{ d.hardware.osVersion || '—' }}</td>
-            <td class="c-md">{{ d.apiVersion || '—' }}</td>
-            <td class="c-md">
+            <td class="c-l1">{{ d.apiVersion || '—' }}</td>
+            <td class="c-l1">
               @if (d.lastJobEvent?.status) {
                 <span class="chip" [class.ok]="d.lastJobEvent.status === 'succeeded'" [class.err]="d.lastJobEvent.status === 'failed'" [class.run]="d.lastJobEvent.status === 'running' || d.lastJobEvent.status === 'queued'">{{ d.lastJobEvent.status }}</span>
               } @else { — }
@@ -103,6 +111,7 @@
     <div class="rugix-backdrop" (click)="selectedId = null"></div>
     <div class="rugix-details">
       <mat-toolbar color="primary" class="details-toolbar">
+        @if (isRevPi(d)) { <img class="details-icon" [src]="revpiIcon" alt="Revolution Pi"> }
         <div class="details-title">
           <span>{{ d.label || d.name }}</span>
           <span class="details-sub">Rugix device details</span>
@@ -170,7 +179,7 @@
                     @if (s.active) { <span class="pill ok">active</span> }
                   </div>
                   <div class="sub">{{ formatBytes(s.size) }}
-                    @if (s.updatedAt) { · updated {{ s.updatedAt | date:'short' }} }</div>
+                    @if (s.updatedAt) { · updated {{ s.updatedAt | date:'dd/MM/yyyy HH:mm' }} }</div>
                   @for (h of s.hashes | keyvalue; track h.key) {
                     <div class="hash" [matTooltip]="h.value">{{ h.key }}: {{ h.value }}</div>
                   }

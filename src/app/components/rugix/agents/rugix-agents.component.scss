@@ -15,7 +15,7 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    overflow: auto;
+    overflow: hidden;
     box-sizing: border-box;
     background: #fff;
     color: rgba(0, 0, 0, .87);
@@ -49,6 +49,8 @@
 
   // ---- table
   .rugix-table-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -152,7 +154,10 @@
     font-weight: 500;
   }
 
+  .rugix-toolbar { flex: none; }
+
   mat-paginator {
+    flex: none;
     border-top: 1px solid rgba(0, 0, 0, .12);
   }
 
@@ -204,6 +209,8 @@
     border-bottom: 1px solid rgba(0, 0, 0, .12);
   }
 
+  .banner mat-icon { flex: none; width: 24px; height: 24px; font-size: 24px; }
+
   .banner {
     display: flex;
     align-items: center;
@@ -216,6 +223,11 @@
     &.err { background: rgba(209, 39, 48, .08); color: rgb(160, 30, 38); }
   }
 
+  .device { display: flex; align-items: center; gap: 10px; }
+  .device-icon { flex: none; width: 24px; height: 24px; border-radius: 4px; }
+  .device-text { min-width: 0; }
+  .warn-icon { display: none; flex: none; width: 18px; height: 18px; font-size: 18px; margin-left: 4px; vertical-align: middle; color: #e08600; }
+  .details-icon { flex: none; width: 32px; height: 32px; margin-right: 12px; border-radius: 4px; }
   .tab-body {
     padding: 16px 24px;
 
@@ -330,6 +342,21 @@
 }
 
 // The widget is sized by the dashboard grid, so adapt to the widget width (container), not the viewport.
+@container rugix (max-width: 1000px) {
+  .c-l1 { display: none; }
+}
+
+@container rugix (max-width: 800px) {
+  .c-l2 { display: none; }
+}
+
+// Priority when space gets tight: Status + Edge OS stay, then Active group; the 'commit pending' state
+// moves into a small icon next to the device name once the active group column is hidden.
+@container rugix (max-width: 560px) {
+  .c-l3 { display: none; }
+  .warn-icon { display: inline-block; }
+}
+
 @container rugix (max-width: 900px) {
   .c-md { display: none; }
   .rugix-toolbar { padding: 0 8px 0 16px; }
