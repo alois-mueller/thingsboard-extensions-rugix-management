@@ -31,11 +31,11 @@
           <th class="w-check"><mat-checkbox [checked]="allChecked" (change)="toggleAll()"></mat-checkbox></th>
           <th>Device</th>
           <th class="w-status">Status</th>
-          <th>Boot flow</th>
+          <th class="c-md">Boot flow</th>
           <th>Active group</th>
-          <th>State</th>
-          <th>Rugix API</th>
-          <th>Last job</th>
+          <th class="c-sm">State</th>
+          <th class="c-md">Rugix API</th>
+          <th class="c-md">Last job</th>
           <th class="w-actions"></th>
         </tr>
       </thead>
@@ -52,18 +52,18 @@
             <td>
               <span class="status" [class]="statusClass(d)"><span class="dot"></span>{{ d.active ? 'Online' : 'Offline' }}</span>
             </td>
-            <td>{{ d.bootFlow || '—' }}</td>
+            <td class="c-md">{{ d.bootFlow || '—' }}</td>
             <td>
               {{ d.activeGroup || '—' }}
               @if (d.commitPending) {
                 <span class="pill warn" matTooltip="Running a non-default system – commit to keep it, otherwise the device falls back on next boot.">commit pending</span>
               }
             </td>
-            <td>
+            <td class="c-sm">
               <span class="pill" [class.ok]="d.stateStatus === 'active'" [class.err]="d.stateStatus === 'error'">{{ d.stateStatus || '—' }}</span>
             </td>
-            <td>{{ d.apiVersion || '—' }}</td>
-            <td>
+            <td class="c-md">{{ d.apiVersion || '—' }}</td>
+            <td class="c-md">
               @if (d.lastJobEvent?.status) {
                 <span class="rugix-badge" [class]="d.lastJobEvent.status">{{ d.lastJobEvent.status }}</span>
               } @else { — }

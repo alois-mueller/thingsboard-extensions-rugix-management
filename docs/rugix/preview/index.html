@@ -38,6 +38,12 @@ td{padding:8px 12px;border-bottom:1px solid #0000000f}tbody tr{cursor:pointer}tb
 pre{margin:0;padding:10px 12px;background:#1f2430;color:#d6deeb;border-radius:4px;font:12px/1.5 'Roboto Mono',monospace;max-height:240px;overflow:auto;white-space:pre-wrap}
 pre .m{color:#82aaff}pre .t{color:#7f8aa3;margin-right:8px}
 .note{margin:16px;padding:10px 14px;background:#fff8e1;border-radius:4px;font-size:13px}
+
+.dlg{width:min(560px,92vw)}.tbl{overflow-x:auto}.tabs{overflow-x:auto}.tab{white-space:nowrap}
+@media(max-width:900px){.c-md{display:none}}
+@media(max-width:600px){.c-sm{display:none}.card,.note{margin:8px}.ttl{width:100%;flex:1 1 100%}input.s{width:100%;order:3;flex:1 1 100%;box-sizing:border-box}
+.hdr>button{flex:1 1 auto;justify-content:center}th,td{padding:8px 6px}.det{margin:8px 0 0;border-left:0;border-right:0;border-radius:0}
+.dh{padding:12px}.dh button{flex:1 1 calc(50% - 8px);justify-content:center}.ban{flex-wrap:wrap;margin:12px 12px 0}.body{padding:12px}.tab{padding:12px 14px}}
 </style></head><body>
 <div class="note">Static preview of <b>tb-rugix-agents</b> with mock data (Material look as in ThingsBoard). Click a row, tabs, “Install update” or “Commit”.</div>
 <div class="card" id="root"></div>
@@ -57,10 +63,10 @@ function render(){
  <input class="s" placeholder="Search devices">
  <button ${chk.size?'':'disabled'} onclick="inst()"><i class="mi">system_update_alt</i>Update system (${chk.size})</button>
  <button ${chk.size?'':'disabled'}><i class="mi">apps</i>Install app (${chk.size})</button></div>
- <table><thead><tr><th></th><th>Device</th><th>Status</th><th>Boot flow</th><th>Active group</th><th>State</th><th>Rugix API</th><th>Last job</th><th></th></tr></thead><tbody>
+ <table><thead><tr><th></th><th>Device</th><th>Status</th><th class="c-md">Boot flow</th><th>Active group</th><th class="c-sm">State</th><th class="c-md">Rugix API</th><th class="c-md">Last job</th><th></th></tr></thead><tbody>
  ${devs.map((d,i)=>`<tr class="${i==sel?'sel':''}" onclick="sel=${i}==sel?-1:${i};tab=0;render()"><td onclick="event.stopPropagation()"><input type=checkbox ${chk.has(i)?'checked':''} onchange="this.checked?chk.add(${i}):chk.delete(${i});render()"></td>
- <td><div class="nm">${d.l}</div><div class="sub">${d.n}</div></td><td><span class="st ${d.on?'on':'off'}"><i></i>${d.on?'Online':'Offline'}</span></td><td>${d.bf}</td>
- <td>${d.ag}${d.ag!=d.dg?pill('commit pending','warn'):''}</td><td>${pill(d.st,d.st=='active'?'ok':'err')}</td><td>${d.v}</td><td>${pill(d.job,d.job=='succeeded'?'ok':'err')}</td><td><i class="mi">more_vert</i></td></tr>`).join('')}
+ <td><div class="nm">${d.l}</div><div class="sub">${d.n}</div></td><td><span class="st ${d.on?'on':'off'}"><i></i>${d.on?'Online':'Offline'}</span></td><td class="c-md">${d.bf}</td>
+ <td>${d.ag}${d.ag!=d.dg?pill('commit pending','warn'):''}</td><td class="c-sm">${pill(d.st,d.st=='active'?'ok':'err')}</td><td class="c-md">${d.v}</td><td class="c-md">${pill(d.job,d.job=='succeeded'?'ok':'err')}</td><td><i class="mi">more_vert</i></td></tr>`).join('')}
  </tbody></table>${sel>=0?details(devs[sel]):''}`;
 }
 function details(d){

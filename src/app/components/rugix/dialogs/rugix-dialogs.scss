@@ -24,8 +24,9 @@
     flex-direction: column;
     gap: 8px;
     padding: 20px 24px 8px;
-    min-width: 420px;
-    max-width: 640px;
+    box-sizing: border-box;
+    width: min(560px, 92vw);
+    max-width: 100%;
     overflow: auto;
   }
 
@@ -87,7 +88,7 @@
   // --- job progress
   .job-summary {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 12px;
 
     .label {
@@ -102,7 +103,7 @@
   }
 
   .job-log {
-    max-height: 280px;
+    max-height: min(280px, 40vh);
     overflow: auto;
     margin: 0;
     padding: 10px 12px;

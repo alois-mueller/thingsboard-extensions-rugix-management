@@ -1,5 +1,7 @@
 :host {
   display: block;
+  container-type: inline-size;
+  container-name: rugix;
   width: 100%;
   height: 100%;
   overflow: auto;
@@ -160,7 +162,7 @@
 
     &.grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
       gap: 16px;
     }
   }
@@ -182,7 +184,7 @@
 
   .slots {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
     gap: 12px;
   }
 
@@ -221,4 +223,32 @@
     white-space: pre-wrap;
     word-break: break-word;
   }
+
+  .rugix-search { max-width: 100%; }
+  .rugix-table-wrap { -webkit-overflow-scrolling: touch; }
+  .details-head .details-title { word-break: break-word; }
+  .json, .slot .hash { max-width: 100%; }
+}
+
+// The widget is sized by the dashboard grid, so adapt to the widget width (container), not the viewport.
+@container rugix (max-width: 900px) {
+  .c-md { display: none; }
+  .rugix-header { padding: 8px 12px; }
+}
+
+@container rugix (max-width: 600px) {
+  .c-sm { display: none; }
+  .rugix-title { font-size: 18px; width: 100%; }
+  .rugix-search { width: 100%; order: 3; flex: 1 1 100%; }
+  .rugix-header > button { flex: 1 1 auto; justify-content: center; }
+  .rugix-table td, .rugix-table th { padding: 8px 6px; }
+  .rugix-table .w-check { width: 36px; }
+  .rugix-table .w-status { width: auto; }
+  .rugix-details { margin: 8px 0 0; border-radius: 0; border-left: 0; border-right: 0; }
+  .details-head { padding: 12px; }
+  .details-head > button[mat-stroked-button], .details-head > button[mat-flat-button] { flex: 1 1 calc(50% - 8px); }
+  .banner { margin: 12px 12px 0; flex-wrap: wrap; }
+  .tab-body { padding: 12px; }
+  .tab-actions { flex-wrap: wrap; }
+  .tab-actions button { flex: 1 1 auto; }
 }
