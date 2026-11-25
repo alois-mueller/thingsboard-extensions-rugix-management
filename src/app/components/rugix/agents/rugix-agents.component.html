@@ -49,18 +49,18 @@
 
   <!-- ===== table ===== -->
   <div class="rugix-table-wrap">
-    <table class="rugix-table">
+    <table class="rugix-table main-table">
       <thead>
         <tr>
           <th class="w-check"><mat-checkbox [checked]="allChecked" (change)="toggleAll()"></mat-checkbox></th>
           <th class="sortable" [class.sorted]="sortKey === 'name'" (click)="sortBy('name')">Device<mat-icon class="sort-icon">{{ sortKey === 'name' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
           <th class="sortable w-status" [class.sorted]="sortKey === 'status'" (click)="sortBy('status')">Status<mat-icon class="sort-icon">{{ sortKey === 'status' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
-          <th class="sortable" [class.sorted]="sortKey === 'os'" (click)="sortBy('os')">Edge OS<mat-icon class="sort-icon">{{ sortKey === 'os' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
-          <th class="sortable c-l3" [class.sorted]="sortKey === 'group'" (click)="sortBy('group')">Active group<mat-icon class="sort-icon">{{ sortKey === 'group' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
-          <th class="sortable c-l2" [class.sorted]="sortKey === 'flow'" (click)="sortBy('flow')">Boot flow<mat-icon class="sort-icon">{{ sortKey === 'flow' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
-          <th class="sortable c-l2" [class.sorted]="sortKey === 'state'" (click)="sortBy('state')">State<mat-icon class="sort-icon">{{ sortKey === 'state' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
-          <th class="sortable c-l1" [class.sorted]="sortKey === 'api'" (click)="sortBy('api')">Rugix API<mat-icon class="sort-icon">{{ sortKey === 'api' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
-          <th class="sortable c-l1" [class.sorted]="sortKey === 'job'" (click)="sortBy('job')">Last job<mat-icon class="sort-icon">{{ sortKey === 'job' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-os" [class.sorted]="sortKey === 'os'" (click)="sortBy('os')">Edge OS<mat-icon class="sort-icon">{{ sortKey === 'os' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-l3 c-group" [class.sorted]="sortKey === 'group'" (click)="sortBy('group')">Active group<mat-icon class="sort-icon">{{ sortKey === 'group' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-l2 c-flow" [class.sorted]="sortKey === 'flow'" (click)="sortBy('flow')">Boot flow<mat-icon class="sort-icon">{{ sortKey === 'flow' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-l2 c-state" [class.sorted]="sortKey === 'state'" (click)="sortBy('state')">State<mat-icon class="sort-icon">{{ sortKey === 'state' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-l1 c-api" [class.sorted]="sortKey === 'api'" (click)="sortBy('api')">Rugix API<mat-icon class="sort-icon">{{ sortKey === 'api' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-l1 c-job" [class.sorted]="sortKey === 'job'" (click)="sortBy('job')">Last job<mat-icon class="sort-icon">{{ sortKey === 'job' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
           <th class="w-actions"></th>
         </tr>
       </thead>

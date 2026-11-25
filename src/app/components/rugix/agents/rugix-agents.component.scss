@@ -122,6 +122,23 @@
 
   .empty.small { padding: 4px 0; font-size: 12px; }
 
+  // fixed column layout of the device table so the columns stay put while paging
+  .main-table {
+    table-layout: fixed;
+    .w-check { width: 48px; }
+    .w-status { width: 110px; }
+    .c-os { width: 100px; }
+    .c-group { width: 100px; }
+    .c-flow { width: 90px; }
+    .c-state { width: 90px; }
+    .c-api { width: 80px; }
+    .c-job { width: 100px; }
+    .w-actions { width: 56px; }
+    td { overflow: hidden; text-overflow: ellipsis; }
+    .device-text .name, .device-text .sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    td.w-actions { overflow: visible; }
+  }
+
   // fixed column layout so the columns stay put while paging
   .log-table {
     table-layout: fixed;
@@ -614,7 +631,7 @@
 @container rugix (min-width: 1101px) {
   :host .qa-inline { display: inline; }
   :host .qa-menu { display: none; }
-  :host .rugix-table-wrap > .rugix-table .w-actions { width: 260px; }
+  :host .rugix-table-wrap > .rugix-table .w-actions { width: 210px; }
 }
 
 @container rugix (max-width: 600px) {
