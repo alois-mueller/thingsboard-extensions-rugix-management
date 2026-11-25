@@ -95,6 +95,17 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   readonly jobsTab = 5;
   jobGroups: JobGroup[] = [];
   jobEventCount = 0;
+  readonly logPageSize = 5;
+  jobPageIndex = 0;
+  auditPageIndex = 0;
+
+  get jobPage(): JobGroup[] {
+    return this.jobGroups.slice(this.jobPageIndex * this.logPageSize, (this.jobPageIndex + 1) * this.logPageSize);
+  }
+
+  get auditPage(): AuditLog[] {
+    return this.auditLogs.slice(this.auditPageIndex * this.logPageSize, (this.auditPageIndex + 1) * this.logPageSize);
+  }
   jobsLoading = false;
   jobsDeviceId = '';
   jobsLastTs = 0;
@@ -115,6 +126,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       }
       this.jobEventCount = events.length;
       this.jobGroups = this.groupJobs(events);
+      this.jobPageIndex = Math.min(this.jobPageIndex, Math.max(0, Math.ceil(this.jobGroups.length / this.logPageSize) - 1));
       this.jobsLoading = false;
       this.cd.markForCheck();
     });
@@ -213,6 +225,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       next: page => {
         if (this.selectedId === id) {
           this.auditLogs = page.data || [];
+          this.auditPageIndex = Math.min(this.auditPageIndex, Math.max(0, Math.ceil(this.auditLogs.length / this.logPageSize) - 1));
           this.auditLoading = false;
           this.cd.markForCheck();
         }
@@ -532,6 +545,8 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     this.tabIndex = 0;
     this.auditDeviceId = '';
     this.jobsDeviceId = '';
+    this.jobPageIndex = 0;
+    this.auditPageIndex = 0;
     this.loadAudit();
     this.syncStats();
     setTimeout(() => this.syncDetailsLayout());

@@ -404,7 +404,7 @@
           <div class="tab-body">
             <div class="tab-actions">
               <button mat-stroked-button (click)="loadJobs(true)" [disabled]="jobsLoading"><mat-icon>refresh</mat-icon>Refresh</button>
-              <span class="audit-hint">{{ jobGroups.length }} {{ jobGroups.length === 1 ? 'job' : 'jobs' }} in the last {{ jobsDays }} days · {{ jobEventCount }} events</span>
+              <span class="audit-hint">{{ jobGroups.length }} {{ jobGroups.length === 1 ? 'job' : 'jobs' }} in the last {{ jobsDays }} days</span>
             </div>
             @if (jobsLoading && !jobGroups.length) {
               <div class="empty"><mat-spinner diameter="24" style="margin: 0 auto"></mat-spinner></div>
@@ -414,7 +414,7 @@
                 <table class="rugix-table compact">
                   <thead><tr><th class="w-exp"></th><th>Started</th><th>Job</th><th>Status</th><th>Duration</th><th>Job ID</th></tr></thead>
                   <tbody>
-                    @for (j of jobGroups; track j.id; let i = $index) {
+                    @for (j of jobPage; track j.id; let i = $index) {
                       <tr class="job-row" [class.open]="jobOpen(j, i)" (click)="toggleJob(j)">
                         <td class="w-exp"><mat-icon>{{ jobOpen(j, i) ? 'expand_less' : 'expand_more' }}</mat-icon></td>
                         <td class="nowrap">{{ j.start | date:'dd/MM/yyyy HH:mm:ss' }}</td>
@@ -454,6 +454,7 @@
                   </tbody>
                 </table>
               </div>
+              <mat-paginator class="log-paginator" [length]="jobGroups.length" [pageSize]="logPageSize" [pageIndex]="jobPageIndex" hidePageSize showFirstLastButtons (page)="jobPageIndex = $event.pageIndex"></mat-paginator>
             }
           </div>
         }
@@ -462,7 +463,7 @@
           <div class="tab-body">
             <div class="tab-actions">
               <button mat-stroked-button (click)="loadAudit(true)" [disabled]="auditLoading"><mat-icon>refresh</mat-icon>Refresh</button>
-              <span class="audit-hint">Last {{ auditDays }} days · ThingsBoard audit log of this device</span>
+              <span class="audit-hint">{{ auditLogs.length }} {{ auditLogs.length === 1 ? 'entry' : 'entries' }} in the last {{ auditDays }} days</span>
             </div>
             @if (auditLoading) {
               <div class="empty"><mat-spinner diameter="24" style="margin: 0 auto"></mat-spinner></div>
@@ -473,7 +474,7 @@
                 <table class="rugix-table compact">
                   <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Status</th><th>Details</th></tr></thead>
                   <tbody>
-                    @for (l of auditLogs; track l.id.id) {
+                    @for (l of auditPage; track l.id.id) {
                       <tr>
                         <td class="nowrap">{{ l.createdTime | date:'dd/MM/yyyy HH:mm:ss' }}</td>
                         <td>{{ l.userName || '—' }}</td>
@@ -487,6 +488,7 @@
                   </tbody>
                 </table>
               </div>
+              <mat-paginator class="log-paginator" [length]="auditLogs.length" [pageSize]="logPageSize" [pageIndex]="auditPageIndex" hidePageSize showFirstLastButtons (page)="auditPageIndex = $event.pageIndex"></mat-paginator>
             }
           </div>
         }

@@ -122,6 +122,8 @@
 
   .empty.small { padding: 4px 0; font-size: 12px; }
 
+  .log-paginator { background: transparent; }
+
   .audit-hint { font-size: 12px; color: rgba(0, 0, 0, .54); align-self: center; }
   .audit-wrap { overflow-x: auto; }
   .audit-details { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'Roboto Mono', monospace; font-size: 12px; }
