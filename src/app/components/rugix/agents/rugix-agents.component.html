@@ -75,14 +75,6 @@
     <span class="fchip" [class.on]="statusFilter === 'online'" (click)="setStatusFilter('online')"><span class="dot ok"></span>Online</span>
     <span class="fchip" [class.on]="statusFilter === 'offline'" (click)="setStatusFilter('offline')"><span class="dot"></span>Offline</span>
     <span class="fchip" [class.on]="pendingOnly" (click)="pendingOnly = !pendingOnly; pageIndex = 0"><mat-icon>sync_problem</mat-icon>Commit pending</span>
-    @if (osOptions.length > 1) {
-      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="os-filter">
-        <mat-select [(ngModel)]="osFilter" (ngModelChange)="pageIndex = 0" placeholder="Edge OS" aria-label="Edge OS filter">
-          <mat-option value="">All Edge OS versions</mat-option>
-          @for (v of osOptions; track v) { <mat-option [value]="v">{{ v }}</mat-option> }
-        </mat-select>
-      </mat-form-field>
-    }
     @if (filtersActive) {
       <button mat-button type="button" class="fclear" (click)="clearFilters()">Clear</button>
     }

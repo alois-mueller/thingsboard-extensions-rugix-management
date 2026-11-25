@@ -517,14 +517,9 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   statusFilter: 'all' | 'online' | 'offline' = 'all';
   pendingOnly = false;
-  osFilter = '';
-
-  get osOptions(): string[] {
-    return Array.from(new Set(this.devices.map(d => d.hardware.osVersion).filter(v => !!v))).sort((a, b) => a.localeCompare(b, undefined, {numeric: true}));
-  }
 
   get filtersActive(): boolean {
-    return this.statusFilter !== 'all' || this.pendingOnly || !!this.osFilter;
+    return this.statusFilter !== 'all' || this.pendingOnly;
   }
 
   setStatusFilter(v: 'all' | 'online' | 'offline'): void {
@@ -535,7 +530,6 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   clearFilters(): void {
     this.statusFilter = 'all';
     this.pendingOnly = false;
-    this.osFilter = '';
     this.pageIndex = 0;
   }
 
@@ -622,8 +616,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     const q = this.search.trim().toLowerCase();
     const base = this.devices.filter(d =>
       (this.statusFilter === 'all' || (this.statusFilter === 'online') === d.active)
-      && (!this.pendingOnly || d.commitPending)
-      && (!this.osFilter || d.hardware.osVersion === this.osFilter));
+      && (!this.pendingOnly || d.commitPending));
     const list = q ? base.filter(d =>
       [d.name, d.label, d.hardware.osVersion, d.hardware.model, d.hardware.serial, d.bootFlow, d.activeGroup,
         d.stateStatus, d.apiVersion, d.lastJobEvent?.status, d.active ? 'online' : 'offline']
