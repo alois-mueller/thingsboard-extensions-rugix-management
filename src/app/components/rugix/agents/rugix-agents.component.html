@@ -155,19 +155,9 @@
         }
       </div>
         @if (tabIndex === 0) {
-          <div class="tab-body grid">
-            <div class="kv"><span>Boot flow</span><b>{{ d.bootFlow || '—' }}</b></div>
-            <div class="kv"><span>Boot groups</span><b>{{ d.bootGroups.join(', ') || '—' }}</b></div>
-            <div class="kv"><span>Active group</span><b>{{ d.activeGroup || '—' }}</b></div>
-            <div class="kv"><span>Default group</span><b>{{ d.defaultGroup || '—' }}</b></div>
-            <div class="kv"><span>State management</span><b>{{ d.stateStatus || '—' }}</b></div>
-            <div class="kv"><span>Data partition</span><b>{{ d.dataPartition || '—' }}</b></div>
-            <div class="kv"><span>Active slot</span><b>{{ slotCount(d) }}</b></div>
-            <div class="kv"><span>Components consistent</span>
-              <b>{{ d.componentsConsistent === undefined ? '—' : (d.componentsConsistent ? 'yes' : 'no') }}</b></div>
-          </div>
           @if (d.componentList.length) {
-            <div class="section-title">Hardware &amp; software</div>
+            <div class="group-box">
+            <div class="group-title">Hardware &amp; software</div>
             <div class="tab-body grid tight">
               <div class="kv"><span>Model</span><b>{{ d.hardware.model || '—' }}</b></div>
               <div class="kv"><span>Serial number</span><b>{{ d.hardware.serial || '—' }}</b></div>
@@ -180,7 +170,22 @@
               <div class="kv"><span>Docker</span><b>{{ d.hardware.docker || '—' }}</b></div>
               <div class="kv"><span>PiControl</span><b>{{ d.hardware.picontrol || '—' }}</b></div>
             </div>
+            </div>
           }
+          <div class="group-box">
+            <div class="group-title">Rugix</div>
+          <div class="tab-body grid tight">
+            <div class="kv"><span>Boot flow</span><b>{{ d.bootFlow || '—' }}</b></div>
+            <div class="kv"><span>Boot groups</span><b>{{ d.bootGroups.join(', ') || '—' }}</b></div>
+            <div class="kv"><span>Active group</span><b>{{ d.activeGroup || '—' }}</b></div>
+            <div class="kv"><span>Default group</span><b>{{ d.defaultGroup || '—' }}</b></div>
+            <div class="kv"><span>State management</span><b>{{ d.stateStatus || '—' }}</b></div>
+            <div class="kv"><span>Data partition</span><b>{{ d.dataPartition || '—' }}</b></div>
+            <div class="kv"><span>Active slot</span><b>{{ slotCount(d) }}</b></div>
+            <div class="kv"><span>Components consistent</span>
+              <b>{{ d.componentsConsistent === undefined ? '—' : (d.componentsConsistent ? 'yes' : 'no') }}</b></div>
+          </div>
+          </div>
         }
 
         @if (tabIndex === 1) {
