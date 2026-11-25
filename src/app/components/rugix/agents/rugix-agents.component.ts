@@ -102,7 +102,14 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   tabIndex = 0;
 
   // ---- fleet overview
+  /** Selected view per widget; survives a re-initialisation of the widget (e.g. refresh -> updateAliases). */
+  private static readonly lastView = new Map<string, 'overview' | 'devices'>();
   view: 'overview' | 'devices' = 'overview';
+
+  private get widgetKey(): string {
+    return String((this.ctx as any).widget?.id || (this.ctx as any).id || 'rugix');
+  }
+
   overviewStatus: RugixDonutSegment[] = [];
   overviewOs: RugixDonutSegment[] = [];
   overviewJobs: RugixDonutSegment[] = [];
@@ -116,6 +123,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   setView(v: 'overview' | 'devices'): void {
     this.view = v;
+    RugixAgentsComponent.lastView.set(this.widgetKey, v);
     if (v === 'overview') {
       this.closeDetails();
     }
@@ -129,7 +137,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     } else if (filter === 'pending') {
       this.pendingOnly = true;
     }
-    this.view = 'devices';
+    this.setView('devices');
   }
 
   openAlert(a: FleetAlert): void {
@@ -452,7 +460,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     }, 400);
     this.settings = mergeRugixSettings(this.ctx.settings);
     this.pageSize = this.settings.defaultPageSize;
-    this.view = this.settings.defaultView === 'devices' ? 'devices' : 'overview';
+    this.view = RugixAgentsComponent.lastView.get(this.widgetKey) || (this.settings.defaultView === 'devices' ? 'devices' : 'overview');
     this.onDataUpdated();
   }
 

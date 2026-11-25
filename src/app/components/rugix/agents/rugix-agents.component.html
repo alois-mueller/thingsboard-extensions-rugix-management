@@ -2,7 +2,7 @@
   <!-- ===== view tabs ===== -->
   <div class="view-tabs">
     <button type="button" class="view-tab" [class.active]="view === 'overview'" (click)="setView('overview')"><mat-icon>space_dashboard</mat-icon>Overview</button>
-    <button type="button" class="view-tab" [class.active]="view === 'devices'" (click)="view = 'devices'"><mat-icon>developer_board</mat-icon>Devices<span class="count">{{ devices.length }}</span></button>
+    <button type="button" class="view-tab" [class.active]="view === 'devices'" (click)="setView('devices')"><mat-icon>developer_board</mat-icon>Devices<span class="count">{{ devices.length }}</span></button>
   </div>
 
   @if (view === 'overview') {
