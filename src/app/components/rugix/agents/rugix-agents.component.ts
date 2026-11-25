@@ -161,8 +161,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   }
 
   jobOpen(j: JobGroup, index: number): boolean {
-    const dflt = index === 0 || j.status === 'running';
-    return dflt !== this.jobToggled.has(j.id);
+    return this.jobToggled.has(j.id);
   }
 
   toggleJob(j: JobGroup): void {

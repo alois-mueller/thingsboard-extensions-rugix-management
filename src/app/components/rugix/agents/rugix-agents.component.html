@@ -412,7 +412,7 @@
             @if (!jobsLoading || jobGroups.length) {
               <div class="rugix-table-wrap audit-wrap">
                 <table class="rugix-table compact">
-                  <thead><tr><th class="w-exp"></th><th>Time</th><th>Job</th><th>Status</th><th>Duration</th><th>Job ID</th></tr></thead>
+                  <thead><tr><th class="w-exp"></th><th>Started</th><th>Job</th><th>Status</th><th>Duration</th><th>Job ID</th></tr></thead>
                   <tbody>
                     @for (j of jobGroups; track j.id; let i = $index) {
                       <tr class="job-row" [class.open]="jobOpen(j, i)" (click)="toggleJob(j)">
