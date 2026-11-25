@@ -141,9 +141,17 @@
         </div>
       }
 
-      <div class="tabbar">
-        @for (tb of tabLabels(d); track tb.i) {
-          <button type="button" class="tab" [class.active]="tabIndex === tb.i" (click)="selectTab(tb.i, $event)">{{ tb.label }}</button>
+      <div class="tabbar-wrap">
+        @if (tabCanLeft) {
+          <button type="button" class="tab-arrow left" aria-label="Scroll left" (click)="scrollTabs(-1, bar)"><mat-icon>chevron_left</mat-icon></button>
+        }
+        <div class="tabbar" #bar (scroll)="updateTabArrows(bar)">
+          @for (tb of tabLabels(d); track tb.i) {
+            <button type="button" class="tab" [class.active]="tabIndex === tb.i" (click)="selectTab(tb.i, $event)">{{ tb.label }}</button>
+          }
+        </div>
+        @if (tabCanRight) {
+          <button type="button" class="tab-arrow right" aria-label="Scroll right" (click)="scrollTabs(1, bar)"><mat-icon>chevron_right</mat-icon></button>
         }
       </div>
         @if (tabIndex === 0) {

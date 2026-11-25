@@ -2,7 +2,7 @@
 /// Rugix management extension for ThingsBoard
 ///
 
-import { ChangeDetectorRef, Component, HostListener, Input, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, HostListener, Input, OnDestroy, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { PageEvent } from '@angular/material/paginator';
 import { WidgetContext } from '@home/models/widget-component.models';
@@ -124,7 +124,8 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   constructor(private dialog: MatDialog,
               private rpc: RugixRpcService,
-              private cd: ChangeDetectorRef) {
+              private cd: ChangeDetectorRef,
+              private host: ElementRef<HTMLElement>) {
   }
 
   @HostListener('document:keydown.escape')
@@ -137,12 +138,19 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.ctx.$scope.rugixAgentsComponent = this;
+    this.arrowTimer = setInterval(() => {
+      const bar = this.host.nativeElement.querySelector('.tabbar') as HTMLElement;
+      if (bar) { this.updateTabArrows(bar); } else if (this.tabCanLeft || this.tabCanRight) {
+        this.tabCanLeft = this.tabCanRight = false; this.cd.markForCheck();
+      }
+    }, 400);
     this.settings = mergeRugixSettings(this.ctx.settings);
     this.pageSize = this.settings.defaultPageSize;
     this.onDataUpdated();
   }
 
   ngOnDestroy(): void {
+    clearInterval(this.arrowTimer);
     this.statsTimer?.unsubscribe();
     delete this.ctx.$scope.rugixAgentsComponent;
   }
@@ -230,6 +238,24 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   }
 
   /** Select a tab and scroll it to the middle of the tab bar (clamped at both ends, so first/last stay put). */
+  private arrowTimer: any;
+  tabCanLeft = false;
+  tabCanRight = false;
+
+  updateTabArrows(bar: HTMLElement): void {
+    const left = bar.scrollLeft > 2;
+    const right = bar.scrollLeft + bar.clientWidth < bar.scrollWidth - 2;
+    if (left !== this.tabCanLeft || right !== this.tabCanRight) {
+      this.tabCanLeft = left;
+      this.tabCanRight = right;
+      this.cd.markForCheck();
+    }
+  }
+
+  scrollTabs(dir: number, bar: HTMLElement): void {
+    bar.scrollBy({left: dir * Math.max(120, bar.clientWidth * 0.6), behavior: 'smooth'});
+  }
+
   selectTab(i: number, ev: Event): void {
     const el = ev.currentTarget as HTMLElement;
     const bar = el.parentElement;

@@ -226,12 +226,35 @@
     border-bottom: 1px solid rgba(0, 0, 0, .12);
   }
 
+  .tabbar-wrap {
+    position: relative;
+    border-bottom: 1px solid rgba(0, 0, 0, .12);
+  }
+
+  .tab-arrow {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 1;
+    width: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    color: rgba(0, 0, 0, .7);
+    background: #fff;
+    &.left { left: 0; box-shadow: 6px 0 6px -4px rgba(0, 0, 0, .15); }
+    &.right { right: 0; box-shadow: -6px 0 6px -4px rgba(0, 0, 0, .15); }
+    &:hover { color: var(--tb-primary-500, #305680); }
+  }
+
   .tabbar {
     position: relative;
     display: flex;
     overflow-x: auto;
     scrollbar-width: none;
-    border-bottom: 1px solid rgba(0, 0, 0, .12);
     &::-webkit-scrollbar { display: none; }
   }
 
