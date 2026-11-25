@@ -237,6 +237,14 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     return this.devices.find(d => d.id === this.selectedId);
   }
 
+  get tableActions(): SystemActionInfo[] {
+    return this.systemActions.filter(a => a.action !== 'factoryReset');
+  }
+
+  get checkedOnline(): RugixDevice[] {
+    return this.checkedDevices.filter(d => d.active);
+  }
+
   get checkedDevices(): RugixDevice[] {
     return this.devices.filter(d => this.checked.has(d.id));
   }

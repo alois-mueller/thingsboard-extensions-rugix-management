@@ -18,10 +18,10 @@
     } @else {
       <span class="rugix-title">{{ checked.size }} selected</span>
       <span class="flex-1"></span>
-      <button mat-flat-button color="primary" type="button" (click)="openInstall(checkedDevices, 'system')">
+      <button mat-flat-button color="primary" type="button" [disabled]="!checkedOnline.length" [matTooltip]="checkedOnline.length < checked.size ? 'Only online devices are updated' : ''" (click)="openInstall(checkedOnline, 'system')">
         <mat-icon>system_update_alt</mat-icon><span class="lbl">Update system</span>
       </button>
-      <button mat-flat-button color="primary" type="button" (click)="openInstall(checkedDevices, 'app')">
+      <button mat-flat-button color="primary" type="button" [disabled]="!checkedOnline.length" [matTooltip]="checkedOnline.length < checked.size ? 'Only online devices are updated' : ''" (click)="openInstall(checkedOnline, 'app')">
         <mat-icon>apps</mat-icon><span class="lbl">Install app</span>
       </button>
       <button mat-icon-button type="button" (click)="clearSelection()" matTooltip="Clear selection"><mat-icon>close</mat-icon></button>
@@ -88,18 +88,18 @@
                 <mat-spinner diameter="20"></mat-spinner>
               } @else {
                 <span class="qa-inline">
-                  <button mat-icon-button (click)="openInstall([d], 'system')" matTooltip="Install system update…"><mat-icon>system_update_alt</mat-icon></button>
-                  <button mat-icon-button (click)="openInstall([d], 'app')" matTooltip="Install app…"><mat-icon>apps</mat-icon></button>
-                  @for (a of systemActions; track a.action) {
+                  <button mat-icon-button [disabled]="!d.active" (click)="openInstall([d], 'system')" matTooltip="Install system update…"><mat-icon>system_update_alt</mat-icon></button>
+                  <button mat-icon-button [disabled]="!d.active" (click)="openInstall([d], 'app')" matTooltip="Install app…"><mat-icon>apps</mat-icon></button>
+                  @for (a of tableActions; track a.action) {
                     <button mat-icon-button [disabled]="!d.active" (click)="runSystemAction(a, d)" [matTooltip]="a.label"><mat-icon [class.caution-icon]="a.caution">{{ a.icon }}</mat-icon></button>
                   }
                 </span>
                 <span class="qa-menu">
                   <button mat-icon-button [matMenuTriggerFor]="rowMenu" aria-label="Actions"><mat-icon>more_vert</mat-icon></button>
                   <mat-menu #rowMenu="matMenu">
-                    <button mat-menu-item (click)="openInstall([d], 'system')"><mat-icon>system_update_alt</mat-icon>Install system update…</button>
-                    <button mat-menu-item (click)="openInstall([d], 'app')"><mat-icon>apps</mat-icon>Install app…</button>
-                    @for (a of systemActions; track a.action) {
+                    <button mat-menu-item [disabled]="!d.active" (click)="openInstall([d], 'system')"><mat-icon>system_update_alt</mat-icon>Install system update…</button>
+                    <button mat-menu-item [disabled]="!d.active" (click)="openInstall([d], 'app')"><mat-icon>apps</mat-icon>Install app…</button>
+                    @for (a of tableActions; track a.action) {
                       <button mat-menu-item [disabled]="!d.active" (click)="runSystemAction(a, d)"><mat-icon [class.caution-icon]="a.caution">{{ a.icon }}</mat-icon>{{ a.label }}</button>
                     }
                   </mat-menu>
