@@ -15,6 +15,13 @@ widget ──RPC──▶ ThingsBoard ──▶ TB IoT Gateway (request connecto
 - Actions (single + bulk): install system update / app bundle from OTA package URL, reboot, reboot into spare, commit, factory reset (optional backup)
 - Job dialog: live status, install progress and process output from `jobEvent` telemetry
 
+## Resources tab (CPU / memory / storage)
+The *Resources* tab charts the `machineStats` telemetry of the **TB IoT Gateway device that owns the Rugix device**
+(found via the `Created` relation, same as for the job stream; key and relation type are widget settings).
+`freeMemory` is interpreted as *percent free* (used = 100 - freeMemory); `diskUsage`, `totalCpuUsage` and
+`gwProcessCpuUsage` as percent, `gwProcessMemoryFullInfo.rss` is shown in MiB. Ranges: 1 h, 6 h, 24 h, 7 d
+(auto refresh every 30 s). No data keys have to be added to the widget datasource for this tab.
+
 ## Install
 1. `yarn install && yarn build` → upload `target/generated-resources/thingsboard-extension-widgets.js` as **Extension** JS resource.
 2. Create a **latest values** widget, add the extension as resource (*Is extension*), and use

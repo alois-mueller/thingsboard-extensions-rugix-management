@@ -198,6 +198,23 @@
     }
 
     .details-sub { font-size: 12px; opacity: .8; }
+
+    // clearly visible online/offline indicator in the colored toolbar
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      height: 28px;
+      padding: 0 12px;
+      margin-right: 8px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 500;
+      background: #d12730;
+      color: #fff;
+      .dot { width: 9px; height: 9px; margin-right: 8px; border-radius: 50%; background: #fff; }
+
+      &.online { background: #fff; color: rgb(25, 128, 56); .dot { background: rgb(25, 128, 56); box-shadow: 0 0 0 3px rgba(25, 128, 56, .25); } }
+    }
     .status { color: #fff; margin-right: 8px; &.offline { opacity: .7; } }
   }
 
@@ -222,6 +239,26 @@
     &.warn { background: rgba(245, 158, 11, .12); color: #8a4b00; }
     &.err { background: rgba(209, 39, 48, .08); color: rgb(160, 30, 38); }
   }
+
+  // keep the 'commit pending' pill next to the group name instead of wrapping below it
+  td.c-l3 { white-space: nowrap; }
+
+  .stats-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .range { display: inline-flex; border: 1px solid rgba(0, 0, 0, .2); border-radius: 4px; overflow: hidden;
+    button { border: 0; background: #fff; padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer; color: rgba(0, 0, 0, .7);
+      &.active { background: rgba(0, 0, 0, .08); font-weight: 500; color: rgba(0, 0, 0, .87); }
+      & + button { border-left: 1px solid rgba(0, 0, 0, .12); } } }
+  .stats-banner { margin: 0 0 12px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(130px, 100%), 1fr)); gap: 12px; margin: 12px 0 16px; }
+  .kpi { padding: 10px 14px; border: 1px solid rgba(0, 0, 0, .12); border-radius: 4px;
+    span { display: block; font-size: 12px; color: rgba(0, 0, 0, .54); }
+    b { font-size: 22px; font-weight: 400; small { font-size: 13px; color: rgba(0, 0, 0, .54); } }
+    em { display: block; font-style: normal; font-size: 12px; color: rgba(0, 0, 0, .54); } }
+  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 16px; }
+  .chart-card { padding: 12px 12px 4px; border: 1px solid rgba(0, 0, 0, .12); border-radius: 4px; min-width: 0; }
+  .chart-title { font-weight: 500; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin: 2px 0 6px; font-size: 12px; color: rgba(0, 0, 0, .6);
+    i { display: inline-block; width: 10px; height: 10px; margin-right: 5px; border-radius: 2px; } }
 
   .device { display: flex; align-items: center; gap: 10px; }
   .device-icon { flex: none; width: 24px; height: 24px; border-radius: 4px; }

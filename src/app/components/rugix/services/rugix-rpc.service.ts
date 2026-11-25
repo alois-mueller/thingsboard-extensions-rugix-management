@@ -11,13 +11,14 @@ import { Device } from '@shared/models/device.models';
 import { EntityId } from '@shared/models/id/entity-id';
 import {
   RugixAppAction,
+  RugixMachineStat,
   RugixDevice,
   RugixInstallOptions,
   RugixJobEvent,
   RugixSystemAction,
   RugixWidgetSettings
 } from '../models/rugix.models';
-import { parseJobEvent, uuidv4 } from '../models/rugix-parse';
+import { parseJobEvent, parseMachineStat, uuidv4 } from '../models/rugix-parse';
 
 export interface RugixJobHandle {
   jobId: string;
@@ -83,7 +84,7 @@ export class RugixRpcService {
    * `jobEvent` telemetry of the Rugix device. Safe to call more than once for a job.
    */
   startJobStream(settings: RugixWidgetSettings, device: RugixDevice, jobId: string): Observable<any> {
-    return this.findGateway(settings, device.id).pipe(
+    return this.resolveGateway(settings, device.id).pipe(
       mergeMap(gateway => this.profileName(gateway).pipe(
         mergeMap(gatewayType => this.deviceService.sendOneWayRpcCommand(gateway.id.id, {
           method: settings.sse.rpcMethod,
@@ -112,6 +113,17 @@ export class RugixRpcService {
       AggregationType.NONE, undefined, DataSortOrder.DESC, false, {ignoreLoading: true, ignoreErrors: true}).pipe(
       map(data => (data?.[key] || []).map(v => parseJobEvent(v.value, v.ts))),
       catchError(() => of([]))
+    );
+  }
+
+  /** `machineStats` telemetry of the IoT Gateway that owns the Rugix device (oldest first). */
+  loadMachineStats(settings: RugixWidgetSettings, gatewayId: string, startTs: number, endTs: number,
+                   limit = 3000): Observable<RugixMachineStat[]> {
+    const key = settings.keys.machineStats;
+    const entityId: EntityId = {entityType: EntityType.DEVICE, id: gatewayId};
+    return this.attributeService.getEntityTimeseries(entityId, [key], startTs, endTs, limit,
+      AggregationType.NONE, undefined, DataSortOrder.DESC, false, {ignoreLoading: true, ignoreErrors: true}).pipe(
+      map(data => (data?.[key] || []).map(v => parseMachineStat(v.value, v.ts)).filter(s => !!s).reverse() as RugixMachineStat[])
     );
   }
 
@@ -158,7 +170,7 @@ export class RugixRpcService {
   }
 
   /** Walk the `Created` relations up to the gateway device that owns the Rugix device. */
-  private findGateway(settings: RugixWidgetSettings, deviceId: string): Observable<Device> {
+  resolveGateway(settings: RugixWidgetSettings, deviceId: string): Observable<Device> {
     const seen = new Set<string>();
     let fallback: Device | null = null;
     const search = (id: string, entityType: EntityType, depth: number): Observable<Device | null> => {

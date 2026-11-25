@@ -6,18 +6,23 @@ import { ChangeDetectorRef, Component, HostListener, Input, OnDestroy, OnInit } 
 import { MatDialog } from '@angular/material/dialog';
 import { PageEvent } from '@angular/material/paginator';
 import { WidgetContext } from '@home/models/widget-component.models';
-import { Observable } from 'rxjs';
+import { Observable, Subscription, timer } from 'rxjs';
 import { mergeMap } from 'rxjs/operators';
+import { Device } from '@shared/models/device.models';
 import {
   mergeRugixSettings,
   RugixApp,
   RugixAppAction,
   RugixComponent,
+  RugixChartSeries,
   RugixDevice,
+  RugixMachineStat,
   RugixSystemAction,
+  RUGIX_STATS_RANGES,
+  RugixStatsRange,
   RugixWidgetSettings
 } from '../models/rugix.models';
-import { appStatusLabel, applyValue, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots } from '../models/rugix-parse';
+import { appStatusLabel, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots } from '../models/rugix-parse';
 import { REVPI_ICON } from '../models/rugix-icons';
 import { RugixJobHandle, RugixRpcService } from '../services/rugix-rpc.service';
 import {
@@ -67,6 +72,22 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   pageSize = 10;
   busy = new Set<string>();
   searchOpen = false;
+  tabIndex = 0;
+
+  // ---- resources (IoT Gateway machineStats)
+  readonly resourcesTab = 4;
+  readonly statsRanges = RUGIX_STATS_RANGES;
+  statsRange: RugixStatsRange = RUGIX_STATS_RANGES[1];
+  statsLatest?: RugixMachineStat;
+  statsLoading = false;
+  statsError = '';
+  statsGateway: Device | null = null;
+  cpuSeries: RugixChartSeries[] = [];
+  memSeries: RugixChartSeries[] = [];
+  rssSeries: RugixChartSeries[] = [];
+  diskSeries: RugixChartSeries[] = [];
+  private statsTimer?: Subscription;
+  private gateways = new Map<string, Device>();
 
   readonly systemActions: SystemActionInfo[] = [
     {action: 'reboot', icon: 'restart_alt', label: 'Reboot',
@@ -107,7 +128,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   @HostListener('document:keydown.escape')
   onEscape(): void {
     if (this.selectedId && !this.dialog.openDialogs.length) {
-      this.selectedId = null;
+      this.closeDetails();
       this.cd.markForCheck();
     }
   }
@@ -120,6 +141,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.statsTimer?.unsubscribe();
     delete this.ctx.$scope.rugixAgentsComponent;
   }
 
@@ -192,6 +214,86 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   select(d: RugixDevice): void {
     this.selectedId = this.selectedId === d.id ? null : d.id;
+    this.syncStats();
+  }
+
+  closeDetails(): void {
+    this.selectedId = null;
+    this.syncStats();
+  }
+
+  onTabChange(index: number): void {
+    this.tabIndex = index;
+    this.syncStats();
+  }
+
+  setStatsRange(r: RugixStatsRange): void {
+    this.statsRange = r;
+    this.loadStats(true);
+  }
+
+  /** Load the gateway statistics while the Resources tab of a device is open and refresh them every 30s. */
+  private syncStats(): void {
+    this.statsTimer?.unsubscribe();
+    this.statsTimer = undefined;
+    if (this.selectedId && this.tabIndex === this.resourcesTab) {
+      this.statsTimer = timer(0, 30000).subscribe(i => this.loadStats(i === 0));
+    }
+  }
+
+  private loadStats(spinner: boolean): void {
+    const device = this.selected;
+    if (!device) {
+      return;
+    }
+    if (spinner) {
+      this.statsLoading = true;
+      this.statsError = '';
+    }
+    const gateway$ = this.gateways.has(device.id)
+      ? new Observable<Device>(s => { s.next(this.gateways.get(device.id)); s.complete(); })
+      : this.rpc.resolveGateway(this.settings, device.id);
+    const end = Date.now();
+    gateway$.pipe(
+      mergeMap(gw => {
+        this.gateways.set(device.id, gw);
+        this.statsGateway = gw;
+        return this.rpc.loadMachineStats(this.settings, gw.id.id, end - this.statsRange.ms, end);
+      })
+    ).subscribe({
+      next: stats => {
+        if (this.selectedId !== device.id) {
+          return;
+        }
+        this.statsLoading = false;
+        this.statsError = '';
+        this.statsLatest = stats[stats.length - 1];
+        this.buildSeries(downsample(stats, 300));
+        this.cd.markForCheck();
+      },
+      error: err => {
+        if (this.selectedId === device.id) {
+          this.statsLoading = false;
+          this.statsError = err?.message || 'Gateway statistics could not be loaded.';
+          this.cd.markForCheck();
+        }
+      }
+    });
+  }
+
+  private buildSeries(stats: RugixMachineStat[]): void {
+    const pick = (f: (s: RugixMachineStat) => number | undefined): [number, number][] =>
+      stats.filter(s => f(s) !== undefined).map(s => [s.ts, f(s)] as [number, number]);
+    this.cpuSeries = [
+      {name: 'System CPU', color: '#2196f3', data: pick(s => s.cpu)},
+      {name: 'Gateway CPU', color: '#ff9800', data: pick(s => s.gwCpu)}
+    ];
+    this.memSeries = [
+      {name: 'Memory used', color: '#9c27b0', data: pick(s => s.memUsed)},
+      {name: 'Gateway memory', color: '#4caf50', data: pick(s => s.gwMemory)}
+    ];
+    this.rssSeries = [{name: 'Gateway RSS', color: '#4caf50', data: pick(s => s.gwRssMiB)}];
+    this.diskSeries = [{name: 'Disk used', color: '#f44336', data: pick(s => s.diskUsage)}];
   }
 
   onPage(e: PageEvent): void {
@@ -260,21 +362,32 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   }
 
   runAppAction(device: RugixDevice, app: RugixApp, action: RugixAppAction, label: string, warn?: boolean): void {
-    const run = () => this.track(device, `${label} ${app.name}`, this.rpc.appAction(this.settings, device, action, app.name));
-    if (!warn && action !== 'appRollback') {
-      run();
-      return;
-    }
+    const ack: { [a in RugixAppAction]: string } = {
+      appStart: `I understand that app "${app.name}" is started on the device.`,
+      appStop: `I understand that app "${app.name}" is stopped and its service is interrupted.`,
+      appActivate: `I understand that the active generation of app "${app.name}" changes.`,
+      appDeactivate: `I understand that app "${app.name}" is deactivated.`,
+      appRollback: `I understand that app "${app.name}" is rolled back to its previous generation.`,
+      appGc: `I understand that old generations of app "${app.name}" are removed permanently.`,
+      appRemove: `I understand that app "${app.name}" is removed from the device.`
+    };
     this.dialog.open<RugixConfirmDialogComponent, RugixConfirmDialogData, RugixConfirmDialogResult>(
       RugixConfirmDialogComponent, {
-        data: {title: label, message: `${label} app "${app.name}" on "${device.label || device.name}"?`, confirmLabel: label, warn,
-          acknowledge: warn ? `I understand that this affects app "${app.name}" on the device.` : 'I understand that this changes the active generation of the app.'},
+        data: {title: `${label} app`, message: `${label} app "${app.name}" on "${device.label || device.name}"?`,
+          confirmLabel: label, warn, acknowledge: ack[action]},
         autoFocus: false, maxWidth: '95vw'
-      }).afterClosed().subscribe(r => r && run());
+      }).afterClosed().subscribe(r => r && this.track(device, `${label} ${app.name}`,
+      this.rpc.appAction(this.settings, device, action, app.name)));
   }
 
   garbageCollectApps(device: RugixDevice): void {
-    this.track(device, 'App garbage collection', this.rpc.appsGarbageCollect(this.settings, device));
+    this.dialog.open<RugixConfirmDialogComponent, RugixConfirmDialogData, RugixConfirmDialogResult>(
+      RugixConfirmDialogComponent, {
+        data: {title: 'Clean up all apps', message: `Remove unused generations of all apps on "${device.label || device.name}"?`,
+          confirmLabel: 'Clean up', warn: true, acknowledge: 'I understand that old app generations are removed permanently.'},
+        autoFocus: false, maxWidth: '95vw'
+      }).afterClosed().subscribe(r => r && this.track(device, 'App garbage collection',
+      this.rpc.appsGarbageCollect(this.settings, device)));
   }
 
   openJob(device: RugixDevice, jobId: string, title: string, since = Date.now() - 5000): void {

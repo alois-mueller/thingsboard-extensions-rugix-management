@@ -8,6 +8,7 @@ import { SharedModule } from '@shared/public-api';
 import { RugixAgentsComponent } from './agents/rugix-agents.component';
 import { RugixConfirmDialogComponent } from './dialogs/rugix-confirm-dialog.component';
 import { RugixInstallDialogComponent } from './dialogs/rugix-install-dialog.component';
+import { RugixLineChartComponent } from './charts/rugix-line-chart.component';
 import { RugixJobDialogComponent } from './dialogs/rugix-job-dialog.component';
 
 @NgModule({
@@ -15,7 +16,8 @@ import { RugixJobDialogComponent } from './dialogs/rugix-job-dialog.component';
     RugixAgentsComponent,
     RugixConfirmDialogComponent,
     RugixInstallDialogComponent,
-    RugixJobDialogComponent
+    RugixJobDialogComponent,
+    RugixLineChartComponent
   ],
   imports: [
     CommonModule,
@@ -25,7 +27,8 @@ import { RugixJobDialogComponent } from './dialogs/rugix-job-dialog.component';
     RugixAgentsComponent,
     RugixConfirmDialogComponent,
     RugixInstallDialogComponent,
-    RugixJobDialogComponent
+    RugixJobDialogComponent,
+    RugixLineChartComponent
   ]
 })
 export class RugixModule {

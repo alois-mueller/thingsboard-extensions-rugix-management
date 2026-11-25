@@ -1,0 +1,31 @@
+<div class="chart" #wrap (mousemove)="onMove($event)" (mouseleave)="onLeave()" [style.height.px]="height">
+  <svg [attr.width]="width" [attr.height]="height" [attr.viewBox]="'0 0 ' + width + ' ' + height">
+    @for (t of yTicks; track $index) {
+      <line [attr.x1]="pad.l" [attr.x2]="width - pad.r" [attr.y1]="t.pos" [attr.y2]="t.pos" class="grid"/>
+      <text [attr.x]="pad.l - 6" [attr.y]="t.pos + 4" class="axis" text-anchor="end">{{ t.label }}</text>
+    }
+    @for (t of xTicks; track $index) {
+      <text [attr.x]="t.pos" [attr.y]="height - 8" class="axis" [attr.text-anchor]="$first ? 'start' : ($last ? 'end' : 'middle')">{{ t.label }}</text>
+    }
+    @if (area) {
+      @for (p of paths; track p.name; let i = $index) {
+        @if (i === 0) { <path [attr.d]="p.fill" [attr.fill]="p.color" fill-opacity=".12"/> }
+      }
+    }
+    @for (p of paths; track p.name) {
+      <path [attr.d]="p.line" fill="none" [attr.stroke]="p.color" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+    }
+    @if (hover) {
+      <line [attr.x1]="hover.x" [attr.x2]="hover.x" [attr.y1]="pad.t" [attr.y2]="pad.t + plotH" class="cursor"/>
+    }
+  </svg>
+  @if (empty) { <div class="no-data">No data in this time range</div> }
+  @if (hover) {
+    <div class="tip" [style.left.px]="hover.left ? null : hover.x + 10" [style.right.px]="hover.left ? width - hover.x + 10 : null">
+      <div class="tip-time">{{ dateTime(hover.ts) }}</div>
+      @for (v of hover.values; track v.name) {
+        <div class="tip-row"><span class="dot" [style.background]="v.color"></span>{{ v.name }}<b>{{ v.text }}</b></div>
+      }
+    </div>
+  }
+</div>

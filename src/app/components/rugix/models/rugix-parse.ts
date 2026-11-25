@@ -4,6 +4,7 @@
 
 import {
   RugixApp,
+  RugixMachineStat,
   RugixCapability,
   RugixComponent,
   RugixHardwareInfo,
@@ -284,4 +285,74 @@ export function mergeApps(apps: RugixApp[], components: RugixComponent[]): Rugix
     }
   });
   return result.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+const num = (v: any): number | undefined => {
+  const n = typeof v === 'string' ? parseFloat(v) : v;
+  return typeof n === 'number' && isFinite(n) ? n : undefined;
+};
+
+/**
+ * Parse the gateway `machineStats` value. `freeMemory` is interpreted as the percentage of free memory
+ * (as reported by the ThingsBoard IoT Gateway), so the used share is `100 - freeMemory`.
+ */
+export function parseMachineStat(raw: any, ts: number): RugixMachineStat | undefined {
+  const v = parseJson<any>(raw);
+  if (!v || typeof v !== 'object') {
+    return undefined;
+  }
+  const free = num(v.freeMemory);
+  const rss = num(v.gwProcessMemoryFullInfo?.rss);
+  return {
+    ts,
+    cpu: num(v.totalCpuUsage),
+    gwCpu: num(v.gwProcessCpuUsage),
+    memUsed: free === undefined ? undefined : Math.max(0, Math.min(100, 100 - free)),
+    gwMemory: num(v.gwMemory),
+    gwRssMiB: rss === undefined ? undefined : rss / 1048576,
+    diskUsage: num(v.diskUsage),
+    freeDisk: v.freeDisk === undefined ? undefined : String(v.freeDisk),
+    msgsSent: num(v.msgsSentToPlatform),
+    msgsReceived: num(v.msgsReceivedFromPlatform)
+  };
+}
+
+/** Average samples into at most `maxPoints` buckets to keep charts light. */
+export function downsample(stats: RugixMachineStat[], maxPoints: number): RugixMachineStat[] {
+  if (stats.length <= maxPoints) {
+    return stats;
+  }
+  const size = Math.ceil(stats.length / maxPoints);
+  const keys: (keyof RugixMachineStat)[] = ['cpu', 'gwCpu', 'memUsed', 'gwMemory', 'gwRssMiB', 'diskUsage'];
+  const out: RugixMachineStat[] = [];
+  for (let i = 0; i < stats.length; i += size) {
+    const bucket = stats.slice(i, i + size);
+    const avg: any = {ts: bucket[Math.floor(bucket.length / 2)].ts, freeDisk: bucket[bucket.length - 1].freeDisk,
+      msgsSent: bucket[bucket.length - 1].msgsSent, msgsReceived: bucket[bucket.length - 1].msgsReceived};
+    for (const k of keys) {
+      const vals = bucket.map(b => b[k] as number).filter(x => x !== undefined);
+      avg[k] = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : undefined;
+    }
+    out.push(avg);
+  }
+  return out;
+}
+
+const pad2 = (n: number) => (n < 10 ? '0' : '') + n;
+
+/** `dd/MM/yyyy HH:mm:ss` (24h). */
+export function formatDateTime(ts: number, seconds = true): string {
+  const d = new Date(ts);
+  return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}` +
+    (seconds ? ':' + pad2(d.getSeconds()) : '');
+}
+
+export function formatTime(ts: number): string {
+  const d = new Date(ts);
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+export function formatDate(ts: number): string {
+  const d = new Date(ts);
+  return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`;
 }

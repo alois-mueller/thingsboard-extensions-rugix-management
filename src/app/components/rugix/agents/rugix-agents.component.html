@@ -108,7 +108,7 @@
 
   <!-- ===== details ===== -->
   @if (selected; as d) {
-    <div class="rugix-backdrop" (click)="selectedId = null"></div>
+    <div class="rugix-backdrop" (click)="closeDetails()"></div>
     <div class="rugix-details">
       <mat-toolbar color="primary" class="details-toolbar">
         @if (isRevPi(d)) { <img class="details-icon" [src]="revpiIcon" alt="Revolution Pi"> }
@@ -117,8 +117,8 @@
           <span class="details-sub">Rugix device details</span>
         </div>
         <span class="flex-1"></span>
-        <span class="status inverse" [class]="statusClass(d)"><span class="dot"></span>{{ d.active ? 'Online' : 'Offline' }}</span>
-        <button mat-icon-button type="button" (click)="selectedId = null" aria-label="Close details"><mat-icon>close</mat-icon></button>
+        <span class="status-chip" [class.online]="d.active"><span class="dot"></span>{{ d.active ? 'Online' : 'Offline' }}</span>
+        <button mat-icon-button type="button" (click)="closeDetails()" aria-label="Close details"><mat-icon>close</mat-icon></button>
       </mat-toolbar>
       <div class="details-buttons">
         <button mat-stroked-button color="primary" [disabled]="!d.active || busy.has(d.id)" (click)="openInstall([d], 'system')">
@@ -140,7 +140,7 @@
         </div>
       }
 
-      <mat-tab-group animationDuration="0ms" mat-stretch-tabs="false" mat-align-tabs="start">
+      <mat-tab-group animationDuration="0ms" mat-stretch-tabs="false" mat-align-tabs="start" [selectedIndex]="tabIndex" (selectedIndexChange)="onTabChange($event)">
         <mat-tab label="Overview">
           <div class="tab-body grid">
             <div class="kv"><span>Boot flow</span><b>{{ d.bootFlow || '—' }}</b></div>
@@ -268,6 +268,59 @@
                   }
                 </tbody>
               </table>
+            </div>
+          </div>
+        </mat-tab>
+
+        <mat-tab label="Resources">
+          <div class="tab-body">
+            <div class="stats-head">
+              <div class="sub">
+                @if (statsGateway) { Source: IoT Gateway <b>{{ statsGateway.name }}</b> · telemetry <code>{{ settings.keys.machineStats }}</code> · refreshes every 30 s }
+                @else { IoT Gateway statistics }
+              </div>
+              <span class="flex-1"></span>
+              <div class="range">
+                @for (r of statsRanges; track r.label) {
+                  <button type="button" [class.active]="r === statsRange" (click)="setStatsRange(r)">{{ r.label }}</button>
+                }
+              </div>
+            </div>
+            @if (statsError) {
+              <div class="banner err stats-banner"><mat-icon>error_outline</mat-icon><span>{{ statsError }}</span></div>
+            }
+            @if (statsLoading) { <mat-progress-bar mode="indeterminate"></mat-progress-bar> }
+            @if (statsLatest) {
+              <div class="kpis">
+                <div class="kpi"><span>CPU</span><b>{{ statsLatest.cpu ?? '—' }}<small>%</small></b></div>
+                <div class="kpi"><span>Memory used</span><b>{{ statsLatest.memUsed !== undefined ? (statsLatest.memUsed | number:'1.0-1') : '—' }}<small>%</small></b></div>
+                <div class="kpi"><span>Disk used</span><b>{{ statsLatest.diskUsage ?? '—' }}<small>%</small></b><em>{{ statsLatest.freeDisk ? statsLatest.freeDisk + ' free' : '' }}</em></div>
+                <div class="kpi"><span>Gateway CPU</span><b>{{ statsLatest.gwCpu ?? '—' }}<small>%</small></b></div>
+                <div class="kpi"><span>Gateway RSS</span><b>{{ statsLatest.gwRssMiB !== undefined ? (statsLatest.gwRssMiB | number:'1.0-0') : '—' }}<small> MiB</small></b></div>
+                <div class="kpi"><span>Messages sent</span><b>{{ statsLatest.msgsSent ?? '—' }}</b></div>
+              </div>
+            }
+            <div class="charts">
+              <div class="chart-card">
+                <div class="chart-title">CPU usage</div>
+                <div class="legend">@for (s of cpuSeries; track s.name) { <span><i [style.background]="s.color"></i>{{ s.name }}</span> }</div>
+                <tb-rugix-line-chart [series]="cpuSeries" unit="%" [yMax]="100"></tb-rugix-line-chart>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">Memory usage</div>
+                <div class="legend">@for (s of memSeries; track s.name) { <span><i [style.background]="s.color"></i>{{ s.name }}</span> }</div>
+                <tb-rugix-line-chart [series]="memSeries" unit="%" [yMax]="100"></tb-rugix-line-chart>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">Storage usage</div>
+                <div class="legend">@for (s of diskSeries; track s.name) { <span><i [style.background]="s.color"></i>{{ s.name }}</span> }</div>
+                <tb-rugix-line-chart [series]="diskSeries" unit="%" [yMax]="100"></tb-rugix-line-chart>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">Gateway process memory</div>
+                <div class="legend">@for (s of rssSeries; track s.name) { <span><i [style.background]="s.color"></i>{{ s.name }}</span> }</div>
+                <tb-rugix-line-chart [series]="rssSeries" unit="MiB" [decimals]="0"></tb-rugix-line-chart>
+              </div>
             </div>
           </div>
         </mat-tab>

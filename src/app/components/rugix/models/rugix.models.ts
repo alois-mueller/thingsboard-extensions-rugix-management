@@ -49,6 +49,8 @@ export interface RugixKeySettings {
   componentsProblems: string;
   apps: string;
   jobEvent: string;
+  /** Telemetry key of the IoT Gateway statistics (read from the related gateway device). */
+  machineStats: string;
   slotPrefix: string;
 }
 
@@ -98,6 +100,7 @@ export const DEFAULT_RUGIX_SETTINGS: RugixWidgetSettings = {
     componentsProblems: 'components.problems',
     apps: 'apps.apps',
     jobEvent: 'jobEvent',
+    machineStats: 'machineStats',
     slotPrefix: 'slots.'
   },
   sse: {
@@ -241,4 +244,38 @@ export const RUGIX_REBOOT_MODES: { value: RugixInstallOptions['reboot']; label: 
   {value: 'set', label: 'Install & select', hint: 'Select the new system, reboot later manually.'},
   {value: 'deferred', label: 'Deferred', hint: 'Record the new system for the next boot.'},
   {value: 'no', label: 'Install only', hint: 'Do not change the boot selection.'}
+];
+
+/** One sample of the IoT Gateway `machineStats` telemetry (values are percentages unless noted). */
+export interface RugixMachineStat {
+  ts: number;
+  cpu?: number;
+  gwCpu?: number;
+  /** Percentage of memory in use (derived from `freeMemory`). */
+  memUsed?: number;
+  gwMemory?: number;
+  /** Resident set size of the gateway process in MiB. */
+  gwRssMiB?: number;
+  diskUsage?: number;
+  freeDisk?: string;
+  msgsSent?: number;
+  msgsReceived?: number;
+}
+
+export interface RugixChartSeries {
+  name: string;
+  color: string;
+  data: [number, number][];
+}
+
+export interface RugixStatsRange {
+  label: string;
+  ms: number;
+}
+
+export const RUGIX_STATS_RANGES: RugixStatsRange[] = [
+  {label: '1 h', ms: 3600000},
+  {label: '6 h', ms: 6 * 3600000},
+  {label: '24 h', ms: 24 * 3600000},
+  {label: '7 d', ms: 7 * 24 * 3600000}
 ];
