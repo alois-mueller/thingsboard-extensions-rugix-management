@@ -79,3 +79,14 @@ open(os.path.join(ROOT, 'devices.txt'), 'w').write('\n'.join(lines) + '\n')
 os.makedirs(os.path.join(ROOT, 'sim'), exist_ok=True)
 json.dump(cfg, open(os.path.join(ROOT, 'sim', 'fleet.json'), 'w'), indent=1)
 print(len(FLEET), 'devices,', sum(1 for f in FLEET if f[4]), 'online')
+
+# Offline devices: TB only flips `active` after its inactivity timeout, so set it (and the last activity time) directly.
+if '--offline' in sys.argv:
+    import time
+    now = int(time.time() * 1000)
+    ids = {l.split()[0]: l.split()[1] for l in open(os.path.join(ROOT, 'devices.txt')) if l.strip()}
+    for n, c in cfg.items():
+        if not c['online']:
+            api('POST', '/api/plugins/telemetry/DEVICE/%s/attributes/SERVER_SCOPE' % ids[n],
+                {'active': False, 'lastActivityTime': now - c.get('offlineMinutes', 120) * 60000})
+    print('offline devices marked inactive')
