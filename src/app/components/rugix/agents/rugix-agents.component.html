@@ -77,7 +77,7 @@
                   <div class="name">
                     {{ d.label || d.name }}
                     @if (d.commitPending) { <mat-icon class="warn-icon" matTooltip="Commit pending">sync_problem</mat-icon> }
-                    @if (d.insecure) { <mat-icon class="warn-icon insecure-icon" matTooltip="Rugix Ctrl security bypasses enabled (development only)">gpp_maybe</mat-icon> }
+                    @if (d.insecure) { <mat-icon class="warn-icon insecure-icon" matTooltip="Warning: Rugix Ctrl security bypasses enabled (development only)">warning</mat-icon> }
                   </div>
                   @if (d.label) { <div class="sub">{{ d.name }}</div> }
                 </div>
@@ -165,8 +165,8 @@
       @if (restrictionNote) { <div class="hint">{{ restrictionNote }}</div> }
       @if (d.insecure) {
         <div class="banner err insecure">
-          <mat-icon>gpp_maybe</mat-icon>
-          <span><b>Rugix Ctrl security bypasses enabled.</b> The privileged daemon lets callers bypass bundle verification and compatibility checks. Suitable only for development.</span>
+          <mat-icon>warning</mat-icon>
+          <span><b>Warning: Rugix Ctrl security bypasses enabled.</b> The privileged daemon lets callers bypass bundle verification and compatibility checks. Suitable only for development.</span>
         </div>
       }
       @if (!d.active) {
@@ -225,11 +225,11 @@
           <div class="group-box">
             <div class="group-title">Daemon Capabilities</div>
             <div class="tab-body grid tight">
-              <div class="kv"><span>Factory reset</span><b>{{ featureLabel(d, 'factory_reset') }}</b></div>
-              <div class="kv"><span>System commit</span><b>{{ featureLabel(d, 'system_commit') }}</b></div>
-              <div class="kv"><span>System reboot</span><b>{{ featureLabel(d, 'system_reboot') }}</b></div>
-              <div class="kv"><span>App lifecycle</span><b>{{ featureLabel(d, 'app_lifecycle') }}</b></div>
-              <div class="kv"><span>Security bypasses</span><b [class.bad]="d.insecure">{{ d.insecure === undefined ? '—' : (d.insecure ? 'enabled (development only)' : 'disabled') }}</b></div>
+              <div class="kv"><span>Factory reset</span><b [class.good]="d.daemon?.factory_reset === true" [class.bad]="d.daemon?.factory_reset === false">{{ featureLabel(d, 'factory_reset') }}</b></div>
+              <div class="kv"><span>System commit</span><b [class.good]="d.daemon?.system_commit === true" [class.bad]="d.daemon?.system_commit === false">{{ featureLabel(d, 'system_commit') }}</b></div>
+              <div class="kv"><span>System reboot</span><b [class.good]="d.daemon?.system_reboot === true" [class.bad]="d.daemon?.system_reboot === false">{{ featureLabel(d, 'system_reboot') }}</b></div>
+              <div class="kv"><span>App lifecycle</span><b [class.good]="d.daemon?.app_lifecycle === true" [class.bad]="d.daemon?.app_lifecycle === false">{{ featureLabel(d, 'app_lifecycle') }}</b></div>
+              <div class="kv"><span>Security bypasses</span><b [class.bad]="d.insecure === true" [class.good]="d.insecure === false">{{ d.insecure === undefined ? '—' : (d.insecure ? 'enabled (development only)' : 'disabled') }}</b></div>
             </div>
           </div>
           <div class="group-box">
