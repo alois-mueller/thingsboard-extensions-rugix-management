@@ -411,8 +411,8 @@
             }
             @if (!jobsLoading || jobGroups.length) {
               <div class="rugix-table-wrap audit-wrap">
-                <table class="rugix-table compact">
-                  <thead><tr><th class="w-exp"></th><th>Started</th><th>Job</th><th>Status</th><th>Duration</th><th>Job ID</th></tr></thead>
+                <table class="rugix-table compact log-table">
+                  <thead><tr><th class="w-exp"></th><th class="lc-time">Started</th><th>Job</th><th class="lc-status">Status</th><th class="lc-dur">Duration</th><th class="lc-id">Job ID</th></tr></thead>
                   <tbody>
                     @for (j of jobPage; track j.id; let i = $index) {
                       <tr class="job-row" [class.open]="jobOpen(j, i)" (click)="toggleJob(j)">
@@ -471,8 +471,8 @@
               <div class="banner err"><mat-icon>error_outline</mat-icon><span>{{ auditError }}</span></div>
             } @else {
               <div class="rugix-table-wrap audit-wrap">
-                <table class="rugix-table compact">
-                  <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Status</th><th>Details</th></tr></thead>
+                <table class="rugix-table compact log-table">
+                  <thead><tr><th class="lc-time">Time</th><th class="lc-user">User</th><th class="lc-action">Action</th><th class="lc-status">Status</th><th>Details</th></tr></thead>
                   <tbody>
                     @for (l of auditPage; track l.id.id) {
                       <tr>
