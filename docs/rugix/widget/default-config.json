@@ -1,0 +1,123 @@
+{
+  "datasources": [
+    {
+      "type": "entity",
+      "dataKeys": [
+        {
+          "name": "active",
+          "type": "attribute",
+          "label": "active",
+          "settings": {}
+        },
+        {
+          "name": "boot.bootFlow",
+          "type": "attribute",
+          "label": "boot.bootFlow",
+          "settings": {}
+        },
+        {
+          "name": "boot.groups",
+          "type": "attribute",
+          "label": "boot.groups",
+          "settings": {}
+        },
+        {
+          "name": "state.status",
+          "type": "attribute",
+          "label": "state.status",
+          "settings": {}
+        },
+        {
+          "name": "state.dataPartition",
+          "type": "attribute",
+          "label": "state.dataPartition",
+          "settings": {}
+        },
+        {
+          "name": "api.version",
+          "type": "attribute",
+          "label": "api.version",
+          "settings": {}
+        },
+        {
+          "name": "daemon.features",
+          "type": "attribute",
+          "label": "daemon.features",
+          "settings": {}
+        },
+        {
+          "name": "components.components",
+          "type": "attribute",
+          "label": "components.components",
+          "settings": {}
+        },
+        {
+          "name": "components.consistent",
+          "type": "attribute",
+          "label": "components.consistent",
+          "settings": {}
+        },
+        {
+          "name": "components.problems",
+          "type": "attribute",
+          "label": "components.problems",
+          "settings": {}
+        },
+        {
+          "name": "apps.apps",
+          "type": "attribute",
+          "label": "apps.apps",
+          "settings": {}
+        },
+        {
+          "name": "slots.boot-a",
+          "type": "attribute",
+          "label": "slots.boot-a",
+          "settings": {}
+        },
+        {
+          "name": "slots.boot-b",
+          "type": "attribute",
+          "label": "slots.boot-b",
+          "settings": {}
+        },
+        {
+          "name": "slots.system-a",
+          "type": "attribute",
+          "label": "slots.system-a",
+          "settings": {}
+        },
+        {
+          "name": "slots.system-b",
+          "type": "attribute",
+          "label": "slots.system-b",
+          "settings": {}
+        },
+        {
+          "name": "boot.activeGroup",
+          "type": "timeseries",
+          "label": "boot.activeGroup",
+          "settings": {}
+        },
+        {
+          "name": "boot.defaultGroup",
+          "type": "timeseries",
+          "label": "boot.defaultGroup",
+          "settings": {}
+        },
+        {
+          "name": "jobEvent",
+          "type": "timeseries",
+          "label": "jobEvent",
+          "settings": {}
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "title": "Rugix Management"
+  },
+  "showTitle": false,
+  "padding": "0px",
+  "backgroundColor": "#fff"
+}
