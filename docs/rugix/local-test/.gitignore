@@ -1,0 +1,5 @@
+devices.txt
+node_modules/
+sim/node_modules/
+sim/package-lock.json
+sim/sim.log

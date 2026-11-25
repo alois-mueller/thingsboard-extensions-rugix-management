@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: tb-pg
+    environment:
+      POSTGRES_DB: thingsboard
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      retries: 20
+
+  # one-shot: create schema and demo data (tenant@thingsboard.org / tenant)
+  tb-install:
+    image: thingsboard/tb-node:4.4.1
+    container_name: tb-install
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    environment:
+      INSTALL_TB: "true"
+      LOAD_DEMO: "true"
+      TB_QUEUE_TYPE: in-memory
+      DATABASE_TS_TYPE: sql
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/thingsboard
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+
+  thingsboard:
+    image: thingsboard/tb-node:4.4.1
+    container_name: tb-local
+    depends_on:
+      tb-install:
+        condition: service_completed_successfully
+    ports:
+      - "8080:8080"
+      - "1883:1883"
+    environment:
+      TB_SERVICE_ID: tb-local
+      TB_SERVICE_TYPE: monolith
+      TB_QUEUE_TYPE: in-memory
+      HTTP_BIND_PORT: "8080"
+      DATABASE_TS_TYPE: sql
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/thingsboard
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      CACHE_TYPE: caffeine
+
+volumes:
+  pg-data:
