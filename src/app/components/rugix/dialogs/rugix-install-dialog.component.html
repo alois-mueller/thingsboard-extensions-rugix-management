@@ -1,18 +1,15 @@
 <form (ngSubmit)="install()">
-  <mat-toolbar color="primary" class="rugix-dialog-toolbar">
-    <h2 class="rugix-dialog-title">{{ isSystem ? 'Install system update' : 'Install app bundle' }}</h2>
+  <div class="rugix-plain-header">
+    <h2 class="rugix-plain-title">{{ isSystem ? 'Install system update' : 'Install app bundle' }}</h2>
     <span class="flex-1"></span>
     <button mat-icon-button type="button" (click)="cancel()" [disabled]="installing" aria-label="Close"><mat-icon>close</mat-icon></button>
-  </mat-toolbar>
+  </div>
   <div mat-dialog-content class="rugix-dialog-content">
-    <div class="rugix-section-title">Target devices ({{ data.devices.length }})</div>
-    <div class="rugix-device-chips">
-      @for (d of data.devices; track d.id) {
-        <span class="chip"><mat-icon inline>memory</mat-icon>{{ d.label || d.name }}</span>
-      }
+    <div class="rugix-targets" [matTooltip]="targetsTooltip" matTooltipPosition="above">
+      <mat-icon>memory</mat-icon>
+      <span class="targets-text"><b>{{ data.devices.length === 1 ? 'Target' : 'Targets (' + data.devices.length + ')' }}:</b> {{ targetsSummary }}</span>
     </div>
 
-    <div class="rugix-section-title">Bundle</div>
     @if (!useCustomUrl) {
       <mat-form-field appearance="outline" class="rugix-field">
         <mat-label>{{ isSystem ? 'Firmware package' : 'Software package' }}</mat-label>
@@ -41,33 +38,42 @@
       <mat-checkbox [(ngModel)]="useCustomUrl" name="useCustomUrl" [disabled]="installing">Enter URL manually</mat-checkbox>
     }
 
-    @if (isSystem) {
-      <div class="rugix-section-title">After installation</div>
-      <mat-radio-group [(ngModel)]="reboot" name="reboot" class="rugix-options" [disabled]="installing">
-        @for (m of rebootModes; track m.value) {
-          <mat-radio-button [value]="m.value">{{ m.label }} <span class="hint">– {{ m.hint }}</span></mat-radio-button>
-        }
-      </mat-radio-group>
-      @if (bootGroups.length) {
-        <mat-form-field appearance="outline" class="rugix-field">
-          <mat-label>Boot group (optional)</mat-label>
-          <mat-select [(ngModel)]="bootGroup" name="bootGroup" [disabled]="installing">
-            <mat-option value="">Spare group (default)</mat-option>
-            @for (g of bootGroups; track g) {
-              <mat-option [value]="g">{{ g }}</mat-option>
+    <button type="button" class="rugix-advanced-toggle" (click)="advancedOpen = !advancedOpen" [attr.aria-expanded]="advancedOpen">
+      <mat-icon>{{ advancedOpen ? 'expand_less' : 'expand_more' }}</mat-icon>Advanced
+    </button>
+    @if (advancedOpen) {
+      <div class="rugix-advanced">
+        @if (isSystem) {
+          <div class="rugix-section-title">After installation</div>
+          <mat-radio-group [(ngModel)]="reboot" name="reboot" class="rugix-options" [disabled]="installing">
+            @for (m of rebootModes; track m.value) {
+              <mat-radio-button [value]="m.value">{{ m.label }} <span class="hint">– {{ m.hint }}</span></mat-radio-button>
             }
-          </mat-select>
+          </mat-radio-group>
+          @if (bootGroups.length) {
+            <mat-form-field appearance="outline" class="rugix-field">
+              <mat-label>Boot group (optional)</mat-label>
+              <mat-select [(ngModel)]="bootGroup" name="bootGroup" [disabled]="installing">
+                <mat-option value="">Spare group (default)</mat-option>
+                @for (g of bootGroups; track g) {
+                  <mat-option [value]="g">{{ g }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
+          <mat-checkbox [(ngModel)]="keepOverlay" name="keepOverlay" [disabled]="installing">Keep overlay of the target slot</mat-checkbox>
+        }
+        <mat-form-field appearance="outline" class="rugix-field">
+          <mat-label>Expected bundle hash (optional)</mat-label>
+          <input matInput name="bundleHash" [(ngModel)]="bundleHash" [disabled]="installing">
         </mat-form-field>
-      }
-      <mat-checkbox [(ngModel)]="keepOverlay" name="keepOverlay" [disabled]="installing">Keep overlay of the target slot</mat-checkbox>
+        <mat-checkbox [(ngModel)]="skipCompatibilityCheck" name="skipCompat" [disabled]="installing">Skip component compatibility check</mat-checkbox>
+      </div>
     }
 
-    <div class="rugix-section-title">Advanced</div>
-    <mat-form-field appearance="outline" class="rugix-field">
-      <mat-label>Expected bundle hash (optional)</mat-label>
-      <input matInput name="bundleHash" [(ngModel)]="bundleHash" [disabled]="installing">
-    </mat-form-field>
-    <mat-checkbox [(ngModel)]="skipCompatibilityCheck" name="skipCompat" [disabled]="installing">Skip component compatibility check</mat-checkbox>
+    <div class="rugix-ack">
+      <mat-checkbox [(ngModel)]="acknowledged" name="ack" [disabled]="installing">{{ ackText }}</mat-checkbox>
+    </div>
 
     @if (error) {
       <div class="rugix-error"><mat-icon>error_outline</mat-icon><span>{{ error }}</span></div>
@@ -78,7 +84,7 @@
     <button mat-button type="button" (click)="cancel()" [disabled]="installing">Cancel</button>
     <button mat-flat-button color="primary" type="submit" [disabled]="!canInstall">
       @if (installing) { <mat-spinner diameter="18" class="inline-spinner"></mat-spinner> }
-      {{ installing ? 'Starting…' : 'Install' }}
+      {{ installing ? 'Starting…' : installLabel }}
     </button>
   </div>
 </form>

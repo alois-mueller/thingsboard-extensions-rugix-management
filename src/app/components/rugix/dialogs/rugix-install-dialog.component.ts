@@ -38,7 +38,9 @@ export class RugixInstallDialogComponent implements OnInit {
   customUrl = '';
   useCustomUrl = false;
 
-  reboot: RugixInstallOptions['reboot'] = 'set';
+  reboot: RugixInstallOptions['reboot'] = 'yes';
+  advancedOpen = false;
+  acknowledged = false;
   bootGroup = '';
   bundleHash = '';
   keepOverlay = false;
@@ -63,12 +65,42 @@ export class RugixInstallDialogComponent implements OnInit {
     return Array.from(groups);
   }
 
+  get installLabel(): string {
+    if (!this.isSystem) {
+      return 'Install';
+    }
+    return {yes: 'Install & reboot', set: 'Install & select', deferred: 'Install (deferred)', no: 'Install only'}[this.reboot] || 'Install';
+  }
+
+  get ackText(): string {
+    const n = this.data.devices.length;
+    const who = n === 1 ? 'the device' : `${n} devices`;
+    if (!this.isSystem) {
+      return `I understand that the app bundle is installed on ${who}.`;
+    }
+    switch (this.reboot) {
+      case 'yes': return `I understand that the update is installed on ${who} and ${n === 1 ? 'it reboots' : 'they reboot'} immediately.`;
+      case 'set': return `I understand that the update is installed on ${who} and the new system is selected for the next boot.`;
+      case 'deferred': return `I understand that the update is installed on ${who} and applied at a later boot.`;
+      default: return `I understand that the update is installed on ${who} without changing the boot selection.`;
+    }
+  }
+
+  get targetsSummary(): string {
+    const names = this.data.devices.map(d => d.label || d.name);
+    return names.length <= 3 ? names.join(', ') : `${names.slice(0, 2).join(', ')} +${names.length - 2} more`;
+  }
+
+  get targetsTooltip(): string {
+    return this.data.devices.length > 3 ? this.data.devices.map(d => d.label || d.name).join('\n') : '';
+  }
+
   get url(): string {
     return this.useCustomUrl ? this.customUrl.trim() : (this.selectedPackage?.url || '');
   }
 
   get canInstall(): boolean {
-    return !this.installing && !!this.url;
+    return !this.installing && !!this.url && this.acknowledged;
   }
 
   ngOnInit(): void {
