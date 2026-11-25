@@ -263,7 +263,7 @@
                     <td><b>{{ a.name }}</b></td>
                     <td class="nowrap">{{ a.version || '—' }}</td>
                     <td>{{ a.generation ?? '—' }}</td>
-                    <td><span class="pill" [class.ok]="appStatusLabel(a.status) === 'running'">{{ appStatusLabel(a.status) }}</span></td>
+                    <td><span class="pill" [class.ok]="appStatusLabel(a.status) === 'running'" [class.warn]="appStatusLabel(a.status) === 'unhealthy'" [class.err]="appStatusLabel(a.status) === 'failed'" [matTooltip]="appStatusMessage(a.status)">{{ appStatusLabel(a.status) }}</span></td>
                     <td class="c-md">{{ a.orchestrator || '—' }}</td>
                     <td class="w-actions">
                       <button mat-icon-button [matMenuTriggerFor]="appMenu" [disabled]="blocked(d, 'install')"><mat-icon>more_vert</mat-icon></button>

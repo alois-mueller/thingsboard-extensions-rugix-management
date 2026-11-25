@@ -22,7 +22,7 @@ import {
   RugixStatsRange,
   RugixWidgetSettings
 } from '../models/rugix.models';
-import { appStatusLabel, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots } from '../models/rugix-parse';
+import { appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots } from '../models/rugix-parse';
 import { REVPI_ICON } from '../models/rugix-icons';
 import { RugixJobHandle, RugixRpcService } from '../services/rugix-rpc.service';
 import {
@@ -121,6 +121,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   componentFilter = '';
   readonly formatBytes = formatBytes;
   readonly appStatusLabel = appStatusLabel;
+  readonly appStatusMessage = appStatusMessage;
 
   constructor(private dialog: MatDialog,
               private rpc: RugixRpcService,

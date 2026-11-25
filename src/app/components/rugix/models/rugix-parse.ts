@@ -143,8 +143,16 @@ export function appStatusLabel(status: any): string {
   if (typeof status === 'string') {
     return status;
   }
+  // Rugix Admin: `{"state": "running"}` / `{"state": "failed", "message": "…"}`
+  if (typeof status.state === 'string') {
+    return status.state;
+  }
   const keys = Object.keys(status);
   return keys.length ? keys[0] : 'unknown';
+}
+
+export function appStatusMessage(status: any): string {
+  return (status && typeof status === 'object' && typeof status.message === 'string') ? status.message : '';
 }
 
 export function newDevice(id: string, name: string, label: string): RugixDevice {
