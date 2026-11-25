@@ -78,6 +78,8 @@
 
   .os-filter { width: 200px; ::ng-deep .mat-mdc-form-field-infix { min-height: 32px; padding-top: 4px; padding-bottom: 4px; } }
 
+  .kv b.bad { color: rgb(209, 39, 48); }
+
   .insecure-icon { color: rgb(209, 39, 48); }
 
   .hint { padding: 8px 24px 0; font-size: 12px; color: rgba(0, 0, 0, .6); }

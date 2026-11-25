@@ -250,12 +250,9 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     }
   }
 
-  daemonNote(d: RugixDevice): string {
-    const names: { [K in RugixDaemonFeature]: string } = {
-      factory_reset: 'factory reset', system_commit: 'commit', system_reboot: 'reboot', app_lifecycle: 'app start/stop/activate/remove'
-    };
-    const off = (Object.keys(names) as RugixDaemonFeature[]).filter(k => !this.featureOn(d, k));
-    return off.length ? 'Disabled in the device\'s Rugix Ctrl daemon: ' + off.map(k => names[k]).join(', ') + '.' : '';
+  featureLabel(d: RugixDevice, feature: RugixDaemonFeature): string {
+    const v = d.daemon?.[feature];
+    return v === undefined ? '—' : (v ? 'enabled' : 'disabled');
   }
 
   get restrictionNote(): string {

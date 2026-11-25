@@ -163,7 +163,6 @@
       </div>
 
       @if (restrictionNote) { <div class="hint">{{ restrictionNote }}</div> }
-      @if (daemonNote(d)) { <div class="hint">{{ daemonNote(d) }}</div> }
       @if (d.insecure) {
         <div class="banner err insecure">
           <mat-icon>gpp_maybe</mat-icon>
@@ -223,6 +222,16 @@
             </div>
             </div>
           }
+          <div class="group-box">
+            <div class="group-title">Daemon Capabilities</div>
+            <div class="tab-body grid tight">
+              <div class="kv"><span>Factory reset</span><b>{{ featureLabel(d, 'factory_reset') }}</b></div>
+              <div class="kv"><span>System commit</span><b>{{ featureLabel(d, 'system_commit') }}</b></div>
+              <div class="kv"><span>System reboot</span><b>{{ featureLabel(d, 'system_reboot') }}</b></div>
+              <div class="kv"><span>App lifecycle</span><b>{{ featureLabel(d, 'app_lifecycle') }}</b></div>
+              <div class="kv"><span>Security bypasses</span><b [class.bad]="d.insecure">{{ d.insecure === undefined ? '—' : (d.insecure ? 'enabled (development only)' : 'disabled') }}</b></div>
+            </div>
+          </div>
           <div class="group-box">
             <div class="group-title">Boot-Info</div>
           <div class="tab-body grid tight">
