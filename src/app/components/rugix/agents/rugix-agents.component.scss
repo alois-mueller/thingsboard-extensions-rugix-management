@@ -149,6 +149,17 @@
 
   .kv b.bad { color: rgb(209, 39, 48); }
   .kv b.good { color: rgb(25, 128, 56); }
+  .kv b.warn { color: #b45309; }
+  .fw-flag { display: inline-block; width: 16px; height: 16px; font-size: 16px; line-height: 16px; margin-left: 4px; vertical-align: -3px; color: #ef6c00; }
+  .rugix-filters .fchip mat-icon.fw-chip { width: 16px; height: 16px; font-size: 16px; line-height: 16px; margin-right: 4px; color: #ef6c00; }
+  .channel-pick { display: inline-flex; width: fit-content; border: 1px solid rgba(0, 0, 0, .2); border-radius: 6px; overflow: hidden; }
+  .ch-opt {
+    border: 0; background: transparent; padding: 2px 12px; font: inherit; font-size: 12px; font-weight: 500; color: rgba(0, 0, 0, .65); cursor: pointer;
+    & + & { border-left: 1px solid rgba(0, 0, 0, .2); }
+    &.on { background: rgba(var(--tb-primary-color, 48, 86, 128), .14); background: #e3ecf7; color: #1d4f91; }
+    &:disabled { cursor: default; opacity: .6; }
+    &:not(.on):not(:disabled):hover { background: rgba(0, 0, 0, .05); }
+  }
 
   .warn-icon.commit-icon { display: inline-block; color: #ef6c00; }
   .warn-icon.insecure-icon { display: inline-block; color: rgb(209, 39, 48); }
@@ -263,14 +274,13 @@
   .intro-text { flex: 1 1 auto; min-width: 0; .rugix-title { padding-right: 0; } p { margin: 4px 0 0; font-size: 13px; line-height: 20px; color: rgba(0, 0, 0, .65); max-width: 760px; } }
 
   .intro-links { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; margin-top: 8px; }
-  .gh-link {
-    display: inline-flex; align-items: center; gap: 6px; height: 20px; padding: 0 10px; border: 1px solid rgba(0, 0, 0, .2); border-radius: 10px;
-    font-size: 12px; font-weight: 500; color: rgba(0, 0, 0, .75); text-decoration: none;
-    &:hover { background: rgba(0, 0, 0, .05); }
-  }
-  .badge-link {
-    display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: rgba(0, 0, 0, .7); text-decoration: none;
-    img { display: block; height: 20px; }
+  .rel-pill {
+    display: inline-flex; align-items: stretch; height: 24px; border: 1px solid rgba(0, 0, 0, .16); border-radius: 6px; overflow: hidden;
+    font-size: 12px; font-weight: 500; color: rgba(0, 0, 0, .78); text-decoration: none; background: #fff;
+    transition: border-color .15s, box-shadow .15s;
+    &:hover { border-color: rgba(0, 0, 0, .34); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+    .rel-name { display: inline-flex; align-items: center; gap: 5px; padding: 0 9px; background: rgba(0, 0, 0, .04); mat-icon { width: 14px; height: 14px; font-size: 14px; line-height: 14px; } svg { flex: none; } }
+    img { display: block; height: 22px; align-self: center; margin: 0 0 0 1px; }
   }
 
   .fleet-summary { display: flex; align-items: center; gap: 14px; flex: none; margin-left: 4px; font-size: 13px; color: rgba(0, 0, 0, .7); white-space: nowrap; }

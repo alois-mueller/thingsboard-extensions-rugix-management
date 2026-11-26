@@ -26,7 +26,7 @@ import {
 } from '../models/rugix.models';
 import { RugixAppGeneration, RugixAppInfo, RugixDaemonFeature, RugixJobEvent, RugixJobState } from '../models/rugix.models';
 import { RugixDonutSegment } from '../charts/rugix-donut.component';
-import { jobLabel, foldJobEvent, formatDateTime, fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots } from '../models/rugix-parse';
+import { jobLabel, foldJobEvent, formatDateTime, fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots, firmwareState } from '../models/rugix-parse';
 import { REVPI_ICON, RUGIX_LOGO } from '../models/rugix-icons';
 import { RugixJobHandle, RugixRpcService } from '../services/rugix-rpc.service';
 import {
@@ -331,14 +331,16 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   overviewStatus: RugixDonutSegment[] = [];
   overviewOs: RugixDonutSegment[] = [];
   overviewJobs: RugixDonutSegment[] = [];
+  overviewFirmware: RugixDonutSegment[] = [];
   alerts: FleetAlert[] = [];
   readonly alertLimit = 8;
   alertsExpanded = false;
 
   /** Online / offline / error / warning counts for the Devices toolbar. */
-  get fleetSummary(): { online: number; offline: number; error: number; warning: number; healthy: number } {
-    const c = {online: 0, offline: 0, error: 0, warning: 0, healthy: 0};
+  get fleetSummary(): { online: number; offline: number; error: number; warning: number; healthy: number; outdated: number } {
+    const c = {online: 0, offline: 0, error: 0, warning: 0, healthy: 0, outdated: 0};
     for (const d of this.devices) {
+      if (d.firmware === 'outdated') { c.outdated++; }
       if (d.active) { c.online++; } else { c.offline++; }
       if (d.health === 'error') { c.error++; } else if (d.health === 'warning') { c.warning++; } else if (d.health === 'healthy') { c.healthy++; }
     }
@@ -373,6 +375,13 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     }
   }
 
+  onFirmwareSegment(key: string): void {
+    this.clearFilters();
+    this.search = '';
+    this.firmwareFilter = key === 'outdated';
+    this.setView('devices');
+  }
+
   onStatusSegment(key: string): void {
     this.showDevices(key as 'healthy' | 'warning' | 'error' | 'offline');
   }
@@ -383,6 +392,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     const alerts: FleetAlert[] = [];
     const os = new Map<string, number>();
     const jobs = {succeeded: 0, running: 0, failed: 0, none: 0};
+    const fw = {current: 0, outdated: 0, ahead: 0, unknown: 0};
     const push = (d: RugixDevice, severity: 'error' | 'warning', category: string, message: string, ts?: number) =>
       alerts.push({severity, category, deviceId: d.id, device: d.label || d.name, message, ts});
     for (const d of this.devices) {
@@ -412,6 +422,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       }
       d.health = level;
       count[level]++;
+      fw[d.firmware || 'unknown']++;
       const v = d.hardware.osVersion || 'unknown';
       os.set(v, (os.get(v) || 0) + 1);
       const js = d.job?.status;
@@ -429,6 +440,12 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     this.overviewOs = sorted.slice(0, 5).map(([v, n], i) => ({key: v, label: v, value: n, color: palette[i]}));
     const rest = sorted.slice(5).reduce((a, [, n]) => a + n, 0);
     if (rest) { this.overviewOs.push({key: 'other', label: 'Other', value: rest, color: OFF}); }
+    this.overviewFirmware = [
+      {key: 'current', label: 'Current', value: fw.current, color: OK},
+      {key: 'outdated', label: 'Outdated', value: fw.outdated, color: WARN},
+      {key: 'ahead', label: 'Ahead', value: fw.ahead, color: '#2f6fd1'},
+      {key: 'unknown', label: 'No target', value: fw.unknown, color: OFF}
+    ];
     this.overviewJobs = [
       {key: 'running', label: 'Running', value: jobs.running, color: '#2f6fd1'},
       {key: 'succeeded', label: 'Succeeded', value: jobs.succeeded, color: OK},
@@ -765,6 +782,8 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       d.slots = parseSlots(slotRaw.get(d.id));
       d.apps = mergeApps(d.apps, d.componentList);
       d.commitPending = !!d.activeGroup && !!d.defaultGroup && d.activeGroup !== d.defaultGroup;
+      d.target = this.settings.channels[this.channelOf(d)] || undefined;
+      d.firmware = d.target ? firmwareState(d.hardware.osVersion, d.target) : 'unknown';
       this.trackJob(d);
       return d;
     }).sort((a, b) => (a.label || a.name).localeCompare(b.label || b.name));
@@ -785,8 +804,48 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   statusFilter: 'all' | 'online' | 'offline' = 'all';
   healthFilter: '' | 'healthy' | 'warning' | 'error' | 'offline' = '';
 
+  firmwareFilter = false;
+  channelSaving = false;
+
   get filtersActive(): boolean {
-    return this.statusFilter !== 'all' || !!this.healthFilter;
+    return this.statusFilter !== 'all' || !!this.healthFilter || this.firmwareFilter;
+  }
+
+  toggleFirmware(): void {
+    this.firmwareFilter = !this.firmwareFilter;
+    this.pageIndex = 0;
+  }
+
+  channelOf(d: RugixDevice): string {
+    return d.channel || this.settings.defaultChannel;
+  }
+
+  get channelNames(): string[] {
+    return Object.keys(this.settings.channels);
+  }
+
+  /** Switch the release channel of a device (server attribute) and re-evaluate its firmware state. */
+  setChannel(d: RugixDevice, channel: string): void {
+    if (!channel || channel === this.channelOf(d) || this.channelSaving) {
+      return;
+    }
+    this.channelSaving = true;
+    this.rpc.setChannel(this.settings, d, channel).pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        d.channel = channel;
+        d.target = this.settings.channels[channel] || undefined;
+        d.firmware = d.target ? firmwareState(d.hardware.osVersion, d.target) : 'unknown';
+        this.channelSaving = false;
+        this.computeOverview();
+        this.cd.markForCheck();
+        this.ctx.detectChanges();
+      },
+      error: err => {
+        this.channelSaving = false;
+        this.ctx.showErrorToast(`Could not set channel: ${err?.message || err}`);
+        this.cd.markForCheck();
+      }
+    });
   }
 
   toggleHealth(h: 'healthy' | 'warning' | 'error'): void {
@@ -802,6 +861,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   clearFilters(): void {
     this.statusFilter = 'all';
     this.healthFilter = '';
+    this.firmwareFilter = false;
     this.pageIndex = 0;
   }
 
@@ -894,10 +954,11 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     const q = this.search.trim().toLowerCase();
     const base = this.devices.filter(d =>
       (this.statusFilter === 'all' || (this.statusFilter === 'online') === d.active)
-      && (!this.healthFilter || d.health === this.healthFilter));
+      && (!this.healthFilter || d.health === this.healthFilter)
+      && (!this.firmwareFilter || d.firmware === 'outdated'));
     const list = q ? base.filter(d =>
       [d.name, d.label, d.hardware.osVersion, d.hardware.model, d.hardware.serial, d.bootFlow, d.activeGroup, d.defaultGroup,
-        d.stateStatus, d.apiVersion, d.job?.status, d.job?.title, d.active ? 'online' : 'offline']
+        d.stateStatus, d.apiVersion, d.channel, d.job?.status, d.job?.title, d.active ? 'online' : 'offline']
         .some(v => (v || '').toLowerCase().includes(q))) : base;
     const dir = this.sortDir === 'asc' ? 1 : -1;
     return [...list].sort((a, b) =>

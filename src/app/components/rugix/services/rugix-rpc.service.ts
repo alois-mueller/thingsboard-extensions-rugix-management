@@ -4,7 +4,7 @@
 
 import { Injectable } from '@angular/core';
 import { DeviceService, AttributeService, EntityRelationService, DeviceProfileService } from '@core/public-api';
-import { AggregationType, DataSortOrder, EntityType } from '@shared/public-api';
+import { AggregationType, AttributeScope, DataSortOrder, EntityType } from '@shared/public-api';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, map, mergeMap } from 'rxjs/operators';
 import { Device } from '@shared/models/device.models';
@@ -178,6 +178,12 @@ export class RugixRpcService {
         return {jobId, response};
       })
     );
+  }
+
+  /** Store the release channel as server-scope attribute of the device. */
+  setChannel(settings: RugixWidgetSettings, device: RugixDevice, channel: string): Observable<any> {
+    const entityId = {entityType: EntityType.DEVICE, id: device.id} as EntityId;
+    return this.attributeService.saveEntityAttributes(entityId, AttributeScope.SERVER_SCOPE, [{key: settings.keys.channel, value: channel}]);
   }
 
   /** Creation time (ms epoch) of the device entity. */

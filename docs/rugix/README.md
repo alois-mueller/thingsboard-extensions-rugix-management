@@ -14,7 +14,7 @@ Three views in the top menu:
 
 | View | What it shows |
 |------|---------------|
-| **Overview** | Fleet donuts (device status, Edge OS versions, last job), recent alerts (offline, commit pending, failed jobs, state errors, security bypasses), Rugix logo, GitHub link and version badges |
+| **Overview** | Fleet donuts (device status, Edge OS versions, firmware vs. release channel, last job), recent alerts (offline, commit pending, failed jobs, state errors, security bypasses), Rugix logo, GitHub link and version badges |
 | **Devices** | Sortable / searchable / paginated table (connection incl. online/offline since, Edge OS, active / default boot group, boot flow, state, API, last job with live progress), health and connection filters, bulk *Upgrade Firmware* / *Install App*, details side panel |
 | **Jobs** | Job history of all devices (24 h / 7 d / 30 d), status filter, search; a row opens the device's job log |
 
@@ -56,6 +56,15 @@ Widget settings (JSON, all optional): `title` (default "Rugix Devices"), `defaul
 `access` (see below), RPC method names (`rpc.*`, incl. `appInfo`), data keys (`keys.*`), SSE options.
 The Apps tab generations list needs the `appInfo` RPC (see connector table); install options are passed as query string
 (`root_cert`, `http_max_retries`, …) to the existing install RPCs.
+
+### Release channels
+Each device follows a release channel (`stable` or `testing`) that targets an Edge OS version. Configure the versions in the widget settings:
+
+```json
+{"channels": {"stable": "0.5.0", "testing": "0.5.2-rc1"}, "defaultChannel": "stable"}
+```
+
+The channel of a device is the server-scope attribute `rugix.channel` (add it as data key; devices without it use `defaultChannel`). The details panel shows the channel, its target version and lets users with the *install* permission switch the channel. Devices running an older version than their channel target get an orange upgrade icon in the table; the **Outdated** filter chip and the *Firmware vs. channel* donut on the Overview page list them (select them and use *Upgrade Firmware* for a bulk update). Versions are compared semver-style, pre-releases sort before their release (`0.5.0-rc1 < 0.5.0`); devices newer than the channel are shown as *Ahead*.
 
 ### Role restrictions and last seen
 `access` in the widget settings limits which ThingsBoard user authorities may use an action class
