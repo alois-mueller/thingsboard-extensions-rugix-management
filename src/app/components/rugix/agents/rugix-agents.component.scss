@@ -176,24 +176,36 @@
 
   .empty.small { padding: 4px 0; font-size: 12px; }
 
-  // fixed column layout of the device table so the columns stay put while paging
+  // The device table is a CSS grid: the column set per widget width is defined once (--rugix-cols), so the columns
+  // keep their positions and widths from page to page and share extra space evenly (fr units with minimums).
   .main-table {
-    table-layout: fixed;
-    .w-check { width: 48px; }
-    .c-dev { width: 24%; }
-    .w-status { width: 10%; }
-    .c-os { width: 9%; }
-    .c-group { width: 10%; }
-    .c-flow { width: 9%; }
-    .c-state { width: 9%; }
-    .c-api { width: 8%; }
-    .c-job { width: 13%; }
-    .w-actions { width: 56px; }
-    td { overflow: hidden; text-overflow: ellipsis; }
+    display: block;
+    width: 100%;
+    --rugix-cols: 48px minmax(180px, 2.4fr) minmax(112px, 1.2fr) minmax(88px, 1fr) minmax(88px, 1fr) minmax(80px, .9fr) minmax(80px, .9fr) minmax(76px, .8fr) minmax(136px, 1.5fr) 56px;
+
+    thead, tbody { display: block; }
+    tr { display: grid; grid-template-columns: var(--rugix-cols); }
+    th, td {
+      width: auto !important;
+      min-width: 0;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    th { display: flex; align-items: center; }
+    td {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      text-overflow: ellipsis;
+    }
+    td > * { max-width: 100%; }
+    td.w-check { align-items: flex-start; }
+    td.w-actions { align-items: flex-end; overflow: visible; padding-left: 0; padding-right: 4px; }
+    td.empty { grid-column: 1 / -1; display: block; }
     .device-text .name { display: flex; align-items: center; min-width: 0; }
     .device-text .name-text, .device-text .sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 24ch; }
     .device-text .name .warn-icon { flex: none; }
-    td.w-actions { overflow: visible; }
   }
 
   // fixed column layout so the columns stay put while paging
@@ -682,16 +694,22 @@
 // The widget is sized by the dashboard grid, so adapt to the widget width (container), not the viewport.
 @container rugix (max-width: 1000px) {
   .c-l1 { display: none; }
+  :host .main-table .c-l1 { display: none; }
+  :host .main-table { --rugix-cols: 48px minmax(170px, 2.4fr) minmax(112px, 1.2fr) minmax(88px, 1fr) minmax(88px, 1fr) minmax(80px, .9fr) minmax(80px, .9fr) 56px; }
 }
 
 @container rugix (max-width: 800px) {
   .c-l2 { display: none; }
+  :host .main-table .c-l2 { display: none; }
+  :host .main-table { --rugix-cols: 48px minmax(160px, 2.4fr) minmax(112px, 1.2fr) minmax(88px, 1fr) minmax(88px, 1fr) 56px; }
 }
 
 // Priority when space gets tight: Status + Edge OS stay, then Active group; the 'commit pending' state
 // moves into a small icon next to the device name once the active group column is hidden.
 @container rugix (max-width: 560px) {
   .c-l3 { display: none; }
+  :host .main-table .c-l3 { display: none; }
+  :host .main-table { --rugix-cols: 44px minmax(140px, 2.4fr) minmax(104px, 1.2fr) minmax(88px, 1fr) 56px; }
   .warn-icon { display: inline-block; }
 }
 
@@ -700,19 +718,10 @@
   .rugix-toolbar { padding: 0 8px 0 16px; }
 }
 
-@container rugix (min-width: 1101px) {
+@container rugix (min-width: 1251px) {
   :host .qa-inline { display: inline; }
   :host .qa-menu { display: none; }
-  :host .rugix-table-wrap > .rugix-table .w-actions { width: 220px; }
-}
-
-@container rugix (max-width: 900px) {
-  :host .main-table .c-dev { width: 26%; }
-  :host .main-table .w-status { width: 15%; }
-  :host .main-table .c-os { width: 16%; }
-  :host .main-table .c-group { width: 15%; }
-  :host .main-table .c-flow { width: 14%; }
-  :host .main-table .c-state { width: 14%; }
+  :host .main-table { --rugix-cols: 48px minmax(180px, 2.4fr) minmax(112px, 1.2fr) minmax(88px, 1fr) minmax(88px, 1fr) minmax(80px, .9fr) minmax(80px, .9fr) minmax(76px, .8fr) minmax(136px, 1.5fr) 232px; }
 }
 
 @container rugix (max-width: 700px) {
@@ -734,8 +743,6 @@
   .rugix-toolbar.selection button[mat-flat-button] { min-width: 0; padding: 0 12px; }
   .rugix-toolbar.selection button[mat-flat-button] mat-icon { margin: 0; }
   .rugix-table td, .rugix-table th { padding-left: 6px; }
-  .rugix-table .w-check { width: 40px; }
-  .rugix-table .w-status { width: auto; }
   .rugix-details { width: 100%; }
   .details-toolbar { padding-left: 16px; }
   .details-buttons { padding: 12px 16px; }
