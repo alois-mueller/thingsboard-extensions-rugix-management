@@ -134,8 +134,13 @@
             <td class="c-l1">{{ d.apiVersion || '—' }}</td>
             <td class="c-l1">
               @if (d.job && d.job.status !== 'unknown') {
-                <span class="chip" [class.ok]="d.job.status === 'succeeded'" [class.err]="d.job.status === 'failed'" [class.run]="isJobActive(d)">@if (isJobActive(d)) { <span class="spin"></span> }{{ d.job.status }}@if (isJobActive(d) && d.job.progress !== null) { · {{ d.job.progress | number:'1.0-0' }} %}</span>
-                @if (d.job.title) { <div class="sub job-title" [matTooltip]="jt(d.job.title, d.job.kind)" matTooltipPosition="above" matTooltipClass="rugix-tip">{{ jt(d.job.title, d.job.kind) }}</div> }
+                <span class="jobline" [class.run]="isJobActive(d)" [class.ok]="d.job.status === 'succeeded'" [class.err]="d.job.status === 'failed'"
+                      [matTooltip]="d.job.status + (d.job.failure ? ': ' + d.job.failure : '') + ' – ' + jt(d.job.title, d.job.kind)" matTooltipPosition="above" matTooltipClass="rugix-tip">
+                  @if (isJobActive(d)) { <span class="spin"></span> }
+                  @else if (d.job.status === 'succeeded') { <mat-icon>check_circle</mat-icon> }
+                  @else if (d.job.status === 'failed') { <mat-icon>error</mat-icon> }
+                  <span class="jl-text">@if (isJobActive(d) && d.job.progress !== null) {{{ d.job.progress | number:'1.0-0' }} % · }{{ jt(d.job.title, d.job.kind) || d.job.status }}</span>
+                </span>
               } @else { — }
             </td>
             <td class="w-actions" (click)="$event.stopPropagation()">

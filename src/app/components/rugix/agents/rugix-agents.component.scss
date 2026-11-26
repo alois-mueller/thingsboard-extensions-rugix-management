@@ -228,6 +228,17 @@
     border: 2px solid rgba(21, 101, 192, .25); border-top-color: #1565c0; border-radius: 50%; animation: rugix-spin .8s linear infinite;
   }
   // running job under the device name: only where there is no 'Last job' column (narrow widths)
+  // 'Last job' column: one line, "<icon> [36 % ·] title", coloured by status
+  .jobline {
+    display: flex; align-items: center; gap: 6px; max-width: 100%; min-width: 0; font-size: 13px; font-weight: 500; color: rgba(0, 0, 0, .6);
+    .spin { margin-right: 0; }
+    mat-icon { flex: none; width: 16px; height: 16px; font-size: 16px; }
+    .jl-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    &.run { color: #1565c0; }
+    &.ok { color: rgb(25, 128, 56); }
+    &.err { color: rgb(209, 39, 48); }
+  }
+
   .sub.job-active { display: none; }
   .sub.dev-name.has-job { display: block; }
   .sub.job-active { color: #1565c0; font-weight: 500; }
