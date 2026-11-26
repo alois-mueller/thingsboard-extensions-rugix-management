@@ -3,7 +3,7 @@
   <div class="view-tabs">
     <button type="button" class="view-tab" [class.active]="view === 'overview'" (click)="setView('overview')"><mat-icon>space_dashboard</mat-icon>Overview</button>
     <button type="button" class="view-tab" [class.active]="view === 'devices'" (click)="setView('devices')"><mat-icon>developer_board</mat-icon>Devices<span class="count">{{ devices.length }}</span></button>
-    <button type="button" class="view-tab" [class.active]="view === 'jobs'" (click)="setView('jobs')"><mat-icon>work_history</mat-icon>Jobs@if (fleetCount('running')) { <span class="count run">{{ fleetCount('running') }}</span> }</button>
+    <button type="button" class="view-tab" [class.active]="view === 'jobs'" (click)="setView('jobs')"><mat-icon>work_history</mat-icon>Jobs@if (runningJobs) { <span class="count run">{{ runningJobs }}</span> }</button>
     <button type="button" class="view-tab" [class.active]="view === 'channels'" (click)="setView('channels')"><mat-icon>alt_route</mat-icon>Channels</button>
   </div>
 

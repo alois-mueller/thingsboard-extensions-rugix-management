@@ -205,6 +205,11 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     return this.fleetFiltered.slice(this.fleetPageIndex * this.fleetPageSize, (this.fleetPageIndex + 1) * this.fleetPageSize);
   }
 
+  /** Devices with a running or queued job – known from the live device data, so the tab badge works before the Jobs view was opened. */
+  get runningJobs(): number {
+    return this.devices.filter(d => this.isJobActive(d)).length;
+  }
+
   fleetCount(status: 'running' | 'failed' | 'succeeded'): number {
     return this.fleetJobs.filter(f => status === 'running' ? (f.job.status === 'running' || f.job.status === 'queued') : f.job.status === status).length;
   }

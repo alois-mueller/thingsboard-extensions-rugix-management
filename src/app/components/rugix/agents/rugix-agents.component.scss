@@ -284,6 +284,7 @@
   .intro-text { flex: 1 1 auto; min-width: 0; .rugix-title { padding-right: 0; } p { margin: 4px 0 0; font-size: 13px; line-height: 20px; color: rgba(0, 0, 0, .65); max-width: 760px; } }
 
   .intro-links { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; margin-top: 8px; }
+  .rel-pill, .rel-pill:hover, .rel-pill:focus, .rel-pill:visited, .rel-pill * { text-decoration: none !important; }
   .rel-pill {
     display: inline-flex; align-items: center; gap: 4px; height: 20px; font-size: 12px; font-weight: 500; line-height: 18px;
     color: rgba(0, 0, 0, .78); text-decoration: none;
