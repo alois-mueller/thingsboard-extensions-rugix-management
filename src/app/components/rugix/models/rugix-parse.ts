@@ -451,3 +451,15 @@ export function foldJobEvent(state: RugixJobState | undefined, e: RugixJobEvent)
   }
   return st;
 }
+
+
+/** Display name of a job: "Upgrade Firmware" for system updates, "Install App" for app bundles. */
+export function jobLabel(title?: string, kind?: string): string {
+  if (kind === 'system-update' || /install system update/i.test(title || '')) {
+    return 'Upgrade Firmware';
+  }
+  if (kind === 'app-install' || /install app/i.test(title || '')) {
+    return 'Install App';
+  }
+  return title || '';
+}

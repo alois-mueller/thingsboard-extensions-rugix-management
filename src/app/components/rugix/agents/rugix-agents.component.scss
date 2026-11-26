@@ -227,11 +227,14 @@
     flex: none; display: inline-block; box-sizing: border-box; width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px;
     border: 2px solid rgba(21, 101, 192, .25); border-top-color: #1565c0; border-radius: 50%; animation: rugix-spin .8s linear infinite;
   }
+  // running job under the device name: only where there is no 'Last job' column (narrow widths)
+  .sub.job-active { display: none; }
+  .sub.dev-name.has-job { display: block; }
   .sub.job-active { color: #1565c0; font-weight: 500; }
   .chip.run { white-space: nowrap; }
   .sub.job-title { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .chip.run { color: #1565c0; background: rgba(33, 150, 243, .12); }
-  .mini-bar { width: 90px; height: 4px; margin-top: 4px; border-radius: 2px; background: rgba(0, 0, 0, .1); overflow: hidden; span { display: block; height: 100%; background: #1565c0; transition: width .4s; } }
+  .mini-bar { display: none; width: 90px; height: 4px; margin-top: 4px; border-radius: 2px; background: rgba(0, 0, 0, .1); overflow: hidden; span { display: block; height: 100%; background: #1565c0; transition: width .4s; } }
   .job-banner { margin: 12px 24px 0; padding: 10px 16px; border-radius: 4px; background: rgba(33, 150, 243, .1); color: #0d47a1; }
   .jb-head { display: flex; align-items: center; gap: 8px; min-height: 32px; .spin { margin-right: 2px; } }
   .jb-bar { height: 6px; margin-top: 6px; border-radius: 3px; background: rgba(0, 0, 0, .12); overflow: hidden; span { display: block; height: 100%; background: #1565c0; transition: width .4s; } }
@@ -693,6 +696,8 @@
 
 // The widget is sized by the dashboard grid, so adapt to the widget width (container), not the viewport.
 @container rugix (max-width: 1000px) {
+  :host .sub.job-active { display: block; }
+  :host .sub.dev-name.has-job { display: none; }
   .c-l1 { display: none; }
   :host .main-table .c-l1 { display: none; }
   :host .main-table { --rugix-cols: 48px minmax(170px, 2.4fr) minmax(112px, 1.2fr) minmax(88px, 1fr) minmax(88px, 1fr) minmax(80px, .9fr) minmax(80px, .9fr) 56px; }

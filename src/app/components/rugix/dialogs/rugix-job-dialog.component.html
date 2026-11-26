@@ -6,7 +6,7 @@
 <div mat-dialog-content class="rugix-dialog-content">
   <div class="job-summary">
     <div><div class="label">Device</div><div class="value">{{ data.device.label || data.device.name }}</div></div>
-    <div><div class="label">Job</div><div class="value">{{ title || data.jobId }}</div></div>
+    <div><div class="label">Job</div><div class="value">{{ jt(title, kind) || data.jobId }}</div></div>
     <div><div class="label">Status</div><div class="value"><span class="rugix-badge" [class]="status">{{ status }}</span></div></div>
   </div>
   @if (!done) {

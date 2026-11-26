@@ -26,7 +26,7 @@ import {
 } from '../models/rugix.models';
 import { RugixDaemonFeature, RugixJobEvent, RugixJobState } from '../models/rugix.models';
 import { RugixDonutSegment } from '../charts/rugix-donut.component';
-import { foldJobEvent, formatDateTime, fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots } from '../models/rugix-parse';
+import { jobLabel, foldJobEvent, formatDateTime, fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots } from '../models/rugix-parse';
 import { REVPI_ICON } from '../models/rugix-icons';
 import { RugixJobHandle, RugixRpcService } from '../services/rugix-rpc.service';
 import {
@@ -216,7 +216,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
         }
       }
       if (d.job?.status === 'failed') {
-        push(d, 'error', 'job', `Job failed: ${d.job.failure || d.job.title || ''}`.trim(), d.job.ts);
+        push(d, 'error', 'job', `Job failed: ${d.job.failure || jobLabel(d.job.title, d.job.kind)}`.trim(), d.job.ts);
         if (d.active) { raise('error'); }
       }
       count[level]++;
@@ -481,6 +481,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   readonly formatBytes = formatBytes;
   readonly appStatusLabel = appStatusLabel;
   readonly appStatusMessage = appStatusMessage;
+  readonly jt = jobLabel;
 
   constructor(private dialog: MatDialog,
               private rpc: RugixRpcService,
@@ -627,7 +628,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     if (!missing.length) {
       return '';
     }
-    const names = {install: 'install updates/apps', power: 'reboot/commit', factoryReset: 'factory reset'};
+    const names = {install: 'upgrade firmware / install apps', power: 'reboot/commit', factoryReset: 'factory reset'};
     return 'Your user role is not allowed to ' + missing.map(k => names[k]).join(', ') + '.';
   }
 
@@ -935,7 +936,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       if (result?.jobs?.length) {
         this.ctx.showSuccessToast(`Installation started on ${result.jobs.length} device(s).`, 3000, 'top', 'left');
         if (result.jobs.length === 1) {
-          this.openJob(result.jobs[0].device, result.jobs[0].handle.jobId, 'Install');
+          this.openJob(result.jobs[0].device, result.jobs[0].handle.jobId, mode === 'system' ? 'Upgrade Firmware' : 'Install App');
         }
       }
     });

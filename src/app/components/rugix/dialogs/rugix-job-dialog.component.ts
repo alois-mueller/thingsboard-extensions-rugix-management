@@ -7,7 +7,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Subscription, timer } from 'rxjs';
 import { exhaustMap, takeWhile } from 'rxjs/operators';
 import { RugixDevice, RugixJobEvent, RugixJobStatus, RugixWidgetSettings } from '../models/rugix.models';
-import { formatDateTime, isTerminalStatus } from '../models/rugix-parse';
+import { formatDateTime, isTerminalStatus, jobLabel } from '../models/rugix-parse';
 import { RugixRpcService } from '../services/rugix-rpc.service';
 
 export interface RugixJobDialogData {
@@ -31,6 +31,8 @@ export class RugixJobDialogComponent implements OnInit, OnDestroy {
   events: RugixJobEvent[] = [];
   status: RugixJobStatus = 'queued';
   title = '';
+  kind = '';
+  readonly jt = jobLabel;
   progress: number | null = null;
   failure = '';
   done = false;
@@ -69,6 +71,7 @@ export class RugixJobDialogComponent implements OnInit, OnDestroy {
       if (e.type === 'job-changed' && e.status) {
         this.status = e.status;
         this.title = e.title || this.title;
+        this.kind = e.kind || this.kind;
         this.failure = e.failureMessage || '';
       } else if (e.type === 'install-progress' && !isNaN(e.progress)) {
         this.progress = Math.max(0, Math.min(100, e.progress));

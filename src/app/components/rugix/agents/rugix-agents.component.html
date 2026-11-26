@@ -60,10 +60,10 @@
       <span class="rugix-title">{{ checked.size }} selected</span>
       <span class="flex-1"></span>
       <button mat-flat-button color="primary" type="button" [disabled]="!checkedOnline.length || !allowed('install')" [matTooltip]="checkedOnline.length < checked.size ? 'Only online devices are updated' : ''" (click)="openInstall(checkedOnline, 'system')">
-        <mat-icon>system_update_alt</mat-icon><span class="lbl">Update system</span>
+        <mat-icon>system_update_alt</mat-icon><span class="lbl">Upgrade Firmware</span>
       </button>
       <button mat-flat-button color="primary" type="button" [disabled]="!checkedOnline.length || !allowed('install')" [matTooltip]="checkedOnline.length < checked.size ? 'Only online devices are updated' : ''" (click)="openInstall(checkedOnline, 'app')">
-        <mat-icon>apps</mat-icon><span class="lbl">Install app</span>
+        <mat-icon>apps</mat-icon><span class="lbl">Install App</span>
       </button>
       <button mat-icon-button type="button" (click)="clearSelection()" matTooltip="Clear selection"><mat-icon>close</mat-icon></button>
     }
@@ -112,9 +112,10 @@
                     @if (d.commitPending) { <mat-icon class="warn-icon commit-icon" matTooltipPosition="above" matTooltipClass="rugix-tip" matTooltip="Warning: Commit pending – running a non-default system. Commit to keep it, otherwise the device falls back on next boot.">warning</mat-icon> }
                     @if (d.insecure) { <mat-icon class="warn-icon insecure-icon" matTooltipPosition="above" matTooltipClass="rugix-tip" matTooltip="Warning: Rugix Ctrl security bypasses enabled (development only)">warning</mat-icon> }
                   </div>
+                  @if (d.label) { <div class="sub dev-name" [class.has-job]="isJobActive(d)">{{ d.name }}</div> }
                   @if (isJobActive(d)) {
-                    <div class="sub job-active"><span class="spin"></span>@if (d.job.progress !== null) {{{ d.job.progress | number:'1.0-0' }} % · }{{ d.job.title || 'Job running' }}</div>
-                  } @else if (d.label) { <div class="sub">{{ d.name }}</div> }
+                    <div class="sub job-active"><span class="spin"></span>@if (d.job.progress !== null) {{{ d.job.progress | number:'1.0-0' }} % · }{{ jt(d.job.title, d.job.kind) || 'Job running' }}</div>
+                  }
                 </div>
               </div>
             </td>
@@ -133,11 +134,8 @@
             <td class="c-l1">{{ d.apiVersion || '—' }}</td>
             <td class="c-l1">
               @if (d.job && d.job.status !== 'unknown') {
-                <span class="chip" [class.ok]="d.job.status === 'succeeded'" [class.err]="d.job.status === 'failed'" [class.run]="isJobActive(d)">{{ d.job.status }}@if (isJobActive(d) && d.job.progress !== null) { · {{ d.job.progress | number:'1.0-0' }} %}</span>
-                @if (isJobActive(d) && d.job.progress !== null) {
-                  <div class="mini-bar"><span [style.width.%]="d.job.progress"></span></div>
-                }
-                @if (d.job.title) { <div class="sub job-title" [matTooltip]="d.job.title" matTooltipPosition="above" matTooltipClass="rugix-tip">{{ d.job.title }}</div> }
+                <span class="chip" [class.ok]="d.job.status === 'succeeded'" [class.err]="d.job.status === 'failed'" [class.run]="isJobActive(d)">@if (isJobActive(d)) { <span class="spin"></span> }{{ d.job.status }}@if (isJobActive(d) && d.job.progress !== null) { · {{ d.job.progress | number:'1.0-0' }} %}</span>
+                @if (d.job.title) { <div class="sub job-title" [matTooltip]="jt(d.job.title, d.job.kind)" matTooltipPosition="above" matTooltipClass="rugix-tip">{{ jt(d.job.title, d.job.kind) }}</div> }
               } @else { — }
             </td>
             <td class="w-actions" (click)="$event.stopPropagation()">
@@ -145,8 +143,8 @@
                 <mat-spinner diameter="20"></mat-spinner>
               } @else {
                 <span class="qa-inline">
-                  <button mat-icon-button [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'system')" matTooltip="Install system update…"><mat-icon>system_update_alt</mat-icon></button>
-                  <button mat-icon-button [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'app')" matTooltip="Install app…"><mat-icon>apps</mat-icon></button>
+                  <button mat-icon-button [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'system')" matTooltip="Upgrade Firmware"><mat-icon>system_update_alt</mat-icon></button>
+                  <button mat-icon-button [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'app')" matTooltip="Install App"><mat-icon>apps</mat-icon></button>
                   @for (a of tableActions; track a.action) {
                     <button mat-icon-button [disabled]="blocked(d, kindOf(a), featureOf(a))" (click)="runSystemAction(a, d)" [matTooltip]="a.label"><mat-icon [class.caution-icon]="a.caution">{{ a.icon }}</mat-icon></button>
                   }
@@ -154,8 +152,8 @@
                 <span class="qa-menu">
                   <button mat-icon-button [matMenuTriggerFor]="rowMenu" aria-label="Actions"><mat-icon>more_vert</mat-icon></button>
                   <mat-menu #rowMenu="matMenu">
-                    <button mat-menu-item [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'system')"><mat-icon>system_update_alt</mat-icon>Install system update…</button>
-                    <button mat-menu-item [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'app')"><mat-icon>apps</mat-icon>Install app…</button>
+                    <button mat-menu-item [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'system')"><mat-icon>system_update_alt</mat-icon>Upgrade Firmware</button>
+                    <button mat-menu-item [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'app')"><mat-icon>apps</mat-icon>Install App</button>
                     @for (a of tableActions; track a.action) {
                       <button mat-menu-item [disabled]="blocked(d, kindOf(a), featureOf(a))" (click)="runSystemAction(a, d)"><mat-icon [class.caution-icon]="a.caution">{{ a.icon }}</mat-icon>{{ a.label }}</button>
                     }
@@ -190,7 +188,7 @@
       </mat-toolbar>
       <div class="details-buttons">
         <button mat-flat-button color="primary" [disabled]="blocked(d, 'install') || busy.has(d.id)" (click)="openInstall([d], 'system')">
-          <mat-icon>system_update_alt</mat-icon>Install update
+          <mat-icon>system_update_alt</mat-icon>Upgrade Firmware
         </button>
         @for (a of systemActions; track a.action) {
           <button mat-flat-button [color]="a.warn ? 'warn' : (a.caution ? undefined : 'primary')" [class.caution]="a.caution"
@@ -204,7 +202,7 @@
         <div class="job-banner">
           <div class="jb-head">
             <span class="spin"></span>
-            <b>{{ d.job.title || 'Job' }}</b>
+            <b>{{ jt(d.job.title, d.job.kind) || 'Job' }}</b>
             <span class="pill run">{{ d.job.status }}</span>
             <span class="flex-1"></span>
             @if (d.job.progress !== null) { <b>{{ d.job.progress | number:'1.0-1' }} %</b> }
@@ -323,7 +321,7 @@
         @if (tabIndex === 2) {
           <div class="tab-body">
             <div class="tab-actions">
-              <button mat-stroked-button [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'app')"><mat-icon>add</mat-icon>Install app</button>
+              <button mat-stroked-button [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'app')"><mat-icon>add</mat-icon>Install App</button>
               <button mat-stroked-button [disabled]="blocked(d, 'install', 'app_lifecycle')" (click)="garbageCollectApps(d)"><mat-icon>cleaning_services</mat-icon>Clean up all apps</button>
             </div>
             <table class="rugix-table compact">
@@ -474,7 +472,7 @@
                       <tr class="job-row" [class.open]="jobOpen(j, i)" (click)="toggleJob(j)">
                         <td class="w-exp"><mat-icon>{{ jobOpen(j, i) ? 'expand_less' : 'expand_more' }}</mat-icon></td>
                         <td class="nowrap">{{ fmt(j.start, true) }}</td>
-                        <td class="nowrap"><mat-icon class="job-icon">{{ jobIcon(j.kind) }}</mat-icon>{{ j.title || 'Job' }}</td>
+                        <td class="nowrap"><mat-icon class="job-icon">{{ jobIcon(j.kind) }}</mat-icon>{{ jt(j.title, j.kind) || 'Job' }}</td>
                         <td><span class="pill" [class.ok]="j.status === 'succeeded'" [class.err]="j.status === 'failed'" [class.run]="j.status === 'running' || j.status === 'queued'">{{ j.status }}</span></td>
                         <td class="nowrap">{{ jobDuration(j) || '—' }}</td>
                         <td class="job-id-cell" [matTooltip]="j.id"><span class="id-text">{{ j.id }}</span>
