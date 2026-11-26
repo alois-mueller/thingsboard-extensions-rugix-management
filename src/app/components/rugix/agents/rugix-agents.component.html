@@ -268,10 +268,10 @@
             <div class="group-title">Boot-Info</div>
           <div class="tab-body grid tight">
             <div class="kv"><span>Boot flow</span><b>{{ d.bootFlow || '—' }}</b></div>
-            <div class="kv"><span>Boot groups</span><b>{{ d.bootGroups.join(', ') || '—' }}</b></div>
             <div class="kv"><span>Active group</span><b>{{ d.activeGroup || '—' }}</b></div>
             <div class="kv"><span>Default group</span><b>{{ d.defaultGroup || '—' }}</b></div>
-            <div class="kv"><span>State management</span><b>{{ d.stateStatus || '—' }}</b></div>
+            <div class="kv"><span>Boot groups</span><b>{{ d.bootGroups.join(', ') || '—' }}</b></div>
+            <div class="kv"><span>State management</span><b [class.good]="d.stateStatus === 'active'" [class.bad]="d.stateStatus === 'error'">{{ d.stateStatus || '—' }}</b></div>
             <div class="kv"><span>Data partition</span><b>{{ d.dataPartition || '—' }}</b></div>
             <div class="kv"><span>Active slot</span><b>{{ slotCount(d) }}</b></div>
             <div class="kv"><span>Components consistent</span>
