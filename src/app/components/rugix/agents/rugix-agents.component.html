@@ -117,8 +117,8 @@
               </div>
             </td>
             <td>
-              <span class="status" [class]="statusClass(d)" [matTooltip]="d.active && d.stateSince ? 'Online since ' + fmt(d.stateSince) : ''" matTooltipPosition="above" matTooltipClass="rugix-tip"><span class="dot"></span>{{ d.active ? 'Online' : 'Offline' }}</span>
-              @if (!d.active && d.lastSeen) { <div class="sub" [matTooltip]="'Offline since ' + fmt(d.lastSeen)" matTooltipPosition="above" matTooltipClass="rugix-tip">{{ ago(d.lastSeen) }}</div> }
+              <span class="status" [class]="statusClass(d)" [matTooltip]="d.active ? (d.stateSince ? 'Online since ' + fmt(d.stateSince) : '') : (d.lastSeen ? 'Offline since ' + fmt(d.lastSeen) : '')" matTooltipPosition="above" matTooltipClass="rugix-tip"><span class="dot"></span>{{ d.active ? 'Online' : 'Offline' }}</span>
+              @if (!d.active && d.lastSeen) { <div class="sub">{{ ago(d.lastSeen) }}</div> }
             </td>
             <td class="nowrap">{{ d.hardware.osVersion || '—' }}</td>
             <td class="c-l3">
