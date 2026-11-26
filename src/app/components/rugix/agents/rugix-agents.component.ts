@@ -1153,7 +1153,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       case 'status': return d.active ? '1' : '0';
       case 'os': return d.hardware.osVersion || '';
       case 'group': return d.activeGroup || '';
-      case 'flow': return d.bootFlow || '';
+      case 'channel': return this.channelOf(d) || '';
       case 'state': return d.stateStatus || '';
       case 'api': return d.apiVersion || '';
       case 'job': return d.job?.status || '';
@@ -1168,7 +1168,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       && (!this.healthFilter || d.health === this.healthFilter)
       && (!this.firmwareFilter || d.firmware === 'outdated'));
     const list = q ? base.filter(d =>
-      [d.name, d.label, d.hardware.osVersion, d.hardware.model, d.hardware.serial, d.bootFlow, d.activeGroup, d.defaultGroup,
+      [d.name, d.label, d.hardware.osVersion, d.hardware.model, d.hardware.serial, d.bootFlow, this.channelOf(d), d.activeGroup, d.defaultGroup,
         d.stateStatus, d.apiVersion, d.channel, d.job?.status, d.job?.title, d.active ? 'online' : 'offline']
         .some(v => (v || '').toLowerCase().includes(q))) : base;
     const dir = this.sortDir === 'asc' ? 1 : -1;

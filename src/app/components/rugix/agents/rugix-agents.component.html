@@ -273,7 +273,7 @@
           <th class="sortable w-status" [class.sorted]="sortKey === 'status'" tabindex="0" role="button" (click)="sortBy('status')" (keydown.enter)="sortBy('status')">Connection<mat-icon class="sort-icon">{{ sortKey === 'status' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
           <th class="sortable c-os" [class.sorted]="sortKey === 'os'" tabindex="0" role="button" (click)="sortBy('os')" (keydown.enter)="sortBy('os')">Edge OS<mat-icon class="sort-icon">{{ sortKey === 'os' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
           <th class="sortable c-l3 c-group" [class.sorted]="sortKey === 'group'" tabindex="0" role="button" (click)="sortBy('group')" (keydown.enter)="sortBy('group')">Active / default<mat-icon class="sort-icon">{{ sortKey === 'group' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
-          <th class="sortable c-l2 c-flow" [class.sorted]="sortKey === 'flow'" tabindex="0" role="button" (click)="sortBy('flow')" (keydown.enter)="sortBy('flow')">Boot flow<mat-icon class="sort-icon">{{ sortKey === 'flow' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-l2 c-flow" [class.sorted]="sortKey === 'channel'" tabindex="0" role="button" (click)="sortBy('channel')" (keydown.enter)="sortBy('channel')">Release channel<mat-icon class="sort-icon">{{ sortKey === 'channel' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
           <th class="sortable c-l2 c-state" [class.sorted]="sortKey === 'state'" tabindex="0" role="button" (click)="sortBy('state')" (keydown.enter)="sortBy('state')">State<mat-icon class="sort-icon">{{ sortKey === 'state' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
           <th class="sortable c-l1 c-api" [class.sorted]="sortKey === 'api'" tabindex="0" role="button" (click)="sortBy('api')" (keydown.enter)="sortBy('api')">Rugix API<mat-icon class="sort-icon">{{ sortKey === 'api' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
           <th class="sortable c-l1 c-job" [class.sorted]="sortKey === 'job'" tabindex="0" role="button" (click)="sortBy('job')" (keydown.enter)="sortBy('job')">Last job<mat-icon class="sort-icon">{{ sortKey === 'job' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
@@ -311,7 +311,7 @@
             <td class="c-l3">
               <span class="groups" [class.mismatch]="d.commitPending" [matTooltip]="d.commitPending ? 'Active group ' + d.activeGroup + ', default group ' + d.defaultGroup + ' – commit pending' : ''" matTooltipPosition="above" matTooltipClass="rugix-tip">{{ d.activeGroup || '—' }}@if (d.defaultGroup) { / {{ d.defaultGroup }} }</span>
             </td>
-            <td class="c-l2">{{ d.bootFlow || '—' }}</td>
+            <td class="c-l2"><span [matTooltip]="d.target ? 'Targets ' + d.target : 'No target version for this channel'" matTooltipPosition="above" matTooltipClass="rugix-tip">{{ channelOf(d) || '—' }}</span></td>
             <td class="c-l2">
               <span class="chip" [class.ok]="d.stateStatus === 'active'" [class.err]="d.stateStatus === 'error'">{{ d.stateStatus || '—' }}</span>
             </td>

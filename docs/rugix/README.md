@@ -15,7 +15,7 @@ Six views in the top menu:
 | View | What it shows |
 |------|---------------|
 | **Overview** | Fleet donuts (device status, Edge OS versions, firmware vs. release channel, last job), recent alerts (offline, commit pending, failed jobs, state errors, security bypasses), Rugix logo, GitHub link and version badges |
-| **Devices** | Sortable / searchable / paginated table (connection incl. online/offline since, Edge OS, active / default boot group, boot flow, state, API, last job with live progress), health and connection filters, bulk *Upgrade Firmware* / *Install App*, details side panel |
+| **Devices** | Sortable / searchable / paginated table (connection incl. online/offline since, Edge OS, active / default boot group, release channel, state, API, last job with live progress), health and connection filters, bulk *Upgrade Firmware* / *Install App*, details side panel |
 | **Updates** / **Apps** | The firmware updates and app bundles that can be installed: ThingsBoard OTA packages (type firmware / software) that point to an external bundle URL. Add, edit (replace) and remove them here; the *Upgrade Firmware* / *Install App* dialogs offer the same packages |
 | **Channels** | Release channels with target versions (dropdown of the firmware versions from *Updates*) and per-channel device counts (editable by tenant administrators) |
 | **Jobs** | Job history of all devices (24 h / 7 d / 30 d), status filter, search; a row opens the device's job log |
