@@ -10,6 +10,7 @@
       <span class="targets-text"><b>{{ data.devices.length === 1 ? 'Target' : 'Targets (' + data.devices.length + ')' }}:</b> {{ targetsSummary }}</span>
     </div>
 
+    <ng-template #pkgSelect>
     @if (!useCustomUrl) {
       <mat-form-field appearance="outline" class="rugix-field">
         <mat-label>{{ isSystem ? 'Firmware package' : 'Software package' }}</mat-label>
@@ -35,18 +36,32 @@
         }
       </mat-form-field>
     }
-    @if (targetNote; as n) { <div [class]="n.warn ? 'rugix-note' : 'rugix-note ok'">{{ n.text }}</div> }
-    @if (urlProblem.error) { <div class="rugix-error">{{ urlProblem.error }}</div> }
-    @if (urlProblem.warn) { <div class="rugix-note">{{ urlProblem.warn }}</div> }
     @if (packages.length) {
       <mat-checkbox (change)="blurSoon()" [(ngModel)]="useCustomUrl" name="useCustomUrl" [disabled]="installing">Enter URL manually</mat-checkbox>
     }
+    </ng-template>
 
+    @if (fixedMode) {
+      <div class="rugix-fixed">
+        <mat-icon>system_update_alt</mat-icon>
+        <span class="fixed-text"><b>Firmware:</b> {{ fixedLabel }}</span>
+        @if (!useCustomUrl && selectedPackage && isTarget(selectedPackage)) { <span class="rugix-target-tag">channel target</span> }
+      </div>
+    } @else {
+      <ng-container *ngTemplateOutlet="pkgSelect"></ng-container>
+    }
+    @if (targetNote; as n) { <div [class]="n.warn ? 'rugix-note' : 'rugix-note ok'">{{ n.text }}</div> }
+    @if (urlProblem.error) { <div class="rugix-error">{{ urlProblem.error }}</div> }
+    @if (urlProblem.warn) { <div class="rugix-note">{{ urlProblem.warn }}</div> }
     <button type="button" class="rugix-advanced-toggle" (click)="advancedOpen = !advancedOpen" [attr.aria-expanded]="advancedOpen">
       <mat-icon>{{ advancedOpen ? 'expand_less' : 'expand_more' }}</mat-icon>Advanced
     </button>
     @if (advancedOpen) {
       <div class="rugix-advanced">
+        @if (fixedMode) {
+          <div class="rugix-section-title">Firmware package</div>
+          <ng-container *ngTemplateOutlet="pkgSelect"></ng-container>
+        }
         @if (isSystem) {
           <div class="rugix-section-title">After installation</div>
           <mat-radio-group [(ngModel)]="reboot" name="reboot" class="rugix-options" [disabled]="installing">

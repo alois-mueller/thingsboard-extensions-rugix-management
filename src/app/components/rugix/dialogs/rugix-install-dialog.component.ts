@@ -125,6 +125,22 @@ export class RugixInstallDialogComponent implements OnInit {
     return !!this.targetVersion && p.version === this.targetVersion;
   }
 
+  /** Firmware upgrade to a single channel target: the version is fixed and can only be changed under Advanced. */
+  get fixedMode(): boolean {
+    return this.isSystem && !!this.targetVersion && (this.loadingPackages || !!this.targetPackage);
+  }
+
+  get fixedLabel(): string {
+    if (this.loadingPackages) {
+      return 'Loading…';
+    }
+    if (this.useCustomUrl) {
+      return this.customUrl.trim() || 'custom bundle URL';
+    }
+    const p = this.selectedPackage;
+    return p ? `${p.title || p.tag || p.version} – ${p.version}` : '—';
+  }
+
   /** Hint about the channel target below the package selection. */
   get targetNote(): { text: string; warn: boolean } | null {
     const t = this.data.targets || [];

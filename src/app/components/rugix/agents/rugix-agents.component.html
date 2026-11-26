@@ -401,11 +401,6 @@
         <button mat-flat-button color="primary" [disabled]="blocked(d, 'install') || busy.has(d.id)" (click)="openInstall([d], 'system')">
           <mat-icon>system_update_alt</mat-icon>Upgrade Firmware
         </button>
-        @if (d.firmware === 'outdated' && d.target && allowed('install')) {
-          <button mat-flat-button color="primary" [disabled]="blocked(d, 'install') || busy.has(d.id)" (click)="openInstall([d], 'system')" [matTooltip]="'Release channel ' + channelOf(d) + ' targets ' + d.target" matTooltipPosition="above" matTooltipClass="rugix-tip">
-            <mat-icon>upgrade</mat-icon>Upgrade to {{ d.target }}
-          </button>
-        }
         @for (a of systemActions; track a.action) {
           <button mat-flat-button [color]="a.warn ? 'warn' : (a.caution ? undefined : 'primary')" [class.caution]="a.caution"
                   [disabled]="blocked(d, kindOf(a), featureOf(a)) || busy.has(d.id)" (click)="runSystemAction(a, d)">
