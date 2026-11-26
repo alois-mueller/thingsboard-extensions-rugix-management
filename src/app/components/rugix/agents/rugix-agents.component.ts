@@ -359,6 +359,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   setView(v: 'overview' | 'devices' | 'jobs' | 'channels'): void {
     this.view = v;
     RugixAgentsComponent.lastView.set(this.widgetKey, v);
+    setTimeout(() => this.centerView(true));
     this.syncFleet();
     if (v === 'overview') {
       this.closeDetails();
@@ -745,6 +746,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     this.syncFleet();
     this.onDataUpdated();
     this.loadChannels();
+    setTimeout(() => this.centerView(false), 300);
   }
 
   ngOnDestroy(): void {
@@ -1299,6 +1301,15 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
         this.tabCanRight = right;
         this.cd.markForCheck();
       });
+    }
+  }
+
+  /** Scroll the active view tab to the middle of the bar (clamped at both ends, like the details tabs). */
+  private centerView(smooth: boolean): void {
+    const bar = this.host.nativeElement.querySelector('.view-tabs') as HTMLElement | null;
+    const tab = bar?.querySelector('.view-tab.active') as HTMLElement | null;
+    if (bar && tab) {
+      bar.scrollTo({left: tab.offsetLeft - (bar.clientWidth - tab.offsetWidth) / 2, behavior: smooth ? 'smooth' : 'auto'});
     }
   }
 
