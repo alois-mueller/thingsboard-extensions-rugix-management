@@ -90,7 +90,7 @@
               <td class="pk-url">
                 @if (p.url) {
                   <div class="pk-urlbox">
-                    <span class="pk-link" [matTooltip]="p.url" matTooltipPosition="above" matTooltipClass="rugix-tip">{{ p.url }}</span>
+                    <span class="pk-link" [matTooltip]="displayUrl(p.url)" matTooltipPosition="above" matTooltipClass="rugix-tip">{{ displayUrl(p.url) }}</span>
                     <button mat-icon-button type="button" class="copy-btn" matTooltip="Copy URL" matTooltipPosition="above" matTooltipClass="rugix-tip" aria-label="Copy bundle URL" (click)="copy(p.url)"><mat-icon>{{ copied === p.url ? 'check' : 'content_copy' }}</mat-icon></button>
                   </div>
                 } @else {

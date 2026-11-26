@@ -34,6 +34,8 @@
         }
       </mat-form-field>
     }
+    @if (urlProblem.error) { <div class="rugix-error">{{ urlProblem.error }}</div> }
+    @if (urlProblem.warn) { <div class="rugix-note">{{ urlProblem.warn }}</div> }
     @if (packages.length) {
       <mat-checkbox (change)="blurSoon()" [(ngModel)]="useCustomUrl" name="useCustomUrl" [disabled]="installing">Enter URL manually</mat-checkbox>
     }

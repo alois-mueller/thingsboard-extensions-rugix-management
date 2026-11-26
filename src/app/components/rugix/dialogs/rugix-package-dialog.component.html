@@ -34,6 +34,8 @@
       <mat-label>Description (optional)</mat-label>
       <textarea matInput name="description" rows="2" [(ngModel)]="description" [disabled]="saving"></textarea>
     </mat-form-field>
+    @if (url.trim() && urlProblem.error) { <div class="rugix-error">{{ urlProblem.error }}</div> }
+    @if (urlProblem.warn) { <div class="rugix-note">{{ urlProblem.warn }}</div> }
     @if (replaces) { <div class="rugix-note">ThingsBoard cannot change title, version, tag or URL of a package, so saving replaces it (the package is removed and added again).</div> }
     @if (error) { <div class="rugix-error">{{ error }}</div> }
   </div>

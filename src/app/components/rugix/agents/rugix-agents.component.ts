@@ -26,7 +26,7 @@ import {
 } from '../models/rugix.models';
 import { RugixAppGeneration, RugixAppInfo, RugixDaemonFeature, RugixJobEvent, RugixJobState } from '../models/rugix.models';
 import { RugixDonutSegment } from '../charts/rugix-donut.component';
-import { compareVersions, jobLabel, foldJobEvent, formatDateTime, fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots, firmwareState } from '../models/rugix-parse';
+import { channelTarget, CHANNEL_NAME, displayUrl, compareVersions, jobLabel, foldJobEvent, formatDateTime, fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots, firmwareState } from '../models/rugix-parse';
 import { REVPI_ICON, RUGIX_LOGO } from '../models/rugix-icons';
 import { RugixJobHandle, RugixRpcService } from '../services/rugix-rpc.service';
 import {
@@ -798,7 +798,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       d.slots = parseSlots(slotRaw.get(d.id));
       d.apps = mergeApps(d.apps, d.componentList);
       d.commitPending = !!d.activeGroup && !!d.defaultGroup && d.activeGroup !== d.defaultGroup;
-      d.target = this.settings.channels[this.channelOf(d)] || undefined;
+      d.target = channelTarget(this.settings.channels, this.channelOf(d));
       d.firmware = d.target ? firmwareState(d.hardware.osVersion, d.target) : 'unknown';
       this.trackJob(d);
       return d;
@@ -846,6 +846,8 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       error: () => { this.pkgLoading = false; this.cd.markForCheck(); }
     });
   }
+
+  displayUrl = displayUrl;
 
   /** Release channels whose target version is this firmware package (comma separated, empty when none). */
   channelsOf(p: OtaPackageInfo): string {
@@ -926,7 +928,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   private refreshFirmware(): void {
     for (const d of this.devices) {
-      d.target = this.settings.channels[this.channelOf(d)] || undefined;
+      d.target = channelTarget(this.settings.channels, this.channelOf(d));
       d.firmware = d.target ? firmwareState(d.hardware.osVersion, d.target) : 'unknown';
     }
     this.computeOverview();
@@ -967,7 +969,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   /** `''` when the new channel name is acceptable. */
   chNameError(name: string): string {
     if (!name) { return 'Enter a name'; }
-    if (!/^[a-z0-9][a-z0-9._-]{0,31}$/.test(name)) { return 'Use lower-case letters, digits, . _ -'; }
+    if (!CHANNEL_NAME.test(name)) { return 'Use lower-case letters, digits, . _ -'; }
     return this.chDraft.some(c => c.name === name) ? 'Channel exists' : '';
   }
 
@@ -1030,7 +1032,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     if (!channel || channel === this.channelOf(d) || this.channelSaving || !this.allowed('install')) {
       return;
     }
-    const from = this.channelOf(d), target = this.settings.channels[channel];
+    const from = this.channelOf(d), target = channelTarget(this.settings.channels, channel);
     this.dialog.open<RugixConfirmDialogComponent, RugixConfirmDialogData, RugixConfirmDialogResult>(
       RugixConfirmDialogComponent, {
         data: {
@@ -1049,7 +1051,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     this.rpc.setChannel(this.settings, d, channel).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
         d.channel = channel;
-        d.target = this.settings.channels[channel] || undefined;
+        d.target = channelTarget(this.settings.channels, channel);
         d.firmware = d.target ? firmwareState(d.hardware.osVersion, d.target) : 'unknown';
         this.channelSaving = false;
         this.computeOverview();

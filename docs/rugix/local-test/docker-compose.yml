@@ -36,8 +36,8 @@ services:
       tb-install:
         condition: service_completed_successfully
     ports:
-      - "8080:8080"
-      - "1883:1883"
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:1883:1883"
     environment:
       TB_SERVICE_ID: tb-local
       TB_SERVICE_TYPE: monolith

@@ -260,7 +260,9 @@ export function applyValue(device: RugixDevice, key: string, raw: any, keys: Rug
       device.insecure = daemon.insecure;
     }
   } else if (key === keys.channel) {
-    device.channel = typeof raw === 'string' && raw.trim() ? raw.trim().toLowerCase() : undefined;
+    // device-controlled value: only plain channel names (never keys like "constructor" or "__proto__")
+    const name = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
+    device.channel = CHANNEL_NAME.test(name) ? name : undefined;
   } else if (key === keys.adminVersion) {
     device.adminVersion = typeof raw === 'string' ? raw : (parseJson<any>(raw)?.version ?? undefined);
   } else if (key === keys.components) {
@@ -537,4 +539,42 @@ export function compareVersions(a: string | undefined, b: string | undefined): n
 export function firmwareState(current: string | undefined, target: string | undefined): 'current' | 'outdated' | 'ahead' | 'unknown' {
   const c = compareVersions(current, target);
   return c === null ? 'unknown' : (c < 0 ? 'outdated' : (c > 0 ? 'ahead' : 'current'));
+}
+
+/** Valid release channel name (also used by the Channels view). */
+export const CHANNEL_NAME = /^[a-z0-9][a-z0-9._-]{0,31}$/;
+
+/** Version a channel targets; own properties only, so names like "constructor" cannot resolve to prototype members. */
+export function channelTarget(channels: { [name: string]: string } | undefined, name: string | undefined): string | undefined {
+  if (!channels || !name || !Object.prototype.hasOwnProperty.call(channels, name)) {
+    return undefined;
+  }
+  const v = channels[name];
+  return typeof v === 'string' && v ? v : undefined;
+}
+
+/** Problems of a bundle URL: `error` blocks, `warn` is a hint (plain http, credentials or a SAS token inside the URL). */
+export function urlIssue(url: string): { error?: string; warn?: string } {
+  const v = (url || '').trim();
+  if (!v) {
+    return {};
+  }
+  let u: URL;
+  try {
+    u = new URL(v);
+  } catch {
+    return {error: 'Not a valid URL'};
+  }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') {
+    return {error: 'Only http(s) URLs are supported'};
+  }
+  if (u.username || u.password || /(^|&)(sig|token|access_token|x-amz-signature)=/i.test(u.search.slice(1))) {
+    return {warn: 'The URL contains a credential or access token. Everybody who can read this entry (and the audit log) can see it – let a proxy or the gateway add it instead.'};
+  }
+  return u.protocol === 'http:' ? {warn: 'Plain http: the download is not encrypted. Use https if possible.'} : {};
+}
+
+/** URL without query string and fragment, for display (keeps SAS tokens off the screen). */
+export function displayUrl(url: string): string {
+  return (url || '').replace(/[?#].*$/, '');
 }

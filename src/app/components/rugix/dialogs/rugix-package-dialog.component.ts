@@ -7,6 +7,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { catchError, mergeMap } from 'rxjs/operators';
 import { throwError } from 'rxjs';
 import { OtaPackageInfo, OtaUpdateType } from '@shared/public-api';
+import { urlIssue } from '../models/rugix-parse';
 import { RugixRpcService } from '../services/rugix-rpc.service';
 
 export interface RugixPackageDialogData {
@@ -54,9 +55,13 @@ export class RugixPackageDialogComponent implements OnInit {
     return this.data.type === OtaUpdateType.FIRMWARE;
   }
 
+  get urlProblem(): { error?: string; warn?: string } {
+    return urlIssue(this.url);
+  }
+
   get valid(): boolean {
     const url = this.url.trim();
-    return !!this.title.trim() && !!this.version.trim() && /^https?:\/\/\S+$/i.test(url) && (this.isEdit || !!this.profileId);
+    return !!this.title.trim() && !!this.version.trim() && !!url && !urlIssue(url).error && (this.isEdit || !!this.profileId);
   }
 
   /** ThingsBoard only allows changing the description of an existing package; everything else needs a replacement. */

@@ -9,6 +9,7 @@ import { OtaPackageInfo, OtaUpdateType, PageLink } from '@shared/public-api';
 import { forkJoin, Observable, of } from 'rxjs';
 import { catchError, mergeMap } from 'rxjs/operators';
 import { RugixDevice, RugixInstallOptions, RugixWidgetSettings, RUGIX_REBOOT_MODES } from '../models/rugix.models';
+import { urlIssue } from '../models/rugix-parse';
 import { RugixJobHandle, RugixRpcService } from '../services/rugix-rpc.service';
 
 export interface RugixInstallDialogData {
@@ -115,8 +116,12 @@ export class RugixInstallDialogComponent implements OnInit {
     return this.useCustomUrl ? this.customUrl.trim() : (this.selectedPackage?.url || '');
   }
 
+  get urlProblem(): { error?: string; warn?: string } {
+    return urlIssue(this.url);
+  }
+
   get canInstall(): boolean {
-    return !this.installing && !!this.url && this.acknowledged;
+    return !this.installing && !!this.url && !this.urlProblem.error && this.acknowledged;
   }
 
   ngOnInit(): void {
