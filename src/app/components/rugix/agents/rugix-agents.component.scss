@@ -256,15 +256,23 @@
   .tab-body > .banner { margin: 0 0 12px; }
   .fchip mat-icon.close { }
   .view-tab .count.run { background: rgba(33, 150, 243, .16); color: #1565c0; }
-  .fleet .overview-head { gap: 16px; }
-  .fleet-filters { padding-left: 0; padding-right: 0; flex-wrap: wrap; overflow: visible; }
-  .fleet-filters .fchip .spin { margin: 0; }
-  .fleet-filters .fchip mat-icon.bad { color: #d12730; }
-  .fleet-filters .fchip mat-icon.good { color: #198038; }
+  .fleet-hint { white-space: nowrap; }
+  .rugix-filters .fchip .spin { margin: 0; }
+  .rugix-filters .fchip mat-icon.bad { color: #d12730; }
+  .rugix-filters .fchip mat-icon.good { color: #198038; }
   .fleet-range { margin-left: auto; }
-  .fleet-range ~ .comp-filter { width: 220px; }
-  .log-table .fj-dev { width: 200px; }
-  .log-table .fj-job { width: 200px; }
+  .fleet-table {
+    table-layout: fixed;
+    min-width: 760px;
+    .lc-time { width: 190px; }
+    .fj-dev { width: 22%; }
+    .fj-job { width: 22%; }
+    .lc-status { width: 130px; }
+    .lc-dur { width: 90px; }
+    .lc-id { width: 150px; }
+    td, th { overflow: hidden; text-overflow: ellipsis; }
+    tbody tr { cursor: pointer; }
+  }
   .gen-table { margin-top: 4px; .w-actions { width: 120px; text-align: right; } }
   .gen-activate { height: 32px; line-height: 30px; }
   .apps-table .w-exp { width: 36px; }

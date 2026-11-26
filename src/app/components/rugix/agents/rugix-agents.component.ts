@@ -244,6 +244,14 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     });
   }
 
+  toggleFleetSearch(): void {
+    this.searchOpen = !this.searchOpen;
+    if (!this.searchOpen) {
+      this.fleetSearch = '';
+      this.fleetPageIndex = 0;
+    }
+  }
+
   openDeviceJobs(f: { device: RugixDevice }): void {
     const d = this.devices.find(x => x.id === f.device.id);
     if (!d) {

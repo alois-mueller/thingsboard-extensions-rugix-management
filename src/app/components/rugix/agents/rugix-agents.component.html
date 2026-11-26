@@ -41,48 +41,55 @@
   }
 
   @if (view === 'jobs') {
-    <div class="overview fleet">
-      <div class="overview-head">
-        <span class="rugix-title">Jobs</span>
-        <span class="audit-hint">{{ fleetFiltered.length }} {{ fleetFiltered.length === 1 ? 'job' : 'jobs' }} in the last {{ fleetDays }} days on {{ devices.length }} devices</span>
-        <span class="flex-1"></span>
-        <button mat-icon-button type="button" (click)="loadFleetJobs()" [disabled]="fleetLoading" matTooltip="Refresh" aria-label="Refresh"><mat-icon>refresh</mat-icon></button>
-      </div>
-      <div class="rugix-filters fleet-filters">
-        <span class="fchip" role="button" tabindex="0" [class.on]="fleetStatus === ''" (click)="fleetStatus = ''; fleetPageIndex = 0" (keydown.enter)="fleetStatus = ''; fleetPageIndex = 0">All</span>
-        <span class="fchip" role="button" tabindex="0" [class.on]="fleetStatus === 'running'" (click)="fleetStatus = 'running'; fleetPageIndex = 0" (keydown.enter)="fleetStatus = 'running'; fleetPageIndex = 0"><span class="spin"></span>Running · {{ fleetCount('running') }}</span>
-        <span class="fchip" role="button" tabindex="0" [class.on]="fleetStatus === 'failed'" (click)="fleetStatus = 'failed'; fleetPageIndex = 0" (keydown.enter)="fleetStatus = 'failed'; fleetPageIndex = 0"><mat-icon class="bad">error</mat-icon>Failed · {{ fleetCount('failed') }}</span>
-        <span class="fchip" role="button" tabindex="0" [class.on]="fleetStatus === 'succeeded'" (click)="fleetStatus = 'succeeded'; fleetPageIndex = 0" (keydown.enter)="fleetStatus = 'succeeded'; fleetPageIndex = 0"><mat-icon class="good">check_circle</mat-icon>Succeeded · {{ fleetCount('succeeded') }}</span>
-        <span class="range fleet-range">
-          @for (n of [1, 7, 30]; track n) { <button type="button" [class.active]="fleetDays === n" (click)="setFleetDays(n)">{{ n === 1 ? '24 h' : n + ' d' }}</button> }
-        </span>
-        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="comp-filter">
-          <mat-icon matPrefix>search</mat-icon>
-          <input matInput placeholder="Search jobs" [(ngModel)]="fleetSearch" (ngModelChange)="fleetPageIndex = 0">
-        </mat-form-field>
-      </div>
-      @if (fleetLoading) { <mat-progress-bar mode="indeterminate"></mat-progress-bar> }
-      <div class="rugix-table-wrap audit-wrap">
-        <table class="rugix-table compact log-table">
-          <thead><tr><th class="lc-time">Started</th><th class="fj-dev">Device</th><th class="fj-job">Job</th><th class="lc-status">Status</th><th class="lc-dur">Duration</th><th class="lc-id">Job ID</th></tr></thead>
-          <tbody>
-            @for (f of fleetPage; track f.job.id) {
-              <tr class="job-row" tabindex="0" (click)="openDeviceJobs(f)" (keydown.enter)="openDeviceJobs(f)">
-                <td class="nowrap">{{ fmt(f.job.start, true) }}</td>
-                <td class="nowrap"><b>{{ f.device.label || f.device.name }}</b></td>
-                <td class="nowrap"><mat-icon class="job-icon">{{ jobIcon(f.job.kind) }}</mat-icon>{{ jt(f.job.title, f.job.kind) || 'Job' }}</td>
-                <td><span class="pill" [class.run]="f.job.status === 'running' || f.job.status === 'queued'" [class.ok]="f.job.status === 'succeeded'" [class.err]="f.job.status === 'failed'" [matTooltip]="f.job.failure">{{ f.job.status }}@if ((f.job.status === 'running' || f.job.status === 'queued') && f.job.progress !== null) { · {{ f.job.progress | number:'1.0-0' }} %}</span></td>
-                <td class="nowrap">{{ jobDuration(f.job) || '—' }}</td>
-                <td class="job-id-cell" [matTooltip]="f.job.id"><span class="id-text">{{ f.job.id }}</span></td>
-              </tr>
-            } @empty {
-              <tr><td colspan="6" class="empty">{{ fleetLoading ? 'Loading jobs…' : 'No jobs match in this period.' }}</td></tr>
-            }
-          </tbody>
-        </table>
-      </div>
-      <mat-paginator class="log-paginator" [length]="fleetFiltered.length" [pageSize]="fleetPageSize" [pageIndex]="fleetPageIndex" hidePageSize showFirstLastButtons (page)="fleetPageIndex = $event.pageIndex"></mat-paginator>
+    <!-- same structure as the device table: toolbar, filters, scrolling table, pinned paginator -->
+    <div class="rugix-toolbar">
+      <span class="rugix-title">Jobs</span>
+      <span class="audit-hint fleet-hint">{{ fleetFiltered.length }} {{ fleetFiltered.length === 1 ? 'job' : 'jobs' }} in the last {{ fleetDays }} days</span>
+      <span class="flex-1"></span>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="rugix-search" [class.open]="searchOpen">
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput placeholder="Search jobs" [(ngModel)]="fleetSearch" (ngModelChange)="fleetPageIndex = 0">
+        @if (fleetSearch) {
+          <button matSuffix mat-icon-button type="button" aria-label="Clear search" (click)="fleetSearch = ''; fleetPageIndex = 0"><mat-icon>close</mat-icon></button>
+        }
+      </mat-form-field>
+      <button mat-icon-button type="button" class="search-toggle" (click)="toggleFleetSearch()" matTooltip="Search" aria-label="Search">
+        <mat-icon>{{ searchOpen ? 'close' : 'search' }}</mat-icon>
+      </button>
+      <button mat-icon-button type="button" (click)="loadFleetJobs()" [disabled]="fleetLoading" matTooltip="Refresh" aria-label="Refresh"><mat-icon>refresh</mat-icon></button>
     </div>
+
+    <div class="rugix-filters">
+      <span class="fchip" role="button" tabindex="0" [class.on]="fleetStatus === ''" (click)="fleetStatus = ''; fleetPageIndex = 0" (keydown.enter)="fleetStatus = ''; fleetPageIndex = 0">All</span>
+      <span class="fchip" role="button" tabindex="0" [class.on]="fleetStatus === 'running'" (click)="fleetStatus = 'running'; fleetPageIndex = 0" (keydown.enter)="fleetStatus = 'running'; fleetPageIndex = 0"><span class="spin"></span>Running · {{ fleetCount('running') }}</span>
+      <span class="fchip" role="button" tabindex="0" [class.on]="fleetStatus === 'failed'" (click)="fleetStatus = 'failed'; fleetPageIndex = 0" (keydown.enter)="fleetStatus = 'failed'; fleetPageIndex = 0"><mat-icon class="bad">error</mat-icon>Failed · {{ fleetCount('failed') }}</span>
+      <span class="fchip" role="button" tabindex="0" [class.on]="fleetStatus === 'succeeded'" (click)="fleetStatus = 'succeeded'; fleetPageIndex = 0" (keydown.enter)="fleetStatus = 'succeeded'; fleetPageIndex = 0"><mat-icon class="good">check_circle</mat-icon>Succeeded · {{ fleetCount('succeeded') }}</span>
+      <span class="range fleet-range">
+        @for (n of [1, 7, 30]; track n) { <button type="button" [class.active]="fleetDays === n" (click)="setFleetDays(n)">{{ n === 1 ? '24 h' : n + ' d' }}</button> }
+      </span>
+    </div>
+    @if (fleetLoading) { <mat-progress-bar mode="indeterminate"></mat-progress-bar> }
+
+    <div class="rugix-table-wrap">
+      <table class="rugix-table fleet-table">
+        <thead><tr><th class="lc-time">Started</th><th class="fj-dev">Device</th><th class="fj-job">Job</th><th class="lc-status">Status</th><th class="lc-dur">Duration</th><th class="lc-id">Job ID</th></tr></thead>
+        <tbody>
+          @for (f of fleetPage; track f.job.id) {
+            <tr class="job-row" tabindex="0" (click)="openDeviceJobs(f)" (keydown.enter)="openDeviceJobs(f)">
+              <td class="nowrap">{{ fmt(f.job.start, true) }}</td>
+              <td class="nowrap"><b>{{ f.device.label || f.device.name }}</b></td>
+              <td class="nowrap"><mat-icon class="job-icon">{{ jobIcon(f.job.kind) }}</mat-icon>{{ jt(f.job.title, f.job.kind) || 'Job' }}</td>
+              <td><span class="pill" [class.run]="f.job.status === 'running' || f.job.status === 'queued'" [class.ok]="f.job.status === 'succeeded'" [class.err]="f.job.status === 'failed'" [matTooltip]="f.job.failure">{{ f.job.status }}@if ((f.job.status === 'running' || f.job.status === 'queued') && f.job.progress !== null) { · {{ f.job.progress | number:'1.0-0' }} %}</span></td>
+              <td class="nowrap">{{ jobDuration(f.job) || '—' }}</td>
+              <td class="job-id-cell" [matTooltip]="f.job.id"><span class="id-text">{{ f.job.id }}</span></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="empty">{{ fleetLoading ? 'Loading jobs…' : 'No jobs match in this period.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <mat-paginator showFirstLastButtons hidePageSize [length]="fleetFiltered.length" [pageIndex]="fleetPageIndex" [pageSize]="fleetPageSize" (page)="fleetPageIndex = $event.pageIndex"></mat-paginator>
   }
 
   @if (view === 'devices') {
