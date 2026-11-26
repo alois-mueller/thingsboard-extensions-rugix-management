@@ -336,11 +336,11 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   alertsExpanded = false;
 
   /** Online / offline / error / warning counts for the Devices toolbar. */
-  get fleetSummary(): { online: number; offline: number; error: number; warning: number } {
-    const c = {online: 0, offline: 0, error: 0, warning: 0};
+  get fleetSummary(): { online: number; offline: number; error: number; warning: number; healthy: number } {
+    const c = {online: 0, offline: 0, error: 0, warning: 0, healthy: 0};
     for (const d of this.devices) {
       if (d.active) { c.online++; } else { c.offline++; }
-      if (d.health === 'error') { c.error++; } else if (d.health === 'warning') { c.warning++; }
+      if (d.health === 'error') { c.error++; } else if (d.health === 'warning') { c.warning++; } else if (d.health === 'healthy') { c.healthy++; }
     }
     return c;
   }
@@ -783,11 +783,15 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   }
 
   statusFilter: 'all' | 'online' | 'offline' = 'all';
-  pendingOnly = false;
   healthFilter: '' | 'healthy' | 'warning' | 'error' | 'offline' = '';
 
   get filtersActive(): boolean {
-    return this.statusFilter !== 'all' || this.pendingOnly || !!this.healthFilter;
+    return this.statusFilter !== 'all' || !!this.healthFilter;
+  }
+
+  toggleHealth(h: 'healthy' | 'warning' | 'error'): void {
+    this.healthFilter = this.healthFilter === h ? '' : h;
+    this.pageIndex = 0;
   }
 
   setStatusFilter(v: 'all' | 'online' | 'offline'): void {
@@ -797,7 +801,6 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   clearFilters(): void {
     this.statusFilter = 'all';
-    this.pendingOnly = false;
     this.healthFilter = '';
     this.pageIndex = 0;
   }
@@ -891,7 +894,6 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     const q = this.search.trim().toLowerCase();
     const base = this.devices.filter(d =>
       (this.statusFilter === 'all' || (this.statusFilter === 'online') === d.active)
-      && (!this.pendingOnly || d.commitPending)
       && (!this.healthFilter || d.health === this.healthFilter));
     const list = q ? base.filter(d =>
       [d.name, d.label, d.hardware.osVersion, d.hardware.model, d.hardware.serial, d.bootFlow, d.activeGroup, d.defaultGroup,

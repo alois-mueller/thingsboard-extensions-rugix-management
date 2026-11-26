@@ -112,6 +112,8 @@
     > * { flex: none; }
   }
 
+  .fchip-sep { flex: none; width: 1px; height: 20px; margin: 0 4px; background: rgba(0, 0, 0, .2); }
+
   .fchip {
     display: inline-flex;
     align-items: center;
@@ -125,7 +127,7 @@
     user-select: none;
     white-space: nowrap;
     mat-icon { width: 18px; height: 18px; font-size: 18px; color: #ef6c00; }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: #9e9e9e; &.ok { background: #198038; } }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #9e9e9e; &.ok { background: #198038; } &.warn { background: #ef6c00; } &.err { background: #d12730; } }
     &:hover { background: rgba(0, 0, 0, .04); }
     &.on { background: rgba(var(--tb-primary-rgb, 48, 86, 128), .12); border-color: var(--tb-primary-500, #305680); color: var(--tb-primary-500, #305680); font-weight: 500; }
   }

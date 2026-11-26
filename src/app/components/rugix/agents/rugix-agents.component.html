@@ -136,10 +136,10 @@
     <span class="fchip" role="button" tabindex="0" [class.on]="statusFilter === 'all'" (click)="setStatusFilter('all')" (keydown.enter)="setStatusFilter('all')">All</span>
     <span class="fchip" role="button" tabindex="0" [class.on]="statusFilter === 'online'" (click)="setStatusFilter('online')" (keydown.enter)="setStatusFilter('online')"><span class="dot ok"></span>Online</span>
     <span class="fchip" role="button" tabindex="0" [class.on]="statusFilter === 'offline'" (click)="setStatusFilter('offline')" (keydown.enter)="setStatusFilter('offline')"><span class="dot"></span>Offline</span>
-    <span class="fchip" role="button" tabindex="0" [class.on]="pendingOnly" (click)="pendingOnly = !pendingOnly; pageIndex = 0" (keydown.enter)="pendingOnly = !pendingOnly; pageIndex = 0"><mat-icon>sync_problem</mat-icon>Commit pending</span>
-    @if (healthFilter) {
-      <span class="fchip on" role="button" tabindex="0" (click)="healthFilter = ''; pageIndex = 0" (keydown.enter)="healthFilter = ''; pageIndex = 0">Health: {{ healthFilter }}<mat-icon>close</mat-icon></span>
-    }
+    <span class="fchip-sep" aria-hidden="true"></span>
+    <span class="fchip" role="button" tabindex="0" [class.on]="healthFilter === 'healthy'" (click)="toggleHealth('healthy')" (keydown.enter)="toggleHealth('healthy')"><span class="dot ok"></span>Healthy · {{ fleetSummary.healthy }}</span>
+    <span class="fchip" role="button" tabindex="0" [class.on]="healthFilter === 'warning'" (click)="toggleHealth('warning')" (keydown.enter)="toggleHealth('warning')"><span class="dot warn"></span>Warning · {{ fleetSummary.warning }}</span>
+    <span class="fchip" role="button" tabindex="0" [class.on]="healthFilter === 'error'" (click)="toggleHealth('error')" (keydown.enter)="toggleHealth('error')"><span class="dot err"></span>Error · {{ fleetSummary.error }}</span>
     @if (filtersActive) {
       <button mat-button type="button" class="fclear" (click)="clearFilters()">Clear</button>
     }
