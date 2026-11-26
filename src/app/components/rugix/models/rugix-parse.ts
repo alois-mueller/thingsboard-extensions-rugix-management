@@ -386,11 +386,11 @@ export function downsample(stats: RugixMachineStat[], maxPoints: number): RugixM
 
 const pad2 = (n: number) => (n < 10 ? '0' : '') + n;
 
-/** `dd/MM/yyyy HH:mm:ss` (24h). */
+/** `dd.MM.yyyy HH:mm[:ss] Uhr` (24h). */
 export function formatDateTime(ts: number, seconds = true): string {
   const d = new Date(ts);
-  return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}` +
-    (seconds ? ':' + pad2(d.getSeconds()) : '');
+  return `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}` +
+    (seconds ? ':' + pad2(d.getSeconds()) : '') + ' Uhr';
 }
 
 export function formatTime(ts: number): string {
@@ -400,7 +400,7 @@ export function formatTime(ts: number): string {
 
 export function formatDate(ts: number): string {
   const d = new Date(ts);
-  return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`;
+  return `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}`;
 }
 
 

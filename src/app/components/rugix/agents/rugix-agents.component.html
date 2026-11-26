@@ -87,7 +87,7 @@
         <tr>
           <th class="w-check"><mat-checkbox [checked]="allChecked" (change)="toggleAll()"></mat-checkbox></th>
           <th class="sortable c-dev" [class.sorted]="sortKey === 'name'" (click)="sortBy('name')">Device<mat-icon class="sort-icon">{{ sortKey === 'name' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
-          <th class="sortable w-status" [class.sorted]="sortKey === 'status'" (click)="sortBy('status')">Status<mat-icon class="sort-icon">{{ sortKey === 'status' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable w-status" [class.sorted]="sortKey === 'status'" (click)="sortBy('status')">Connection<mat-icon class="sort-icon">{{ sortKey === 'status' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
           <th class="sortable c-os" [class.sorted]="sortKey === 'os'" (click)="sortBy('os')">Edge OS<mat-icon class="sort-icon">{{ sortKey === 'os' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
           <th class="sortable c-l3 c-group" [class.sorted]="sortKey === 'group'" (click)="sortBy('group')">Active group<mat-icon class="sort-icon">{{ sortKey === 'group' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
           <th class="sortable c-l2 c-flow" [class.sorted]="sortKey === 'flow'" (click)="sortBy('flow')">Boot flow<mat-icon class="sort-icon">{{ sortKey === 'flow' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
@@ -106,9 +106,9 @@
             <td>
               <div class="device">
                 @if (isRevPi(d)) { <img class="device-icon" [src]="revpiIcon" alt="Revolution Pi" matTooltip="Revolution Pi"> }
-                <div class="device-text" [matTooltip]="d.label ? d.label + ' (' + d.name + ')' : d.name" matTooltipShowDelay="300">
+                <div class="device-text">
                   <div class="name">
-                    <span class="name-text">{{ d.label || d.name }}</span>
+                    <span class="name-text" [matTooltip]="d.label ? d.label + ' (' + d.name + ')' : d.name" matTooltipShowDelay="300">{{ d.label || d.name }}</span>
                     @if (d.commitPending) { <mat-icon class="warn-icon commit-icon" matTooltip="Warning: Commit pending – running a non-default system. Commit to keep it, otherwise the device falls back on next boot.">warning</mat-icon> }
                     @if (d.insecure) { <mat-icon class="warn-icon insecure-icon" matTooltip="Warning: Rugix Ctrl security bypasses enabled (development only)">warning</mat-icon> }
                   </div>
@@ -117,8 +117,8 @@
               </div>
             </td>
             <td>
-              <span class="status" [class]="statusClass(d)"><span class="dot"></span>{{ d.active ? 'Online' : 'Offline' }}</span>
-              @if (!d.active && d.lastSeen) { <div class="sub" [matTooltip]="'Offline since ' + (d.lastSeen | date:'dd/MM/yyyy HH:mm')">{{ ago(d.lastSeen) }}</div> }
+              <span class="status" [class]="statusClass(d)" [matTooltip]="d.active && d.stateSince ? 'Online since ' + fmt(d.stateSince) : ''"><span class="dot"></span>{{ d.active ? 'Online' : 'Offline' }}</span>
+              @if (!d.active && d.lastSeen) { <div class="sub" [matTooltip]="'Offline since ' + fmt(d.lastSeen)">{{ ago(d.lastSeen) }}</div> }
             </td>
             <td class="nowrap">{{ d.hardware.osVersion || '—' }}</td>
             <td class="c-l3">
@@ -204,7 +204,7 @@
       @if (!d.active) {
         <div class="banner neutral">
           <mat-icon>cloud_off</mat-icon>
-          <span>Device is offline{{ d.lastSeen ? ' since ' + (d.lastSeen | date:'dd/MM/yyyy HH:mm') + ' (' + ago(d.lastSeen) + ')' : '' }}. Values shown are from the last connection; actions are disabled.</span>
+          <span>Device is offline{{ d.lastSeen ? ' since ' + fmt(d.lastSeen) + ' (' + ago(d.lastSeen) + ')' : '' }}. Values shown are from the last connection; actions are disabled.</span>
         </div>
       }
 
@@ -289,7 +289,7 @@
                     @if (s.active) { <span class="pill ok">active</span> }
                   </div>
                   <div class="sub">{{ formatBytes(s.size) }}
-                    @if (s.updatedAt) { · updated {{ s.updatedAt | date:'dd/MM/yyyy HH:mm' }} }</div>
+                    @if (s.updatedAt) { · updated {{ fmt(s.updatedAt) }} }</div>
                   @for (h of s.hashes | keyvalue; track h.key) {
                     <div class="hash" [matTooltip]="h.value">{{ h.key }}: {{ h.value }}</div>
                   }
@@ -452,7 +452,7 @@
                     @for (j of jobPage; track j.id; let i = $index) {
                       <tr class="job-row" [class.open]="jobOpen(j, i)" (click)="toggleJob(j)">
                         <td class="w-exp"><mat-icon>{{ jobOpen(j, i) ? 'expand_less' : 'expand_more' }}</mat-icon></td>
-                        <td class="nowrap">{{ j.start | date:'dd/MM/yyyy HH:mm:ss' }}</td>
+                        <td class="nowrap">{{ fmt(j.start, true) }}</td>
                         <td class="nowrap"><mat-icon class="job-icon">{{ jobIcon(j.kind) }}</mat-icon>{{ j.title || 'Job' }}</td>
                         <td><span class="pill" [class.ok]="j.status === 'succeeded'" [class.err]="j.status === 'failed'" [class.run]="j.status === 'running' || j.status === 'queued'">{{ j.status }}</span></td>
                         <td class="nowrap">{{ jobDuration(j) || '—' }}</td>
@@ -511,7 +511,7 @@
                   <tbody>
                     @for (l of auditPage; track l.id.id) {
                       <tr>
-                        <td class="nowrap">{{ l.createdTime | date:'dd/MM/yyyy HH:mm:ss' }}</td>
+                        <td class="nowrap">{{ fmt(l.createdTime, true) }}</td>
                         <td>{{ l.userName || '—' }}</td>
                         <td class="nowrap">{{ auditAction(l) }}</td>
                         <td><span class="pill" [class.ok]="l.actionStatus === 'SUCCESS'" [class.err]="l.actionStatus !== 'SUCCESS'" style="margin-left: 0">{{ l.actionStatus === 'SUCCESS' ? 'Success' : 'Failure' }}</span></td>

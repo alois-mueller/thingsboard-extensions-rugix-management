@@ -26,7 +26,7 @@ import {
 } from '../models/rugix.models';
 import { RugixDaemonFeature, RugixJobEvent } from '../models/rugix.models';
 import { RugixDonutSegment } from '../charts/rugix-donut.component';
-import { fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots } from '../models/rugix-parse';
+import { formatDateTime, fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots } from '../models/rugix-parse';
 import { REVPI_ICON } from '../models/rugix-icons';
 import { RugixJobHandle, RugixRpcService } from '../services/rugix-rpc.service';
 import {
@@ -490,8 +490,11 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       }
       const last = item.data?.length ? item.data[item.data.length - 1] : null;
       if (last) {
-        if (item.dataKey.name === this.settings.keys.active && last[0] && !device.lastSeen) {
-          device.lastSeen = last[0];
+        if (item.dataKey.name === this.settings.keys.active && last[0]) {
+          device.stateSince = last[0];
+          if (!device.lastSeen) {
+            device.lastSeen = last[0];
+          }
         }
         applyValue(device, item.dataKey.name, last[1], this.settings.keys, slotRaw.get(id));
       }
@@ -573,6 +576,12 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     }
     const names = {install: 'install updates/apps', power: 'reboot/commit', factoryReset: 'factory reset'};
     return 'Your user role is not allowed to ' + missing.map(k => names[k]).join(', ') + '.';
+  }
+
+  /** `dd.MM.yyyy HH:mm Uhr` (24 h); accepts ms epoch or an ISO string. */
+  fmt(ts: number | string | undefined, seconds = false): string {
+    const n = typeof ts === 'string' ? Date.parse(ts) : ts;
+    return n && !isNaN(n) ? formatDateTime(n, seconds) : '';
   }
 
   ago(ts?: number): string {

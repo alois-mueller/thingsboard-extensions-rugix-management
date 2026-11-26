@@ -7,7 +7,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Subscription, timer } from 'rxjs';
 import { exhaustMap, takeWhile } from 'rxjs/operators';
 import { RugixDevice, RugixJobEvent, RugixJobStatus, RugixWidgetSettings } from '../models/rugix.models';
-import { isTerminalStatus } from '../models/rugix-parse';
+import { formatDateTime, isTerminalStatus } from '../models/rugix-parse';
 import { RugixRpcService } from '../services/rugix-rpc.service';
 
 export interface RugixJobDialogData {
@@ -82,6 +82,10 @@ export class RugixJobDialogComponent implements OnInit, OnDestroy {
 
   get logEvents(): RugixJobEvent[] {
     return this.events.filter(e => e.type === 'job-output' || e.message || (e.type === 'job-changed' && e.status));
+  }
+
+  fmt(ts: number): string {
+    return formatDateTime(ts, true);
   }
 
   describe(e: RugixJobEvent): string {

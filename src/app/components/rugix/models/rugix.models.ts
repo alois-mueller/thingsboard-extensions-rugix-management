@@ -245,6 +245,8 @@ export interface RugixDevice {
   lastJobEvent?: RugixJobEvent;
   /** ms epoch of the last known activity (offline since / last seen). */
   lastSeen?: number;
+  /** ms epoch of the last change of the `active` attribute (online since / offline since). */
+  stateSince?: number;
 }
 
 export type RugixJobStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'unknown';

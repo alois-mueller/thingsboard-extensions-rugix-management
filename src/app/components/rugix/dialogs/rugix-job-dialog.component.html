@@ -21,7 +21,7 @@
   @if (!logEvents.length) {
     <div class="label">Waiting for events from the gateway… (the SSE stream must be running)</div>
   } @else {
-    <pre class="job-log">@for (e of logEvents; track $index) {<span class="ts">{{ e.ts | date:'dd/MM/yyyy HH:mm:ss' }}</span><span [class.stderr]="e.stream === 'stderr'" [class.meta]="e.type !== 'job-output'">{{ describe(e) }}</span>
+    <pre class="job-log">@for (e of logEvents; track $index) {<span class="ts">{{ fmt(e.ts) }}</span><span [class.stderr]="e.stream === 'stderr'" [class.meta]="e.type !== 'job-output'">{{ describe(e) }}</span>
 }</pre>
   }
 </div>
