@@ -1,0 +1,857 @@
+<div class="rugix">
+  <!-- ===== view tabs ===== -->
+  <div class="view-tabs-wrap">
+    @if (vtCanLeft) {
+      <button type="button" class="tab-arrow left" aria-label="Scroll left" (click)="scrollTabs(-1, vbar)"><mat-icon>chevron_left</mat-icon></button>
+    }
+    <div class="view-tabs" #vbar (scroll)="updateViewArrows(vbar)">
+    <button type="button" class="view-tab" [class.active]="view === 'overview'" (click)="setView('overview')"><mat-icon>space_dashboard</mat-icon>Overview</button>
+    <button type="button" class="view-tab" [class.active]="view === 'devices'" (click)="setView('devices')"><mat-icon>developer_board</mat-icon>Devices<span class="count">{{ devices.length }}</span></button>
+    <button type="button" class="view-tab" [class.active]="view === 'jobs'" (click)="setView('jobs')"><mat-icon>work_history</mat-icon>Jobs@if (runningJobs) { <span class="count run">{{ runningJobs }}</span> }</button>
+    <button type="button" class="view-tab" [class.active]="view === 'updates'" (click)="setView('updates')"><mat-icon>system_update_alt</mat-icon>Updates</button>
+    <button type="button" class="view-tab" [class.active]="view === 'apps'" (click)="setView('apps')"><mat-icon>apps</mat-icon>Apps</button>
+    <button type="button" class="view-tab" [class.active]="view === 'channels'" (click)="setView('channels')"><mat-icon>alt_route</mat-icon>Channels</button>
+  </div>
+    @if (vtCanRight) {
+      <button type="button" class="tab-arrow right" aria-label="Scroll right" (click)="scrollTabs(1, vbar)"><mat-icon>chevron_right</mat-icon></button>
+    }
+  </div>
+
+  @if (view === 'overview') {
+    <div class="overview">
+      <div class="overview-head intro">
+        <img class="rugix-logo" [src]="rugixLogo" alt="Rugix">
+        <div class="intro-text">
+          <div class="rugix-title">Rugix Fleet Overview</div>
+          <p>Monitor and manage your Rugix devices: connection, system health, firmware and app versions. Open <b>Devices</b> to upgrade firmware, install apps and reboot or commit a device, and <b>Jobs</b> to follow all running and finished operations.</p>
+          <div class="intro-links">
+            <a class="rel-pill" href="https://github.com/rugix/rugix" target="_blank" rel="noopener noreferrer" aria-label="Rugix on GitHub"><span class="rel-name"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</span>
+            </a>
+            <a class="rel-pill" href="https://github.com/rugix/rugix/tags" target="_blank" rel="noopener noreferrer" title="Releases of rugix on GitHub"><span class="rel-name"><mat-icon>sell</mat-icon>rugix</span><img src="https://camo.githubusercontent.com/fb0b57fa193985a2ec355f61f22207224c196422c807c18789b9d6ee9af95a98/68747470733a2f2f696d672e736869656c64732e696f2f6769746875622f762f7461672f72756769782f72756769783f6c6162656c3d76657273696f6e" alt="rugix version" height="20"></a>
+            <a class="rel-pill" href="https://github.com/rugix/rugix-admin/tags" target="_blank" rel="noopener noreferrer" title="Releases of rugix-admin on GitHub"><span class="rel-name"><mat-icon>sell</mat-icon>rugix-admin</span><img src="https://camo.githubusercontent.com/1ed6eaa4a6ac5a308718d94117fc6ea9f3b5a8158c8807a4ce20e3810bb800a1/68747470733a2f2f696d672e736869656c64732e696f2f6769746875622f762f7461672f72756769782f72756769782d61646d696e3f6c6162656c3d76657273696f6e" alt="rugix-admin version" height="20"></a>
+          </div>
+        </div>
+        <button mat-icon-button type="button" (click)="refresh()" matTooltip="Refresh" aria-label="Refresh"><mat-icon>refresh</mat-icon></button>
+      </div>
+      <div class="donuts">
+        <tb-rugix-donut title="Device status" [segments]="overviewStatus" [clickable]="true" (segmentClick)="onStatusSegment($event)"></tb-rugix-donut>
+        <tb-rugix-donut title="Edge OS versions" [segments]="overviewOs"></tb-rugix-donut>
+        <tb-rugix-donut title="Firmware vs. channel" [segments]="overviewFirmware" [clickable]="true" (segmentClick)="onFirmwareSegment($event)"></tb-rugix-donut>
+        <tb-rugix-donut title="Last job" [segments]="overviewJobs"></tb-rugix-donut>
+      </div>
+      <div class="alerts-card">
+        <div class="donut-title">Recent alerts <span class="alert-count">{{ alerts.length }}</span></div>
+        @for (a of shownAlerts; track $index) {
+          <div class="alert-row" (click)="openAlert(a)" role="button" tabindex="0" (keydown.enter)="openAlert(a)">
+            <mat-icon [class]="'alert-icon ' + a.severity">{{ alertIcon(a) }}</mat-icon>
+            <span class="alert-device">{{ a.device }}</span>
+            <span class="alert-cat">{{ a.category }}</span>
+            <span class="alert-msg">{{ a.message }}</span>
+            <span class="alert-time">{{ a.ts ? ago(a.ts) : '' }}</span>
+          </div>
+        } @empty {
+          <div class="empty">No alerts – all devices look healthy.</div>
+        }
+        @if (alerts.length > alertLimit) {
+          <button mat-button type="button" class="alerts-more" (click)="alertsExpanded = !alertsExpanded">
+            {{ alertsExpanded ? 'Show less' : 'Show all ' + alerts.length }}
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  @if (view === 'updates' || view === 'apps') {
+    <div class="rugix-toolbar">
+      <span class="rugix-title">{{ view === 'apps' ? 'Rugix Apps' : 'Rugix Updates' }}</span>
+      <span class="audit-hint fleet-hint">{{ pkgList.length }} {{ pkgList.length === 1 ? 'package' : 'packages' }}</span>
+      <span class="flex-1"></span>
+      @if (canEditPackages) {
+        <button mat-flat-button color="primary" type="button" (click)="openPackage()"><mat-icon>add</mat-icon><span class="lbl">Add {{ view === 'apps' ? 'app' : 'update' }}</span></button>
+      }
+      <button mat-icon-button type="button" (click)="loadPackages()" [disabled]="pkgLoading" matTooltip="Refresh" aria-label="Refresh"><mat-icon>refresh</mat-icon></button>
+    </div>
+    @if (pkgLoading) { <mat-progress-bar mode="indeterminate"></mat-progress-bar> }
+    <div class="rugix-table-wrap">
+      <p class="channels-intro">
+        @if (view === 'apps') { App bundles that can be installed on devices (<i>Install App</i>). } @else { Firmware bundles that can be installed on devices (<i>Upgrade Firmware</i>) and chosen as target version of a release channel. }
+        They are ThingsBoard OTA packages that point to an external bundle URL.
+        @if (!canEditPackages) { Packages are managed by tenant administrators. }
+      </p>
+      <table class="rugix-table pkg-table">
+        <thead><tr><th>Title</th><th>Version</th>@if (view === 'updates') { <th class="pk-chan">Active channel</th> }<th class="pk-tag">Tag</th><th class="pk-url">Bundle URL</th><th class="pk-added">Added</th><th class="w-actions"></th></tr></thead>
+        <tbody>
+          @for (p of pkgList; track p.id.id) {
+            <tr class="static-row">
+              <td><b>{{ p.title || p.version }}</b>@if (p.additionalInfo?.description) { <div class="sub">{{ p.additionalInfo.description }}</div> }</td>
+              <td class="nowrap">{{ p.version }}</td>
+              @if (view === 'updates') { <td class="pk-chan nowrap">{{ channelsOf(p) || '—' }}</td> }
+              <td class="pk-tag">{{ p.tag || '—' }}</td>
+              <td class="pk-url">
+                @if (p.url) {
+                  <div class="pk-urlbox">
+                    <span class="pk-link" [matTooltip]="displayUrl(p.url)" matTooltipPosition="above" matTooltipClass="rugix-tip">{{ displayUrl(p.url) }}</span>
+                    <button mat-icon-button type="button" class="copy-btn" matTooltip="Copy URL" matTooltipPosition="above" matTooltipClass="rugix-tip" aria-label="Copy bundle URL" (click)="copy(p.url)"><mat-icon>{{ copied === p.url ? 'check' : 'content_copy' }}</mat-icon></button>
+                  </div>
+                } @else {
+                  <span class="sub" matTooltip="Uploaded file – Rugix needs an external URL to pull a bundle" matTooltipPosition="above" matTooltipClass="rugix-tip">uploaded file</span>
+                }
+              </td>
+              <td class="pk-added nowrap">{{ p.createdTime ? fmt(p.createdTime) : '—' }}</td>
+              <td class="w-actions">
+                @if (canEditPackages) {
+                  <button mat-icon-button type="button" (click)="openPackage(p)" matTooltip="Edit" [attr.aria-label]="'Edit ' + (p.title || p.version)"><mat-icon>edit</mat-icon></button>
+                  <button mat-icon-button type="button" (click)="deletePackage(p)" matTooltip="Remove" [attr.aria-label]="'Remove ' + (p.title || p.version)"><mat-icon>delete</mat-icon></button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr class="static-row"><td [attr.colspan]="view === 'updates' ? 7 : 6" class="empty-row">{{ pkgLoading ? 'Loading…' : (view === 'apps' ? 'No apps yet.' : 'No firmware updates yet.') }}{{ canEditPackages && !pkgLoading ? ' Use "Add" to register a bundle URL.' : '' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (view === 'channels') {
+    <div class="rugix-toolbar">
+      <span class="rugix-title">Rugix Channels</span>
+      <span class="audit-hint fleet-hint">{{ chDraft.length }} {{ chDraft.length === 1 ? 'channel' : 'channels' }}</span>
+      <span class="flex-1"></span>
+      @if (canEditChannels) {
+        <button mat-button type="button" [disabled]="!chDirty || chSaving" (click)="resetDraft()">Discard</button>
+        <button mat-flat-button color="primary" type="button" [disabled]="!chDirty || !chValid || chSaving" (click)="saveChannels()"><mat-icon>save</mat-icon>Save</button>
+      }
+    </div>
+    <div class="rugix-table-wrap">
+      <p class="channels-intro">A release channel targets an Edge OS version, chosen from the firmware updates in the <b>Updates</b> view. Devices follow the channel in their attribute <code>{{ settings.keys.channel }}</code> (default: <b>{{ settings.defaultChannel }}</b>) and are flagged as outdated when they run an older version.
+        @if (canEditChannels) {
+          @if (chSource === 'tenant') { Stored as tenant attribute <code>{{ settings.channelsAttribute }}</code>. } @else { Not saved yet, showing the widget settings – save to store the channels as tenant attribute <code>{{ settings.channelsAttribute }}</code>. }
+        } @else {
+          Channels are managed by tenant administrators.
+        }
+      </p>
+      <table class="rugix-table channels-table">
+        <thead><tr><th>Channel</th><th>Target version</th><th>Devices</th><th>Up to date</th><th>Outdated</th><th class="w-actions">Default</th><th class="w-actions"></th></tr></thead>
+        <tbody>
+          @for (c of chDraft; track c.name) {
+            <tr class="static-row">
+              <td><b>{{ c.name }}</b></td>
+              <td>
+                @if (canEditChannels) {
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="ch-select">
+                    <mat-select [(ngModel)]="c.version" (ngModelChange)="chDirty = true" [attr.aria-label]="'Target version of ' + c.name" placeholder="No target" [name]="'v-' + c.name">
+                      <mat-option value="">No target</mat-option>
+                      @for (v of versionOptions(c.version); track v) { <mat-option [value]="v">{{ v }}</mat-option> }
+                    </mat-select>
+                  </mat-form-field>
+                } @else {
+                  {{ c.version || '—' }}
+                }
+              </td>
+              <td>{{ channelStats(c.name).devices }}</td>
+              <td>{{ channelStats(c.name).current }}</td>
+              <td><span [class.fw-out]="channelStats(c.name).outdated">{{ channelStats(c.name).outdated }}</span></td>
+              <td class="w-actions">
+                <button mat-icon-button type="button" [disabled]="!canEditChannels" (click)="chDefault = c.name; chDirty = true" [matTooltip]="chDefault === c.name ? 'Default channel' : 'Make default channel'" [attr.aria-label]="'Make ' + c.name + ' the default channel'"><mat-icon>{{ chDefault === c.name ? 'radio_button_checked' : 'radio_button_unchecked' }}</mat-icon></button>
+              </td>
+              <td class="w-actions">
+                @if (canEditChannels) {
+                  <button mat-icon-button type="button" [disabled]="channelUsedBy(c.name) > 0 || chDraft.length < 2" (click)="removeChannel(c.name)" [matTooltip]="channelUsedBy(c.name) > 0 ? 'In use by ' + channelUsedBy(c.name) + ' devices' : 'Remove channel'" [attr.aria-label]="'Remove channel ' + c.name"><mat-icon>delete</mat-icon></button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      @if (canEditChannels) {
+        <div class="ch-add">
+          <input class="ch-input" [(ngModel)]="chNew" (keydown.enter)="addChannel()" placeholder="New channel name" aria-label="New channel name" spellcheck="false">
+          <button mat-stroked-button type="button" [disabled]="!!chNameError(chNew.trim().toLowerCase())" (click)="addChannel()"><mat-icon>add</mat-icon>Add channel</button>
+          @if (chNew.trim() && chNameError(chNew.trim().toLowerCase()); as err) { <span class="ch-err">{{ err }}</span> }
+        </div>
+      }
+    </div>
+  }
+
+  @if (view === 'jobs') {
+    <!-- same structure as the device table: toolbar, filters, scrolling table, pinned paginator -->
+    <div class="rugix-toolbar">
+      <span class="rugix-title">Rugix Jobs</span>
+      <span class="audit-hint fleet-hint">{{ fleetFiltered.length }} {{ fleetFiltered.length === 1 ? 'job' : 'jobs' }} in the last {{ fleetDays }} days</span>
+      <span class="flex-1"></span>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="rugix-search" [class.open]="searchOpen">
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput placeholder="Search jobs" [(ngModel)]="fleetSearch" (ngModelChange)="fleetPageIndex = 0">
+        @if (fleetSearch) {
+          <button matSuffix mat-icon-button type="button" aria-label="Clear search" (click)="fleetSearch = ''; fleetPageIndex = 0"><mat-icon>close</mat-icon></button>
+        }
+      </mat-form-field>
+      <button mat-icon-button type="button" class="search-toggle" (click)="toggleFleetSearch()" matTooltip="Search" aria-label="Search">
+        <mat-icon>{{ searchOpen ? 'close' : 'search' }}</mat-icon>
+      </button>
+      <button mat-icon-button type="button" (click)="loadFleetJobs()" [disabled]="fleetLoading" matTooltip="Refresh" aria-label="Refresh"><mat-icon>refresh</mat-icon></button>
+    </div>
+
+    <div class="rugix-filters">
+      <span class="fchip" role="button" tabindex="0" [class.on]="fleetStatus === ''" (click)="fleetStatus = ''; fleetPageIndex = 0" (keydown.enter)="fleetStatus = ''; fleetPageIndex = 0">All</span>
+      <span class="fchip" role="button" tabindex="0" [class.on]="fleetStatus === 'running'" (click)="fleetStatus = 'running'; fleetPageIndex = 0" (keydown.enter)="fleetStatus = 'running'; fleetPageIndex = 0"><span class="spin"></span>Running · {{ fleetCount('running') }}</span>
+      <span class="fchip" role="button" tabindex="0" [class.on]="fleetStatus === 'failed'" (click)="fleetStatus = 'failed'; fleetPageIndex = 0" (keydown.enter)="fleetStatus = 'failed'; fleetPageIndex = 0"><mat-icon class="bad">error</mat-icon>Failed · {{ fleetCount('failed') }}</span>
+      <span class="fchip" role="button" tabindex="0" [class.on]="fleetStatus === 'succeeded'" (click)="fleetStatus = 'succeeded'; fleetPageIndex = 0" (keydown.enter)="fleetStatus = 'succeeded'; fleetPageIndex = 0"><mat-icon class="good">check_circle</mat-icon>Succeeded · {{ fleetCount('succeeded') }}</span>
+      <span class="range fleet-range">
+        @for (n of [1, 7, 30]; track n) { <button type="button" [class.active]="fleetDays === n" (click)="setFleetDays(n)">{{ n === 1 ? '24 h' : n + ' d' }}</button> }
+      </span>
+    </div>
+    @if (fleetLoading) { <mat-progress-bar mode="indeterminate"></mat-progress-bar> }
+
+    <div class="rugix-table-wrap">
+      <table class="rugix-table fleet-table">
+        <thead><tr><th class="lc-time">Started</th><th class="fj-dev">Device</th><th class="fj-job">Job</th><th class="lc-status">Status</th><th class="lc-dur">Duration</th><th class="lc-id">Job ID</th></tr></thead>
+        <tbody>
+          @for (f of fleetPage; track f.job.id) {
+            <tr class="job-row" tabindex="0" (click)="openDeviceJobs(f)" (keydown.enter)="openDeviceJobs(f)">
+              <td class="nowrap">{{ fmt(f.job.start, true) }}</td>
+              <td class="nowrap"><b>{{ f.device.label || f.device.name }}</b></td>
+              <td class="nowrap"><mat-icon class="job-icon">{{ jobIcon(f.job.kind) }}</mat-icon>{{ jt(f.job.title, f.job.kind) || 'Job' }}</td>
+              <td><span class="pill" [class.run]="f.job.status === 'running' || f.job.status === 'queued'" [class.ok]="f.job.status === 'succeeded'" [class.err]="f.job.status === 'failed'" [matTooltip]="f.job.failure">{{ f.job.status }}@if ((f.job.status === 'running' || f.job.status === 'queued') && f.job.progress !== null) { · {{ f.job.progress | number:'1.0-0' }} %}</span></td>
+              <td class="nowrap">{{ jobDuration(f.job) || '—' }}</td>
+              <td class="job-id-cell" [matTooltip]="f.job.id"><span class="id-text">{{ f.job.id }}</span></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="empty">{{ fleetLoading ? 'Loading jobs…' : 'No jobs match in this period.' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <mat-paginator showFirstLastButtons hidePageSize [length]="fleetFiltered.length" [pageIndex]="fleetPageIndex" [pageSize]="fleetPageSize" (page)="fleetPageIndex = $event.pageIndex"></mat-paginator>
+  }
+
+  @if (view === 'devices') {
+  <!-- ===== toolbar (same structure as TB entity tables) ===== -->
+  <div class="rugix-toolbar" [class.selection]="checked.size">
+    @if (!checked.size) {
+      <span class="rugix-title">{{ settings.title }}</span>
+      <span class="fleet-summary"><span class="fs">{{ devices.length }} {{ devices.length === 1 ? 'device' : 'devices' }}</span></span>
+      <span class="flex-1"></span>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="rugix-search" [class.open]="searchOpen">
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput placeholder="Search devices" [(ngModel)]="search" (ngModelChange)="onSearch()" #searchInput>
+        @if (search) {
+          <button matSuffix mat-icon-button type="button" aria-label="Clear search" (click)="search = ''; onSearch()"><mat-icon>close</mat-icon></button>
+        }
+      </mat-form-field>
+      <button mat-icon-button type="button" class="search-toggle" (click)="toggleSearch()" matTooltip="Search">
+        <mat-icon>{{ searchOpen ? 'close' : 'search' }}</mat-icon>
+      </button>
+      <button mat-icon-button type="button" (click)="refresh()" matTooltip="Refresh"><mat-icon>refresh</mat-icon></button>
+    } @else {
+      <span class="rugix-title">{{ checked.size }} selected</span>
+      <span class="flex-1"></span>
+      <button mat-flat-button color="primary" type="button" [disabled]="!checkedOnline.length || !allowed('install')" [matTooltip]="checkedOnline.length < checked.size ? 'Only online devices are updated' : ''" (click)="openInstall(checkedOnline, 'system')">
+        <mat-icon>system_update_alt</mat-icon><span class="lbl">Upgrade Firmware</span>
+      </button>
+      <button mat-flat-button color="primary" type="button" [disabled]="!checkedOnline.length || !allowed('install')" [matTooltip]="checkedOnline.length < checked.size ? 'Only online devices are updated' : ''" (click)="openInstall(checkedOnline, 'app')">
+        <mat-icon>apps</mat-icon><span class="lbl">Install App</span>
+      </button>
+      <button mat-icon-button type="button" (click)="clearSelection()" matTooltip="Clear selection"><mat-icon>close</mat-icon></button>
+    }
+  </div>
+
+  <!-- ===== filters ===== -->
+  <div class="rugix-filters">
+    <span class="fchip" role="button" tabindex="0" [class.on]="statusFilter === 'all'" (click)="setStatusFilter('all')" (keydown.enter)="setStatusFilter('all')">All · {{ devices.length }}</span>
+    <span class="fchip" role="button" tabindex="0" [class.on]="statusFilter === 'online'" (click)="setStatusFilter('online')" (keydown.enter)="setStatusFilter('online')"><span class="dot ok"></span>Online · {{ fleetSummary.online }}</span>
+    <span class="fchip" role="button" tabindex="0" [class.on]="statusFilter === 'offline'" (click)="setStatusFilter('offline')" (keydown.enter)="setStatusFilter('offline')"><span class="dot"></span>Offline · {{ fleetSummary.offline }}</span>
+    <span class="fchip-sep" aria-hidden="true"></span>
+    <span class="fchip" role="button" tabindex="0" [class.on]="healthFilter === 'healthy'" (click)="toggleHealth('healthy')" (keydown.enter)="toggleHealth('healthy')"><span class="dot ok"></span>Healthy · {{ fleetSummary.healthy }}</span>
+    <span class="fchip" role="button" tabindex="0" [class.on]="healthFilter === 'warning'" (click)="toggleHealth('warning')" (keydown.enter)="toggleHealth('warning')"><span class="dot warn"></span>Warning · {{ fleetSummary.warning }}</span>
+    <span class="fchip" role="button" tabindex="0" [class.on]="healthFilter === 'error'" (click)="toggleHealth('error')" (keydown.enter)="toggleHealth('error')"><span class="dot err"></span>Error · {{ fleetSummary.error }}</span>
+    <span class="fchip-sep" aria-hidden="true"></span>
+    <span class="fchip" role="button" tabindex="0" [class.on]="firmwareFilter" (click)="toggleFirmware()" (keydown.enter)="toggleFirmware()"><mat-icon class="fw-chip">upgrade</mat-icon>Outdated · {{ fleetSummary.outdated }}</span>
+    @if (allowed('install') && outdatedGroups.length) {
+      <span class="flex-1"></span>
+      @if (outdatedGroups.length === 1) {
+        <button mat-stroked-button type="button" class="upg-outdated" (click)="openInstall(outdatedGroups[0].devices, 'system')"><mat-icon>upgrade</mat-icon>Upgrade {{ outdatedGroups[0].devices.length }} to {{ outdatedGroups[0].target }}</button>
+      } @else {
+        <button mat-stroked-button type="button" class="upg-outdated" [matMenuTriggerFor]="outdatedMenu"><mat-icon>upgrade</mat-icon>Upgrade outdated</button>
+        <mat-menu #outdatedMenu="matMenu">
+          @for (g of outdatedGroups; track g.target) {
+            <button mat-menu-item (click)="openInstall(g.devices, 'system')"><mat-icon>system_update_alt</mat-icon>{{ g.devices.length }} {{ g.devices.length === 1 ? 'device' : 'devices' }} to {{ g.target }} ({{ g.channels }})</button>
+          }
+        </mat-menu>
+      }
+    }
+    @if (filtersActive) {
+      <button mat-button type="button" class="fclear" (click)="clearFilters()">Clear</button>
+    }
+  </div>
+
+  <!-- ===== table ===== -->
+  <div class="rugix-table-wrap">
+    <table class="rugix-table main-table">
+      <thead>
+        <tr>
+          <th class="w-check"><mat-checkbox [checked]="allChecked" (change)="toggleAll(); releaseFocus()" aria-label="Select all devices on this page"></mat-checkbox></th>
+          <th class="sortable c-dev" [class.sorted]="sortKey === 'name'" tabindex="0" role="button" (click)="sortBy('name')" (keydown.enter)="sortBy('name')">Device<mat-icon class="sort-icon">{{ sortKey === 'name' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable w-status" [class.sorted]="sortKey === 'status'" tabindex="0" role="button" (click)="sortBy('status')" (keydown.enter)="sortBy('status')">Connection<mat-icon class="sort-icon">{{ sortKey === 'status' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-os" [class.sorted]="sortKey === 'os'" tabindex="0" role="button" (click)="sortBy('os')" (keydown.enter)="sortBy('os')">Edge OS<mat-icon class="sort-icon">{{ sortKey === 'os' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-l3 c-group" [class.sorted]="sortKey === 'group'" tabindex="0" role="button" (click)="sortBy('group')" (keydown.enter)="sortBy('group')">Active / default<mat-icon class="sort-icon">{{ sortKey === 'group' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-l2 c-flow" [class.sorted]="sortKey === 'channel'" tabindex="0" role="button" (click)="sortBy('channel')" (keydown.enter)="sortBy('channel')">Release channel<mat-icon class="sort-icon">{{ sortKey === 'channel' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-l2 c-state" [class.sorted]="sortKey === 'state'" tabindex="0" role="button" (click)="sortBy('state')" (keydown.enter)="sortBy('state')">State<mat-icon class="sort-icon">{{ sortKey === 'state' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-l1 c-api" [class.sorted]="sortKey === 'api'" tabindex="0" role="button" (click)="sortBy('api')" (keydown.enter)="sortBy('api')">Rugix API<mat-icon class="sort-icon">{{ sortKey === 'api' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-l1 c-job" [class.sorted]="sortKey === 'job'" tabindex="0" role="button" (click)="sortBy('job')" (keydown.enter)="sortBy('job')">Last job<mat-icon class="sort-icon">{{ sortKey === 'job' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="w-actions"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (d of page; track trackById($index, d)) {
+          <tr [class.selected]="d.id === selectedId" tabindex="0" (click)="select(d)" (keydown.enter)="select(d)">
+            <td class="w-check" (click)="$event.stopPropagation()">
+              <mat-checkbox [checked]="checked.has(d.id)" (change)="toggle(d); releaseFocus()" [attr.aria-label]="'Select ' + (d.label || d.name)"></mat-checkbox>
+            </td>
+            <td>
+              <div class="device">
+                @if (isRevPi(d)) { <img class="device-icon" [src]="revpiIcon" alt="Revolution Pi" matTooltip="Revolution Pi"> }
+                <div class="device-text">
+                  <div class="name">
+                    <span class="name-text" [matTooltip]="d.label ? d.label + ' (' + d.name + ')' : d.name" matTooltipShowDelay="300" matTooltipPosition="above" matTooltipClass="rugix-tip">{{ d.label || d.name }}</span>
+                    @if (d.commitPending) { <mat-icon class="warn-icon commit-icon" matTooltipPosition="above" matTooltipClass="rugix-tip" matTooltip="Warning: Commit pending – running a non-default system. Commit to keep it, otherwise the device falls back on next boot.">warning</mat-icon> }
+                    @if (d.insecure) { <mat-icon class="warn-icon insecure-icon" matTooltipPosition="above" matTooltipClass="rugix-tip" matTooltip="Warning: Rugix Ctrl security bypasses enabled (development only)">warning</mat-icon> }
+                    @if (d.firmware === 'outdated') { <mat-icon class="warn-icon fw-icon" matTooltipPosition="above" matTooltipClass="rugix-tip" [matTooltip]="'Update available: ' + channelOf(d) + ' channel targets ' + d.target + ' (device runs ' + d.hardware.osVersion + ')'">upgrade</mat-icon> }
+                  </div>
+                  @if (d.label) { <div class="sub dev-name" [class.has-job]="isJobActive(d)">{{ d.name }}</div> }
+                  @if (isJobActive(d)) {
+                    <div class="sub job-active"><span class="spin"></span>@if (d.job.progress !== null) {{{ d.job.progress | number:'1.0-0' }} % · }{{ jt(d.job.title, d.job.kind) || 'Job running' }}</div>
+                  }
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="status" [class]="statusClass(d)" [matTooltip]="d.active ? (d.stateSince ? 'Online since ' + fmt(d.stateSince) : '') : (d.lastSeen ? 'Offline since ' + fmt(d.lastSeen) : '')" matTooltipPosition="above" matTooltipClass="rugix-tip"><span class="dot"></span>{{ d.active ? 'Online' : 'Offline' }}</span>
+              @if (!d.active && d.lastSeen) { <div class="sub">{{ ago(d.lastSeen) }}</div> }
+            </td>
+            <td class="nowrap">{{ d.hardware.osVersion || '—' }}</td>
+            <td class="c-l3">
+              <span class="groups" [class.mismatch]="d.commitPending" [matTooltip]="d.commitPending ? 'Active group ' + d.activeGroup + ', default group ' + d.defaultGroup + ' – commit pending' : ''" matTooltipPosition="above" matTooltipClass="rugix-tip">{{ d.activeGroup || '—' }}@if (d.defaultGroup) { / {{ d.defaultGroup }} }</span>
+            </td>
+            <td class="c-l2"><span [matTooltip]="d.target ? 'Targets ' + d.target : 'No target version for this channel'" matTooltipPosition="above" matTooltipClass="rugix-tip">{{ channelOf(d) || '—' }}</span></td>
+            <td class="c-l2">
+              <span class="chip" [class.ok]="d.stateStatus === 'active'" [class.err]="d.stateStatus === 'error'">{{ d.stateStatus || '—' }}</span>
+            </td>
+            <td class="c-l1">{{ d.apiVersion || '—' }}</td>
+            <td class="c-l1">
+              @if (d.job && d.job.status !== 'unknown') {
+                <span class="jobline" [class.run]="isJobActive(d)" [class.ok]="d.job.status === 'succeeded'" [class.err]="d.job.status === 'failed'"
+                      [matTooltip]="d.job.status + (d.job.failure ? ': ' + d.job.failure : '') + ' – ' + jt(d.job.title, d.job.kind)" matTooltipPosition="above" matTooltipClass="rugix-tip">
+                  @if (isJobActive(d)) { <span class="spin"></span> }
+                  @else if (d.job.status === 'succeeded') { <mat-icon>check_circle</mat-icon> }
+                  @else if (d.job.status === 'failed') { <mat-icon>error</mat-icon> }
+                  <span class="jl-text">@if (isJobActive(d) && d.job.progress !== null) {{{ d.job.progress | number:'1.0-0' }} % · }{{ jt(d.job.title, d.job.kind) || d.job.status }}</span>
+                </span>
+              } @else { — }
+            </td>
+            <td class="w-actions" (click)="$event.stopPropagation()">
+              @if (busy.has(d.id)) {
+                <mat-spinner diameter="20"></mat-spinner>
+              } @else {
+                <span class="qa-inline">
+                  <button mat-icon-button [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'system')" matTooltip="Upgrade Firmware" aria-label="Upgrade Firmware"><mat-icon>system_update_alt</mat-icon></button>
+                  <button mat-icon-button [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'app')" matTooltip="Install App" aria-label="Install App"><mat-icon>apps</mat-icon></button>
+                  @for (a of tableActions; track a.action) {
+                    <button mat-icon-button [disabled]="blocked(d, kindOf(a), featureOf(a))" (click)="runSystemAction(a, d)" [matTooltip]="a.label" [attr.aria-label]="a.label"><mat-icon [class.caution-icon]="a.caution">{{ a.icon }}</mat-icon></button>
+                  }
+                </span>
+                <span class="qa-menu">
+                  <button mat-icon-button [matMenuTriggerFor]="rowMenu" aria-label="Actions"><mat-icon>more_vert</mat-icon></button>
+                  <mat-menu #rowMenu="matMenu">
+                    <button mat-menu-item [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'system')"><mat-icon>system_update_alt</mat-icon>Upgrade Firmware</button>
+                    <button mat-menu-item [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'app')"><mat-icon>apps</mat-icon>Install App</button>
+                    @for (a of tableActions; track a.action) {
+                      <button mat-menu-item [disabled]="blocked(d, kindOf(a), featureOf(a))" (click)="runSystemAction(a, d)"><mat-icon [class.caution-icon]="a.caution">{{ a.icon }}</mat-icon>{{ a.label }}</button>
+                    }
+                  </mat-menu>
+                </span>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="10" class="empty">{{ devices.length ? 'No devices match the current search or filters.' : 'No Rugix devices found. Add a device alias with the Rugix device type to the widget datasource.' }}</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <mat-paginator showFirstLastButtons [length]="filtered.length" [pageIndex]="pageIndex" [pageSize]="pageSize" [pageSizeOptions]="[5, 10, 25, 50]" (page)="onPage($event)" hidePageSize="false"></mat-paginator>
+
+  }
+
+  <!-- ===== details ===== -->
+  @if (selected; as d) {
+    <div class="rugix-backdrop" tabindex="-1" (click)="closeDetails()" (keydown.escape)="closeDetails()"></div>
+    <div class="rugix-details">
+      <mat-toolbar color="primary" class="details-toolbar">
+        @if (isRevPi(d)) { <img class="details-icon" [src]="revpiIcon" alt="Revolution Pi"> }
+        <div class="details-title">
+          <span>{{ d.label || d.name }}</span>
+          <span class="details-sub">Rugix device details</span>
+        </div>
+        <span class="flex-1"></span>
+        <span class="status-chip" [class.online]="d.active"><span class="dot"></span>{{ d.active ? 'Online' : 'Offline' }}</span>
+        <button mat-icon-button type="button" (click)="closeDetails()" aria-label="Close details"><mat-icon>close</mat-icon></button>
+      </mat-toolbar>
+      <div class="details-buttons">
+        <button mat-flat-button color="primary" [disabled]="blocked(d, 'install') || busy.has(d.id)" (click)="openInstall([d], 'system')">
+          <mat-icon>system_update_alt</mat-icon>Upgrade Firmware
+        </button>
+        @for (a of systemActions; track a.action) {
+          <button mat-flat-button [color]="a.warn ? 'warn' : (a.caution ? undefined : 'primary')" [class.caution]="a.caution"
+                  [disabled]="blocked(d, kindOf(a), featureOf(a)) || busy.has(d.id)" (click)="runSystemAction(a, d)">
+            <mat-icon>{{ a.icon }}</mat-icon>{{ a.label }}
+          </button>
+        }
+      </div>
+
+      <div class="job-banner" [class.ok]="d.job?.status === 'succeeded'" [class.err]="d.job?.status === 'failed'" [class.idle]="!d.job || d.job.status === 'unknown'">
+        <div class="jb-head">
+          @if (isJobActive(d)) { <span class="spin"></span> }
+          @else if (d.job?.status === 'succeeded') { <mat-icon>check_circle</mat-icon> }
+          @else if (d.job?.status === 'failed') { <mat-icon>error</mat-icon> }
+          @else { <mat-icon>history_toggle_off</mat-icon> }
+          @if (d.job && d.job.status !== 'unknown') {
+            <b>{{ jt(d.job.title, d.job.kind) || 'Job' }}</b>
+            <span class="pill" [class.run]="isJobActive(d)" [class.ok]="d.job.status === 'succeeded'" [class.err]="d.job.status === 'failed'">{{ d.job.status === 'succeeded' ? 'success' : (d.job.status === 'failed' ? 'fail' : d.job.status) }}</span>
+            <span class="flex-1"></span>
+            @if (isJobActive(d) && d.job.progress !== null) { <b>{{ d.job.progress | number:'1.0-1' }} %</b> }
+            @else if (!isJobActive(d)) { <span class="jb-time">{{ fmt(d.job.ts) }}</span> }
+            <button mat-button type="button" (click)="tabIndex = jobsTab; loadJobs()">Show log</button>
+          } @else {
+            <span>No job has run on this device yet <span class="jb-time">(as of {{ fmt(now()) }})</span></span>
+          }
+        </div>
+        @if (isJobActive(d) && d.job.progress !== null) {
+          <div class="jb-bar"><span [style.width.%]="d.job.progress"></span></div>
+        }
+        @if (d.job?.status === 'failed' && d.job.failure) {
+          <div class="jb-fail">{{ d.job.failure }}</div>
+        }
+      </div>
+      @if (restrictionNote) { <div class="hint">{{ restrictionNote }}</div> }
+      @if (d.insecure) {
+        <div class="banner err insecure">
+          <mat-icon>warning</mat-icon>
+          <span><b>Warning: Rugix Ctrl security bypasses enabled.</b> The privileged daemon lets callers bypass bundle verification and compatibility checks. Suitable only for development.</span>
+        </div>
+      }
+      @if (!d.active) {
+        <div class="banner neutral">
+          <mat-icon>cloud_off</mat-icon>
+          <span>Device is offline{{ d.lastSeen ? ' since ' + fmt(d.lastSeen) + ' (' + ago(d.lastSeen) + ')' : '' }}. Values shown are from the last connection; actions are disabled.</span>
+        </div>
+      }
+
+      @if (d.commitPending) {
+        <div class="banner warn">
+          <mat-icon>info</mat-icon>
+          <span>The device runs boot group <b>{{ d.activeGroup }}</b>, the default is <b>{{ d.defaultGroup }}</b>. Commit to keep the new system, otherwise it falls back on the next reboot.</span>
+          <span class="flex-1"></span>
+          <button mat-flat-button color="primary" [disabled]="blocked(d, 'power', 'system_commit')" (click)="runSystemAction(systemActions[2], d)">Commit</button>
+        </div>
+      }
+
+      <div class="tabbar-wrap">
+        @if (tabCanLeft) {
+          <button type="button" class="tab-arrow left" aria-label="Scroll left" (click)="scrollTabs(-1, bar)"><mat-icon>chevron_left</mat-icon></button>
+        }
+        <div class="tabbar" #bar (scroll)="updateTabArrows(bar)">
+          @for (tb of tabLabels(d); track tb.i) {
+            <button type="button" class="tab" [class.active]="tabIndex === tb.i" (click)="selectTab(tb.i, $event)">{{ tb.label }}</button>
+          }
+        </div>
+        @if (tabCanRight) {
+          <button type="button" class="tab-arrow right" aria-label="Scroll right" (click)="scrollTabs(1, bar)"><mat-icon>chevron_right</mat-icon></button>
+        }
+      </div>
+        @if (tabIndex === 0) {
+          @if (d.componentList.length) {
+            <div class="group-box">
+            <div class="group-title">Hardware</div>
+            <div class="tab-body grid tight">
+              <div class="kv"><span>Model</span><b>{{ d.hardware.model || '—' }}</b></div>
+              <div class="kv"><span>Serial number</span><b>{{ d.hardware.serial || '—' }}</b></div>
+              <div class="kv"><span>Vendor</span><b>{{ d.hardware.vendor || '—' }}</b></div>
+              <div class="kv"><span>Board version</span><b>{{ d.hardware.boardVersion || '—' }}</b></div>
+              <div class="kv"><span>CPU module</span><b>{{ d.hardware.cpuModule || '—' }}</b></div>
+              <div class="kv"><span>Architecture</span><b>{{ d.hardware.arch || '—' }}</b></div>
+            </div>
+            </div>
+            <div class="group-box">
+            <div class="group-title">Firmware</div>
+            <div class="tab-body grid tight">
+              <div class="kv"><span>Edge OS</span><b>{{ d.hardware.osVersion || '—' }}</b></div>
+              <div class="kv"><span>Release channel</span>
+                <b class="channel-pick">
+                  @for (c of channelNames; track c) {
+                    <button type="button" class="ch-opt" [class.on]="channelOf(d) === c" [disabled]="channelSaving || !allowed('install')" (click)="setChannel(d, c)">{{ c }}</button>
+                  }
+                </b>
+              </div>
+              <div class="kv"><span>Channel target</span>
+                <b [class.good]="d.firmware === 'current'" [class.warn]="d.firmware === 'outdated'">{{ d.target || 'not configured' }}@if (d.firmware === 'outdated') { · update available } @else if (d.firmware === 'current') { · up to date } @else if (d.firmware === 'ahead') { · device is newer }</b>
+              
+                @if (d.firmware === 'outdated' && d.active && allowed('install')) { <button mat-stroked-button type="button" class="upg-inline" (click)="openInstall([d], 'system')"><mat-icon>upgrade</mat-icon>Upgrade to {{ d.target }}</button> }
+              </div>
+              <div class="kv"><span>Rugix Ctrl</span><b>{{ d.hardware.rugixCtrl || '—' }}</b></div>
+              <div class="kv"><span>Rugix Admin</span><b>{{ d.adminVersion || '—' }}</b></div>
+              <div class="kv"><span>Docker</span><b>{{ d.hardware.docker || '—' }}</b></div>
+              <div class="kv"><span>PiControl</span><b>{{ d.hardware.picontrol || '—' }}</b></div>
+            </div>
+            </div>
+          }
+          <div class="group-box">
+            <div class="group-title">Daemon Capabilities</div>
+            <div class="tab-body grid tight">
+              <div class="kv"><span>Factory reset</span><b [class.good]="d.daemon?.factory_reset === true" [class.bad]="d.daemon?.factory_reset === false">{{ featureLabel(d, 'factory_reset') }}</b></div>
+              <div class="kv"><span>System commit</span><b [class.good]="d.daemon?.system_commit === true" [class.bad]="d.daemon?.system_commit === false">{{ featureLabel(d, 'system_commit') }}</b></div>
+              <div class="kv"><span>System reboot</span><b [class.good]="d.daemon?.system_reboot === true" [class.bad]="d.daemon?.system_reboot === false">{{ featureLabel(d, 'system_reboot') }}</b></div>
+              <div class="kv"><span>App lifecycle</span><b [class.good]="d.daemon?.app_lifecycle === true" [class.bad]="d.daemon?.app_lifecycle === false">{{ featureLabel(d, 'app_lifecycle') }}</b></div>
+              <div class="kv"><span>Security bypasses</span><b [class.bad]="d.insecure === true" [class.good]="d.insecure === false">{{ d.insecure === undefined ? '—' : (d.insecure ? 'enabled (development only)' : 'disabled') }}</b></div>
+            </div>
+          </div>
+          <div class="group-box">
+            <div class="group-title">Boot-Info</div>
+          <div class="tab-body grid tight">
+            <div class="kv"><span>Boot flow</span><b>{{ d.bootFlow || '—' }}</b></div>
+            <div class="kv"><span>Active group</span><b>{{ d.activeGroup || '—' }}</b></div>
+            <div class="kv"><span>Default group</span><b>{{ d.defaultGroup || '—' }}</b></div>
+            <div class="kv"><span>Boot groups</span><b>{{ d.bootGroups.join(', ') || '—' }}</b></div>
+            <div class="kv"><span>State management</span><b [class.good]="d.stateStatus === 'active'" [class.bad]="d.stateStatus === 'error'">{{ d.stateStatus || '—' }}</b></div>
+            <div class="kv"><span>Data partition</span><b>{{ d.dataPartition || '—' }}</b></div>
+            <div class="kv"><span>Active slot</span><b>{{ slotCount(d) }}</b></div>
+            <div class="kv"><span>Components consistent</span>
+              <b>{{ d.componentsConsistent === undefined ? '—' : (d.componentsConsistent ? 'yes' : 'no') }}</b></div>
+          </div>
+          </div>
+          @if (d.bootGroups.length) {
+            <div class="group-box">
+              <div class="group-title">Boot groups</div>
+              <div class="bg-list">
+                @for (g of d.bootGroups; track g) {
+                  <div class="bg-row">
+                    <span class="mono bg-name">{{ g }}</span>
+                    @if (g === d.activeGroup) { <span class="pill ok">active</span> }
+                    @if (g === d.defaultGroup) { <span class="pill run">default</span> }
+                    <span class="flex-1"></span>
+                    @if (bootGroupAction(d, g); as ba) {
+                      <button mat-stroked-button type="button" class="bg-reboot" [class.caution]="ba.caution" [disabled]="blocked(d, 'power', 'system_reboot')" (click)="runSystemAction(ba, d)" [attr.aria-label]="'Reboot into boot group ' + g"><mat-icon>{{ ba.icon }}</mat-icon>Reboot into {{ g }}</button>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+          <div class="group-box">
+            <div class="group-title">Device Registration</div>
+            <div class="tab-body grid tight">
+              <div class="kv"><span>Created on</span><b>{{ createdTimes.get(d.id) ? fmt(createdTimes.get(d.id)) : '—' }}</b></div>
+              <div class="kv"><span>Age</span><b>{{ createdTimes.get(d.id) ? ago(createdTimes.get(d.id)).replace(' ago', '') : '—' }}</b></div>
+              <div class="kv"><span>Device ID</span>
+                <b class="idrow"><span class="mono" [matTooltip]="d.id" matTooltipPosition="above" matTooltipClass="rugix-tip">{{ d.id.slice(0, 8) }}…</span>
+                  <button mat-icon-button type="button" class="copy-btn" aria-label="Copy device ID" matTooltip="Copy" (click)="copy(d.id)"><mat-icon>{{ copied === d.id ? 'check' : 'content_copy' }}</mat-icon></button></b>
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (tabIndex === 1) {
+          <div class="tab-body">
+            <div class="slots">
+              @for (s of d.slots; track s.name) {
+                <div class="slot" [class.active]="s.active">
+                  <div class="slot-head"><mat-icon>{{ s.name.startsWith('boot') ? 'memory' : 'storage' }}</mat-icon>{{ s.name }}
+                    @if (s.active) { <span class="pill ok">active</span> }
+                  </div>
+                  <div class="sub">{{ formatBytes(s.size) }}
+                    @if (s.updatedAt) { · updated {{ fmt(s.updatedAt) }} }</div>
+                  @for (h of s.hashes | keyvalue; track h.key) {
+                    <div class="hash" [matTooltip]="h.value">{{ h.key }}: {{ h.value }}</div>
+                  }
+                </div>
+              } @empty { <div class="empty">No slot information.</div> }
+            </div>
+          </div>
+        }
+
+        @if (tabIndex === 2) {
+          <div class="tab-body">
+            <div class="tab-actions">
+              <button mat-stroked-button [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'app')"><mat-icon>add</mat-icon>Install App</button>
+              <button mat-stroked-button [disabled]="blocked(d, 'install', 'app_lifecycle')" (click)="garbageCollectApps(d)"><mat-icon>cleaning_services</mat-icon>Clean up all apps</button>
+            </div>
+            <table class="rugix-table compact apps-table">
+              <thead><tr><th class="w-exp"></th><th>App</th><th>Version</th><th>Generation</th><th>Status</th><th class="c-md">Orchestrator</th><th class="w-actions"></th></tr></thead>
+              <tbody>
+                @for (a of d.apps; track a.name) {
+                  <tr class="job-row" [class.open]="isAppOpen(d, a)" tabindex="0" (click)="toggleApp(d, a)" (keydown.enter)="toggleApp(d, a)">
+                    <td class="w-exp"><mat-icon>{{ isAppOpen(d, a) ? 'expand_less' : 'expand_more' }}</mat-icon></td>
+                    <td><b>{{ a.name }}</b></td>
+                    <td class="nowrap">{{ a.version || '—' }}</td>
+                    <td>{{ a.generation ?? '—' }}</td>
+                    <td><span class="pill" [class.ok]="appStatusLabel(a.status) === 'running'" [class.warn]="appStatusLabel(a.status) === 'unhealthy'" [class.err]="appStatusLabel(a.status) === 'failed'" [matTooltip]="appStatusMessage(a.status)">{{ appStatusLabel(a.status) }}</span></td>
+                    <td class="c-md">{{ a.orchestrator || '—' }}</td>
+                    <td class="w-actions" (click)="$event.stopPropagation()">
+                      <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="App actions" [disabled]="blocked(d, 'install', 'app_lifecycle')"><mat-icon>more_vert</mat-icon></button>
+                      <mat-menu #appMenu="matMenu">
+                        @for (x of appActions; track x.action) {
+                          <button mat-menu-item (click)="runAppAction(d, a, x.action, x.label, x.warn)"><mat-icon>{{ x.icon }}</mat-icon>{{ x.label }}</button>
+                        }
+                      </mat-menu>
+                    </td>
+                  </tr>
+                  @if (isAppOpen(d, a)) {
+                    <tr class="job-detail">
+                      <td colspan="7">
+                        <div class="job-body">
+                          @let st = appState(d, a);
+                          @if (st?.loading && !st?.info) { <div class="empty small">Loading generations…</div> }
+                          @if (st?.error) { <div class="banner err"><mat-icon>error_outline</mat-icon><span>{{ st.error }}</span></div> }
+                          @if (lifecycleNotice(st?.info); as n) {
+                            <div class="banner" [class.err]="n.tone === 'err'" [class.neutral]="n.tone === 'info'"><mat-icon>{{ n.tone === 'err' ? 'error_outline' : 'sync' }}</mat-icon><span>{{ n.text }}</span></div>
+                          }
+                          @if (st?.info; as info) {
+                            <table class="rugix-table compact gen-table">
+                              <thead><tr><th>Generation</th><th>Created</th><th>Last activated</th><th>State</th><th class="w-actions"><button mat-icon-button type="button" (click)="loadAppInfo(d, a)" [disabled]="st.loading" matTooltip="Refresh" aria-label="Refresh generations"><mat-icon>refresh</mat-icon></button></th></tr></thead>
+                              <tbody>
+                                @for (g of info.generations; track g.number) {
+                                  <tr>
+                                    <td><b>{{ g.number }}</b>@if (g.configurationRevision !== undefined) { <span class="sub"> · config rev {{ g.configurationRevision }}</span> }</td>
+                                    <td class="nowrap">{{ g.createdAt ? fmt(g.createdAt) : '—' }}</td>
+                                    <td class="nowrap">{{ g.lastActivated ? fmt(g.lastActivated) : '—' }}</td>
+                                    <td>
+                                      @if (g.active) { <span class="pill ok">active</span> }
+                                      @else if (!g.complete) { <span class="pill warn">incomplete</span> }
+                                      @else { <span class="pill">inactive</span> }
+                                    </td>
+                                    <td class="w-actions">
+                                      @if (!g.active && g.complete) {
+                                        <button mat-stroked-button type="button" class="gen-activate" [disabled]="blocked(d, 'install', 'app_lifecycle')" (click)="activateGeneration(d, a, g)">Activate</button>
+                                      }
+                                    </td>
+                                  </tr>
+                                } @empty {
+                                  <tr><td colspan="5" class="empty">No generations reported.</td></tr>
+                                }
+                              </tbody>
+                            </table>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                } @empty {
+                  <tr><td colspan="7" class="empty">No apps reported.</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        @if (tabIndex === 3) {
+          <div class="tab-body">
+            @for (p of d.componentsProblems; track $index) {
+              <div class="banner err"><mat-icon>error_outline</mat-icon><span><b>{{ problemTitle(p) }}:</b> {{ problemText(p) }}</span></div>
+            }
+            <div class="tab-actions">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="comp-filter">
+                <input matInput placeholder="Filter components" [(ngModel)]="componentFilter">
+              </mat-form-field>
+              <span class="flex-1"></span>
+              <span class="chip" [class.ok]="d.componentsConsistent === true" [class.err]="d.componentsConsistent === false">
+                {{ d.componentsConsistent === undefined ? 'consistency unknown' : (d.componentsConsistent ? 'consistent' : 'inconsistent') }}
+              </span>
+            </div>
+            <div class="rugix-table-wrap">
+              <table class="rugix-table compact">
+                <thead><tr><th>Component</th><th>Version</th><th>Source</th><th class="c-md">Provides</th><th class="c-md">Requires</th></tr></thead>
+                <tbody>
+                  @for (c of filteredComponents(d); track $index) {
+                    <tr>
+                      <td><div class="name">{{ c.id }}</div>@if (c.path) { <div class="sub path" [matTooltip]="c.path">{{ c.path }}</div> }</td>
+                      <td class="nowrap">{{ c.version || '—' }}</td>
+                      <td>
+                        <span class="kind" [class]="kindClass(c.kind)">{{ c.kind }}</span>
+                        @if (c.app) { <div class="sub">{{ c.app }}{{ c.generation !== undefined ? ' · gen ' + c.generation : '' }}</div> }
+                      </td>
+                      <td class="c-md">
+                        <div class="caps">
+                          @for (x of c.provides; track $index) { <span class="cap" [matTooltip]="'provides'">{{ capabilityLabel(x) }}</span> }
+                          @if (!c.provides.length) { — }
+                        </div>
+                      </td>
+                      <td class="c-md">
+                        <div class="caps">
+                          @for (x of c.requires; track $index) {
+                            <span class="cap req" [class.bad]="isUnsatisfied(d, x.id)" [matTooltip]="isUnsatisfied(d, x.id) ? 'not provided by any component' : 'requires'">{{ capabilityLabel(x) }}</span>
+                          }
+                          @if (!c.requires.length) { — }
+                        </div>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr><td colspan="5" class="empty">No component data.</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+
+        @if (tabIndex === 4) {
+          <div class="tab-body">
+            <div class="stats-head">
+              <div class="sub">
+                @if (statsGateway) { Source: IoT Gateway <b>{{ statsGateway.name }}</b> · telemetry <code>{{ settings.keys.machineStats }}</code> · refreshes every 30 s }
+                @else { IoT Gateway statistics }
+              </div>
+              <span class="flex-1"></span>
+              <div class="range">
+                @for (r of statsRanges; track r.label) {
+                  <button type="button" [class.active]="r === statsRange" (click)="setStatsRange(r)">{{ r.label }}</button>
+                }
+              </div>
+            </div>
+            @if (statsError) {
+              <div class="banner err stats-banner"><mat-icon>error_outline</mat-icon><span>{{ statsError }}</span></div>
+            }
+            @if (statsLoading) { <mat-progress-bar mode="indeterminate"></mat-progress-bar> }
+            @if (statsLatest && !statsError) {
+              <div class="kpis">
+                <div class="kpi"><span>CPU</span><b>{{ statsLatest.cpu ?? '—' }}<small>%</small></b></div>
+                <div class="kpi"><span>Memory used</span><b>{{ statsLatest.memUsed !== undefined ? (statsLatest.memUsed | number:'1.0-1') : '—' }}<small>%</small></b></div>
+                <div class="kpi"><span>Disk used</span><b>{{ statsLatest.diskUsage ?? '—' }}<small>%</small></b><em>{{ statsLatest.freeDisk ? statsLatest.freeDisk + ' free' : '' }}</em></div>
+                <div class="kpi"><span>Gateway CPU</span><b>{{ statsLatest.gwCpu ?? '—' }}<small>%</small></b></div>
+                <div class="kpi"><span>Gateway RSS</span><b>{{ statsLatest.gwRssMiB !== undefined ? (statsLatest.gwRssMiB | number:'1.0-0') : '—' }}<small> MiB</small></b></div>
+                <div class="kpi"><span>Messages sent</span><b>{{ statsLatest.msgsSent ?? '—' }}</b></div>
+              </div>
+            }
+            @if (!statsError) {
+            <div class="charts">
+              <div class="chart-card">
+                <div class="chart-title">CPU usage</div>
+                <div class="legend">@for (s of cpuSeries; track s.name) { <span><i [style.background]="s.color"></i>{{ s.name }}</span> }</div>
+                <tb-rugix-line-chart [series]="cpuSeries" unit="%" [yMax]="100"></tb-rugix-line-chart>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">Memory usage</div>
+                <div class="legend">@for (s of memSeries; track s.name) { <span><i [style.background]="s.color"></i>{{ s.name }}</span> }</div>
+                <tb-rugix-line-chart [series]="memSeries" unit="%" [yMax]="100"></tb-rugix-line-chart>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">Storage usage</div>
+                <div class="legend">@for (s of diskSeries; track s.name) { <span><i [style.background]="s.color"></i>{{ s.name }}</span> }</div>
+                <tb-rugix-line-chart [series]="diskSeries" unit="%" [yMax]="100"></tb-rugix-line-chart>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">Gateway process memory</div>
+                <div class="legend">@for (s of rssSeries; track s.name) { <span><i [style.background]="s.color"></i>{{ s.name }}</span> }</div>
+                <tb-rugix-line-chart [series]="rssSeries" unit="MiB" [decimals]="0"></tb-rugix-line-chart>
+              </div>
+            </div>
+            }
+          </div>
+        }
+
+        @if (tabIndex === 5) {
+          <div class="tab-body">
+            <div class="tab-actions">
+              <button mat-stroked-button (click)="loadJobs(true)" [disabled]="jobsLoading"><mat-icon>refresh</mat-icon>Refresh</button>
+              <span class="audit-hint">{{ jobGroups.length }} {{ jobGroups.length === 1 ? 'job' : 'jobs' }} in the last {{ jobsDays }} days@if (jobsTruncated) { · only the most recent {{ jobEventCount }} events are loaded }</span>
+            </div>
+            @if (jobsLoading && !jobGroups.length) {
+              <div class="empty"><mat-spinner diameter="24" style="margin: 0 auto"></mat-spinner></div>
+            }
+            @if (!jobsLoading || jobGroups.length) {
+              <div class="rugix-table-wrap audit-wrap">
+                <table class="rugix-table compact log-table">
+                  <thead><tr><th class="w-exp"></th><th class="lc-time">Started</th><th>Job</th><th class="lc-status">Status</th><th class="lc-dur">Duration</th><th class="lc-id">Job ID</th></tr></thead>
+                  <tbody>
+                    @for (j of jobPage; track j.id; let i = $index) {
+                      <tr class="job-row" [class.open]="jobOpen(j)" (click)="toggleJob(j)">
+                        <td class="w-exp"><mat-icon>{{ jobOpen(j) ? 'expand_less' : 'expand_more' }}</mat-icon></td>
+                        <td class="nowrap">{{ fmt(j.start, true) }}</td>
+                        <td class="nowrap"><mat-icon class="job-icon">{{ jobIcon(j.kind) }}</mat-icon>{{ jt(j.title, j.kind) || 'Job' }}</td>
+                        <td><span class="pill" [class.ok]="j.status === 'succeeded'" [class.err]="j.status === 'failed'" [class.run]="j.status === 'running' || j.status === 'queued'">{{ j.status }}</span></td>
+                        <td class="nowrap">{{ jobDuration(j) || '—' }}</td>
+                        <td class="job-id-cell" [matTooltip]="j.id"><span class="id-text">{{ j.id }}</span>
+                          <button mat-icon-button type="button" class="copy" matTooltip="Copy job id" (click)="$event.stopPropagation(); copy(j.id)"><mat-icon>content_copy</mat-icon></button>
+                        </td>
+                      </tr>
+                      @if (jobOpen(j)) {
+                        <tr class="job-detail">
+                          <td colspan="6">
+                            <div class="job-body">
+                              @if (j.progress !== null) {
+                                <div class="job-progress"><div class="bar"><span [style.width.%]="j.progress"></span></div><b>{{ j.progress | number:'1.0-1' }} %</b></div>
+                              }
+                              @if (j.failure) {
+                                <div class="banner err"><mat-icon>error_outline</mat-icon><span>{{ j.failure }}</span></div>
+                              }
+                              @if (j.lines.length) {
+                                <div class="job-log">
+                                  @for (l of j.lines; track $index) {
+                                    <div class="ln" [class]="l.kind"><span class="ts">{{ l.ts | date:'HH:mm:ss' }}</span>{{ l.text }}</div>
+                                  }
+                                </div>
+                              } @else if (!j.failure) {
+                                <div class="empty small">No output recorded.</div>
+                              }
+                            </div>
+                          </td>
+                        </tr>
+                      }
+                    } @empty {
+                      <tr><td colspan="6" class="empty">No jobs recorded in the last {{ jobsDays }} days.</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <mat-paginator class="log-paginator" [length]="jobGroups.length" [pageSize]="logPageSize" [pageIndex]="jobPageIndex" hidePageSize showFirstLastButtons (page)="jobPageIndex = $event.pageIndex"></mat-paginator>
+            }
+          </div>
+        }
+
+        @if (tabIndex === 6) {
+          <div class="tab-body">
+            <div class="tab-actions">
+              <button mat-stroked-button (click)="loadAudit(true)" [disabled]="auditLoading"><mat-icon>refresh</mat-icon>Refresh</button>
+              <span class="audit-hint">{{ auditLogs.length }} {{ auditLogs.length === 1 ? 'entry' : 'entries' }} in the last {{ auditDays }} days</span>
+            </div>
+            @if (auditLoading) {
+              <div class="empty"><mat-spinner diameter="24" style="margin: 0 auto"></mat-spinner></div>
+            } @else if (auditError) {
+              <div class="banner err"><mat-icon>error_outline</mat-icon><span>{{ auditError }}</span></div>
+            } @else {
+              <div class="rugix-table-wrap audit-wrap">
+                <table class="rugix-table compact log-table">
+                  <thead><tr><th class="lc-time">Time</th><th class="lc-user">User</th><th class="lc-action">Action</th><th class="lc-status">Status</th><th>Details</th></tr></thead>
+                  <tbody>
+                    @for (l of auditPage; track l.id.id) {
+                      <tr>
+                        <td class="nowrap">{{ fmt(l.createdTime, true) }}</td>
+                        <td>{{ l.userName || '—' }}</td>
+                        <td class="nowrap">{{ auditAction(l) }}</td>
+                        <td><span class="pill" [class.ok]="l.actionStatus === 'SUCCESS'" [class.err]="l.actionStatus !== 'SUCCESS'" style="margin-left: 0">{{ l.actionStatus === 'SUCCESS' ? 'Success' : 'Failure' }}</span></td>
+                        <td class="audit-details" [matTooltip]="auditDetails(l)">{{ auditDetails(l) || '—' }}</td>
+                      </tr>
+                    } @empty {
+                      <tr><td colspan="5" class="empty">No audit log entries in this period.</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <mat-paginator class="log-paginator" [length]="auditLogs.length" [pageSize]="logPageSize" [pageIndex]="auditPageIndex" hidePageSize showFirstLastButtons (page)="auditPageIndex = $event.pageIndex"></mat-paginator>
+            }
+          </div>
+        }
+      
+    </div>
+  }
+</div>

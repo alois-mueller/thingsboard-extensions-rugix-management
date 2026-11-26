@@ -1,0 +1,30 @@
+:host {
+  display: block;
+  min-width: 0;
+
+  .donut-card {
+    height: 100%;
+    box-sizing: border-box;
+    padding: 16px;
+    border: 1px solid rgba(0, 0, 0, .14);
+    border-radius: 8px;
+    background: #fff;
+  }
+
+  .donut-title { font-size: 14px; font-weight: 500; margin-bottom: 12px; color: rgba(0, 0, 0, .87); }
+  .donut-body { display: flex; align-items: center; gap: 16px; }
+  .donut-svg { flex: none; width: 112px; height: 112px; }
+  .ring-bg { fill: none; stroke: rgba(0, 0, 0, .06); stroke-width: 14; }
+  .ring { fill: none; stroke-width: 14; }
+  .total { font: 500 24px Roboto, sans-serif; fill: rgba(0, 0, 0, .87); }
+
+  .legend { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+  .legend-row {
+    display: flex; align-items: center; gap: 8px; min-width: 0;
+    &.clickable { cursor: pointer; &:hover .lbl { text-decoration: underline; } }
+  }
+  .dot { flex: none; width: 10px; height: 10px; border-radius: 50%; }
+  .lbl { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .val { font-weight: 500; font-variant-numeric: tabular-nums; }
+  .pct { flex: none; width: 44px; text-align: right; color: rgba(0, 0, 0, .54); font-size: 12px; }
+}

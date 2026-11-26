@@ -1,0 +1,35 @@
+<div class="rugix-plain-header">
+  <h2 class="rugix-plain-title">{{ data.title }}</h2>
+  <span class="flex-1"></span>
+  <button mat-icon-button type="button" (click)="cancel()" aria-label="Close"><mat-icon>close</mat-icon></button>
+</div>
+<div mat-dialog-content class="rugix-dialog-content">
+  @if (data.transition; as t) {
+    <div class="rugix-transition" [class.change]="t.from !== t.to">
+      <span class="caption">{{ t.caption || 'Boot slot' }}</span>
+      <span class="slot">{{ t.from }}</span>
+      <svg class="tr-arrow" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M4 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="slot">{{ t.to }}</span>
+    </div>
+  }
+  @if (data.message) {
+    <p class="rugix-message">{{ data.message }}</p>
+  }
+  @if (data.checkbox) {
+    <mat-checkbox (change)="blurSoon()" [(ngModel)]="checked">{{ data.checkbox.label }}</mat-checkbox>
+  }
+  @if (data.textWhenChecked && checked) {
+    <mat-form-field appearance="outline" class="rugix-field">
+      <mat-label>{{ data.textWhenChecked.label }}</mat-label>
+      <input matInput [(ngModel)]="text">
+    </mat-form-field>
+  }
+  @if (data.acknowledge) {
+    <mat-checkbox (change)="blurSoon()" class="rugix-ack" [(ngModel)]="acknowledged">{{ data.acknowledge }}</mat-checkbox>
+  }
+</div>
+<div mat-dialog-actions class="rugix-dialog-actions">
+  <span class="flex-1"></span>
+  <button mat-button type="button" (click)="cancel()">Cancel</button>
+  <button mat-flat-button type="button" [class.caution]="data.caution" [color]="data.warn ? 'warn' : (data.caution ? undefined : 'primary')" [disabled]="!canConfirm" (click)="confirm()">{{ data.confirmLabel }}</button>
+</div>

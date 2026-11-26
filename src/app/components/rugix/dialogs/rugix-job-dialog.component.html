@@ -1,0 +1,31 @@
+<div class="rugix-plain-header">
+  <h2 class="rugix-plain-title">{{ data.title || 'Rugix job' }}</h2>
+  <span class="flex-1"></span>
+  <button mat-icon-button type="button" (click)="close()" aria-label="Close"><mat-icon>close</mat-icon></button>
+</div>
+<div mat-dialog-content class="rugix-dialog-content">
+  <div class="job-summary">
+    <div><div class="label">Device</div><div class="value">{{ data.device.label || data.device.name }}</div></div>
+    <div><div class="label">Job</div><div class="value">{{ jt(title, kind) || data.jobId }}</div></div>
+    <div><div class="label">Status</div><div class="value"><span class="rugix-badge" [class]="status">{{ status }}</span></div></div>
+  </div>
+  @if (!done) {
+    <mat-progress-bar [mode]="progress === null ? 'indeterminate' : 'determinate'" [value]="progress ?? 0"></mat-progress-bar>
+  }
+  @if (progress !== null) {
+    <div class="label">Installation progress: {{ progress | number:'1.0-0' }} %</div>
+  }
+  @if (failure) {
+    <div class="rugix-error"><mat-icon>error_outline</mat-icon><span>{{ failure }}</span></div>
+  }
+  @if (!logEvents.length) {
+    <div class="label">Waiting for events from the gateway… (the SSE stream must be running)</div>
+  } @else {
+    <pre class="job-log">@for (e of logEvents; track $index) {<span class="ts">{{ fmt(e.ts) }}</span><span [class.stderr]="e.stream === 'stderr'" [class.meta]="e.type !== 'job-output'">{{ describe(e) }}</span>
+}</pre>
+  }
+</div>
+<div mat-dialog-actions class="rugix-dialog-actions">
+  <span class="flex-1"></span>
+  <button mat-button type="button" (click)="close()">Close</button>
+</div>

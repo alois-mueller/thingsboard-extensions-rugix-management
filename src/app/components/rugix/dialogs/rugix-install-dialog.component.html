@@ -1,0 +1,123 @@
+<form (ngSubmit)="install()">
+  <div class="rugix-plain-header">
+    <h2 class="rugix-plain-title">{{ isSystem ? 'Upgrade Firmware' : 'Install App' }}</h2>
+    <span class="flex-1"></span>
+    <button mat-icon-button type="button" (click)="cancel()" [disabled]="installing" aria-label="Close"><mat-icon>close</mat-icon></button>
+  </div>
+  <div mat-dialog-content class="rugix-dialog-content">
+    <div class="rugix-targets" [matTooltip]="targetsTooltip" matTooltipPosition="above">
+      <mat-icon>memory</mat-icon>
+      <span class="targets-text"><b>{{ data.devices.length === 1 ? 'Target' : 'Targets (' + data.devices.length + ')' }}:</b> {{ targetsSummary }}</span>
+    </div>
+
+    @if (!useCustomUrl) {
+      <mat-form-field appearance="outline" class="rugix-field">
+        <mat-label>{{ isSystem ? 'Firmware package' : 'Software package' }}</mat-label>
+        <mat-select [(ngModel)]="selectedPackage" name="package" [disabled]="loadingPackages || installing">
+          <mat-select-trigger>{{ selectedPackage?.title || selectedPackage?.tag }} <span class="version">– {{ selectedPackage?.version }}</span></mat-select-trigger>
+          @for (p of packages; track p.id.id) {
+            <mat-option [value]="p">{{ p.title || p.tag }} <span class="version">– {{ p.version }}</span>@if (isTarget(p)) { <span class="target-tag">channel target</span> }</mat-option>
+          }
+        </mat-select>
+        @if (loadingPackages) {
+          <mat-hint>Loading OTA packages…</mat-hint>
+        } @else {
+          <mat-hint>Only OTA packages that point to an external URL can be pulled by Rugix.</mat-hint>
+        }
+      </mat-form-field>
+    }
+    @if (useCustomUrl) {
+      <mat-form-field appearance="outline" class="rugix-field">
+        <mat-label>Bundle URL</mat-label>
+        <input matInput name="customUrl" [(ngModel)]="customUrl" placeholder="https://…/update.rugixb" [disabled]="installing">
+        @if (!packages.length && !loadingPackages) {
+          <mat-hint>No OTA package with an external URL found – enter the URL manually.</mat-hint>
+        }
+      </mat-form-field>
+    }
+    @if (targetNote; as n) { <div [class]="n.warn ? 'rugix-note' : 'rugix-note ok'">{{ n.text }}</div> }
+    @if (urlProblem.error) { <div class="rugix-error">{{ urlProblem.error }}</div> }
+    @if (urlProblem.warn) { <div class="rugix-note">{{ urlProblem.warn }}</div> }
+    @if (packages.length) {
+      <mat-checkbox (change)="blurSoon()" [(ngModel)]="useCustomUrl" name="useCustomUrl" [disabled]="installing">Enter URL manually</mat-checkbox>
+    }
+
+    <button type="button" class="rugix-advanced-toggle" (click)="advancedOpen = !advancedOpen" [attr.aria-expanded]="advancedOpen">
+      <mat-icon>{{ advancedOpen ? 'expand_less' : 'expand_more' }}</mat-icon>Advanced
+    </button>
+    @if (advancedOpen) {
+      <div class="rugix-advanced">
+        @if (isSystem) {
+          <div class="rugix-section-title">After installation</div>
+          <mat-radio-group [(ngModel)]="reboot" name="reboot" class="rugix-options" [disabled]="installing">
+            @for (m of rebootModes; track m.value) {
+              <mat-radio-button [value]="m.value">{{ m.label }} <span class="hint">– {{ m.hint }}</span></mat-radio-button>
+            }
+          </mat-radio-group>
+          @if (bootGroups.length) {
+            <mat-form-field appearance="outline" class="rugix-field">
+              <mat-label>Boot group (optional)</mat-label>
+              <mat-select [(ngModel)]="bootGroup" name="bootGroup" [disabled]="installing">
+                <mat-option value="">Spare group (default)</mat-option>
+                @for (g of bootGroups; track g) {
+                  <mat-option [value]="g">{{ g }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
+          <mat-checkbox (change)="blurSoon()" [(ngModel)]="keepOverlay" name="keepOverlay" [disabled]="installing">Keep overlay of the target slot</mat-checkbox>
+        }
+        <mat-form-field appearance="outline" class="rugix-field">
+          <mat-label>Expected bundle hash (optional)</mat-label>
+          <input matInput name="bundleHash" [(ngModel)]="bundleHash" [disabled]="installing">
+        </mat-form-field>
+        <mat-checkbox (change)="blurSoon()" [(ngModel)]="skipCompatibilityCheck" name="skipCompat" [disabled]="installing">Skip component compatibility check</mat-checkbox>
+
+        <div class="rugix-section-title">Download</div>
+        <mat-form-field appearance="outline" class="rugix-field">
+          <mat-label>Root certificate path (optional)</mat-label>
+          <input matInput name="rootCert" [(ngModel)]="rootCert" placeholder="/etc/rugix/root.pem" [disabled]="installing">
+        </mat-form-field>
+        <div class="rugix-grid3">
+          <mat-form-field appearance="outline" class="rugix-field">
+            <mat-label>Retries</mat-label>
+            <input matInput type="number" min="0" name="maxRetries" [(ngModel)]="maxRetries" [disabled]="installing">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="rugix-field">
+            <mat-label>Backoff (s)</mat-label>
+            <input matInput type="number" min="0" name="initialBackoff" [(ngModel)]="initialBackoff" [disabled]="installing">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="rugix-field">
+            <mat-label>Max. backoff (s)</mat-label>
+            <input matInput type="number" min="0" name="maxBackoff" [(ngModel)]="maxBackoff" [disabled]="installing">
+          </mat-form-field>
+        </div>
+        @if (isSystem) {
+          <mat-checkbox (change)="blurSoon()" [(ngModel)]="disableRange" name="disableRange" [disabled]="installing">Disable HTTP range requests</mat-checkbox>
+        }
+
+        @if (anyInsecure) {
+          <div class="rugix-section-title warn">Security bypasses (development only)</div>
+          <mat-checkbox (change)="blurSoon()" [(ngModel)]="insecureSkipVerification" name="insecureSkip" [disabled]="installing">Skip bundle signature verification</mat-checkbox>
+          <mat-checkbox (change)="blurSoon()" [(ngModel)]="insecureAllowMissingBlockIndex" name="insecureBlockIndex" [disabled]="installing">Allow payloads without block index</mat-checkbox>
+        }
+      </div>
+    }
+
+    <div class="rugix-ack">
+      <mat-checkbox (change)="blurSoon()" [(ngModel)]="acknowledged" name="ack" [disabled]="installing">{{ ackText }}</mat-checkbox>
+    </div>
+
+    @if (error) {
+      <div class="rugix-error"><mat-icon>error_outline</mat-icon><span>{{ error }}</span></div>
+    }
+  </div>
+  <div mat-dialog-actions class="rugix-dialog-actions">
+    <span class="flex-1"></span>
+    <button mat-button type="button" (click)="cancel()" [disabled]="installing">Cancel</button>
+    <button mat-flat-button color="primary" type="submit" [disabled]="!canInstall">
+      @if (installing) { <span class="btn-spinner" aria-hidden="true"></span> }
+      {{ installing ? 'Starting…' : installLabel }}
+    </button>
+  </div>
+</form>

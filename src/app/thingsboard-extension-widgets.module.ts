@@ -7,6 +7,7 @@ import { TranslateService } from '@ngx-translate/core';
 import addCustomWidgetLocale from './locale/custom-widget-locale.constant';
 import { CommonModule } from '@angular/common';
 import { ExamplesModule } from './components/examples/examples.module';
+import { RugixModule } from './components/rugix/rugix.module';
 import { addLibraryStyles } from './scss/lib-styles';
 
 @NgModule({
@@ -15,7 +16,8 @@ import { addLibraryStyles } from './scss/lib-styles';
     CommonModule
   ],
   exports: [
-    ExamplesModule
+    ExamplesModule,
+    RugixModule
   ]
 })
 export class ThingsboardExtensionWidgetsModule {

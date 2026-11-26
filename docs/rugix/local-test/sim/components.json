@@ -1,0 +1,182 @@
+[
+ {
+  "source": {
+   "kind": "System",
+   "path": "/usr/lib/rugix/components/revpi.toml"
+  },
+  "component": {
+   "id": "system.edge-os",
+   "version": "0.5.1-dev3",
+   "provides": [],
+   "claims": [],
+   "requires": [
+    {
+     "id": "hardware.revpi.vendor",
+     "value": "KUNBUS GmbH"
+    }
+   ],
+   "conflicts": []
+  }
+ },
+ {
+  "source": {
+   "kind": "Runtime",
+   "path": "/run/rugix/components/docker.toml"
+  },
+  "component": {
+   "id": "runtime.docker",
+   "version": "29.10.0",
+   "provides": [
+    {
+     "id": "runtime.docker-compose",
+     "version": "5.8.0"
+    }
+   ],
+   "claims": [],
+   "requires": [],
+   "conflicts": []
+  }
+ },
+ {
+  "source": {
+   "kind": "Runtime",
+   "path": "/run/rugix/components/revpi.toml"
+  },
+  "component": {
+   "id": "hardware.revpi",
+   "provides": [
+    {
+     "id": "hardware.revpi.vendor",
+     "value": "KUNBUS GmbH"
+    },
+    {
+     "id": "hardware.revpi.model",
+     "value": "RevPi Connect 4 32/4GB"
+    },
+    {
+     "id": "hardware.revpi.version",
+     "version": "1.3"
+    },
+    {
+     "id": "hardware.revpi.id",
+     "value": "PR100000R00"
+    },
+    {
+     "id": "kernel.module.picontrol",
+     "version": "2.8.2"
+    },
+    {
+     "id": "runtime.revpi.picontrol",
+     "version": "2.8.2"
+    }
+   ],
+   "claims": [],
+   "requires": [],
+   "conflicts": []
+  }
+ },
+ {
+  "source": {
+   "kind": "Runtime",
+   "path": "/run/rugix/components/rpi.toml"
+  },
+  "component": {
+   "id": "hardware.rpi",
+   "provides": [
+    {
+     "id": "hardware.rpi.model",
+     "value": "Raspberry Pi Compute Module 4 Rev 1.1"
+    },
+    {
+     "id": "hardware.rpi.revision",
+     "value": "c03141"
+    }
+   ],
+   "claims": [],
+   "requires": [],
+   "conflicts": []
+  }
+ },
+ {
+  "source": {
+   "kind": "App",
+   "path": "/run/rugix/state/apps/pangolin-newt/generations/11/.rugix/components/app.toml",
+   "app": "pangolin-newt",
+   "generation": 11
+  },
+  "component": {
+   "id": "app.pangolin-newt",
+   "version": "0.3.0",
+   "provides": [
+    {
+     "id": "app.newt",
+     "version": "1.19.0"
+    }
+   ],
+   "claims": [],
+   "requires": [
+    {
+     "id": "host.arch",
+     "value": "aarch64"
+    },
+    {
+     "id": "runtime.docker-compose",
+     "version": ">=2.20"
+    }
+   ],
+   "conflicts": []
+  }
+ },
+ {
+  "source": {
+   "kind": "App",
+   "path": "/run/rugix/state/apps/tb-iot-gateway/generations/23/.rugix/components/app.toml",
+   "app": "tb-iot-gateway",
+   "generation": 23
+  },
+  "component": {
+   "id": "app.tb-iot-gateway",
+   "version": "0.4.5",
+   "provides": [
+    {
+     "id": "app.thingsboard-iot-gateway",
+     "version": "0.4.5"
+    }
+   ],
+   "claims": [],
+   "requires": [
+    {
+     "id": "host.arch",
+     "value": "aarch64"
+    },
+    {
+     "id": "runtime.docker-compose",
+     "version": ">=2.20"
+    }
+   ],
+   "conflicts": []
+  }
+ },
+ {
+  "source": {
+   "kind": "Synthetic",
+   "path": "rugix:synthetic/rugix.host"
+  },
+  "component": {
+   "id": "rugix.host",
+   "provides": [
+    {
+     "id": "host.arch",
+     "value": "aarch64"
+    },
+    {
+     "id": "rugix.ctrl",
+     "version": "1.4.1"
+    }
+   ],
+   "claims": [],
+   "requires": [],
+   "conflicts": []
+  }
+ }
+]

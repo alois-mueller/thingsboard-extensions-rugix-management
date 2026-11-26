@@ -1,0 +1,292 @@
+:host {
+  display: flex;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 400;
+  color: rgba(0, 0, 0, .87);
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+
+  .flex-1 {
+    flex: 1 1 0;
+  }
+
+  .rugix-dialog-toolbar {
+    min-height: 56px;
+    padding: 0 8px 0 24px;
+  }
+
+  .rugix-plain-header {
+    display: flex;
+    align-items: center;
+    padding: 8px 8px 0 24px;
+    min-height: 52px;
+  }
+
+  .rugix-plain-title {
+    margin: 0;
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 500;
+    letter-spacing: .15px;
+  }
+
+  .rugix-targets {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, .04);
+    font-size: 13px;
+    min-width: 0;
+
+    mat-icon { flex: none; width: 18px; height: 18px; font-size: 18px; color: rgba(0, 0, 0, .54); }
+    .targets-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  }
+
+  .rugix-advanced-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    align-self: flex-start;
+    margin: 4px 0 0 -4px;
+    padding: 4px 8px 4px 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    font: 500 14px/20px Roboto, sans-serif;
+    color: var(--tb-primary-500, #305680);
+  }
+
+  .rugix-advanced {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px 0 4px 12px;
+    border-left: 2px solid rgba(0, 0, 0, .12);
+  }
+
+  .rugix-dialog-title {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.3;
+    font-weight: 500;
+  }
+
+  .rugix-dialog-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 20px 24px 8px;
+    box-sizing: border-box;
+    width: min(560px, 92vw);
+    max-width: 100%;
+    overflow: auto;
+  }
+
+  .rugix-transition {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, .04);
+
+    .caption { flex: 1 1 auto; font-size: 12px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: rgba(0, 0, 0, .54); }
+    .slot {
+      min-width: 40px; padding: 4px 12px; text-align: center; border-radius: 6px;
+      border: 1px solid rgba(0, 0, 0, .2); background: #fff;
+      font: 500 20px/28px 'Roboto Mono', monospace;
+    }
+    .tr-arrow { color: rgba(0, 0, 0, .54); }
+    &.change .tr-arrow { color: #ef6c00; }
+    &.change .slot:last-of-type { border-color: #ef6c00; color: #ef6c00; }
+  }
+
+  .rugix-message {
+    margin: 0 0 8px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .rugix-ack {
+    margin-top: 4px;
+    padding: 8px 12px 8px 4px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, .04);
+    font-size: 14px;
+  }
+
+  mat-checkbox, mat-radio-button, .mdc-label, label {
+    font-size: 14px;
+  }
+
+  .rugix-field {
+    width: 100%;
+  }
+
+  .rugix-dialog-actions {
+    display: flex;
+    gap: 8px;
+    padding: 8px 24px 16px;
+  }
+
+  .rugix-section-title {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: rgba(0, 0, 0, .54);
+    margin: 8px 0 0;
+  }
+
+  .rugix-grid3 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .rugix-grid3 input[type=number] { -moz-appearance: textfield; appearance: textfield; &::-webkit-inner-spin-button, &::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; } }
+
+  .rugix-section-title.warn { color: #b71c1c; }
+
+  .rugix-device-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 10px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, .06);
+      font-size: 13px;
+    }
+  }
+
+  .rugix-dialog-actions button[type=submit] .mdc-button__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-spinner {
+    flex: none;
+    display: inline-block;
+    box-sizing: border-box;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(0, 0, 0, .25);
+    border-top-color: rgba(0, 0, 0, .6);
+    border-radius: 50%;
+    animation: rugix-spin .8s linear infinite;
+  }
+
+  .rugix-note { padding: 8px 12px; border-radius: 6px; font-size: 13px; line-height: 18px; background: rgba(245, 158, 11, .14); color: #8a4b00; }
+
+  .rugix-note.ok { background: rgba(25, 128, 56, .1); color: #146c2e; }
+  .target-tag { margin-left: 8px; padding: 0 6px; border-radius: 8px; font-size: 11px; background: rgba(25, 128, 56, .12); color: #146c2e; }
+
+  .rugix-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    color: #b71c1c;
+    background: rgba(244, 67, 54, .1);
+  }
+
+  .rugix-options {
+    display: flex;
+    flex-direction: column;
+  }
+
+  // --- job progress
+  .job-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+
+    .label {
+      font-size: 12px;
+      color: rgba(0, 0, 0, .54);
+    }
+
+    .value {
+      font-weight: 500;
+      word-break: normal;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  .job-log {
+    max-height: min(280px, 40vh);
+    overflow: auto;
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 4px;
+    background: #1f2430;
+    color: #d6deeb;
+    font: 12px/1.5 'Roboto Mono', monospace;
+    white-space: pre-wrap;
+    word-break: break-word;
+
+    .stderr {
+      color: #ff8a80;
+    }
+
+    .meta {
+      color: #82aaff;
+    }
+
+    .ts {
+      color: #7f8aa3;
+      margin-right: 8px;
+    }
+  }
+}
+
+.rugix-badge {
+  display: inline-block;
+  padding: 1px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+
+  &.succeeded { color: #2e7d32; background: rgba(76, 175, 80, .15); }
+  &.failed { color: #c62828; background: rgba(244, 67, 54, .15); }
+  &.running, &.queued { color: #1565c0; background: rgba(33, 150, 243, .15); }
+  &.unknown { color: rgba(0, 0, 0, .6); background: rgba(0, 0, 0, .08); }
+}
+
+// amber 'caution' button (warns before risky but reversible actions)
+.caution {
+  --mdc-filled-button-container-color: #ef6c00;
+  --mdc-filled-button-label-text-color: #fff;
+  --mat-button-filled-container-color: #ef6c00;
+  --mat-button-filled-label-text-color: #fff;
+  --mat-filled-button-container-color: #ef6c00;
+  --mat-filled-button-label-text-color: #fff;
+  background-color: #ef6c00;
+  color: #fff;
+}
+
+.caution:disabled, .caution[disabled] {
+  --mdc-filled-button-disabled-container-color: rgba(0, 0, 0, .12);
+  --mat-button-filled-disabled-container-color: rgba(0, 0, 0, .12);
+  --mat-filled-button-disabled-container-color: rgba(0, 0, 0, .12);
+  --mdc-filled-button-disabled-label-text-color: rgba(0, 0, 0, .38);
+  --mat-button-filled-disabled-label-text-color: rgba(0, 0, 0, .38);
+  --mat-filled-button-disabled-label-text-color: rgba(0, 0, 0, .38);
+  background-color: rgba(0, 0, 0, .12);
+  color: rgba(0, 0, 0, .38);
+}
+
+@keyframes rugix-spin {
+  to { transform: rotate(360deg); }
+}

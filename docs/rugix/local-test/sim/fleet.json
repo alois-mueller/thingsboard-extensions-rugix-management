@@ -1,0 +1,439 @@
+{
+ "Testanlage_Felix_Rugix": {
+  "hw": {
+   "model": "RevPi Connect 4 32/4GB",
+   "board": "1.3",
+   "cpu": "Raspberry Pi Compute Module 4 Rev 1.1"
+  },
+  "os": "0.5.1-dev3",
+  "online": true,
+  "serial": "PR100001R00"
+ },
+ "Anlage_Nord_RevPi_02": {
+  "hw": {
+   "model": "RevPi Connect 4 32/4GB",
+   "board": "1.3",
+   "cpu": "Raspberry Pi Compute Module 4 Rev 1.1"
+  },
+  "os": "0.5.1-dev3",
+  "online": true,
+  "serial": "PR100002R01",
+  "insecure": true,
+  "factoryReset": false
+ },
+ "Anlage_03_RevPi": {
+  "hw": {
+   "model": "RevPi Connect 4 32/4GB",
+   "board": "1.3",
+   "cpu": "Raspberry Pi Compute Module 4 Rev 1.1"
+  },
+  "os": "0.5.1-dev3",
+  "online": true,
+  "serial": "PR100003R02",
+  "apps": [
+   {
+    "name": "tb-iot-gateway",
+    "status": {
+     "state": "running"
+    },
+    "generation": 23,
+    "orchestrator": "compose"
+   },
+   {
+    "name": "pangolin-newt",
+    "status": {
+     "state": "running"
+    },
+    "generation": 11,
+    "orchestrator": "compose"
+   }
+  ],
+  "jobs": [
+   {
+    "title": "Install system update",
+    "kind": "system-update",
+    "status": "succeeded",
+    "minutesAgo": 2600,
+    "lines": [
+     "Downloading bundle",
+     "Writing system-a"
+    ],
+    "failure": null
+   }
+  ]
+ },
+ "Anlage_04_RevPi": {
+  "hw": {
+   "model": "RevPi Connect 4 32/4GB",
+   "board": "1.3",
+   "cpu": "Raspberry Pi Compute Module 4 Rev 1.1"
+  },
+  "os": "0.5.1-dev3",
+  "online": true,
+  "serial": "PR100004R00",
+  "apps": [
+   {
+    "name": "tb-iot-gateway",
+    "status": {
+     "state": "running"
+    },
+    "generation": 23,
+    "orchestrator": "compose"
+   }
+  ]
+ },
+ "Anlage_05_RevPi": {
+  "hw": {
+   "model": "RevPi Connect 5 16/4GB",
+   "board": "1.0",
+   "cpu": "Raspberry Pi Compute Module 5 Rev 1.0"
+  },
+  "os": "0.5.2-rc1",
+  "online": true,
+  "serial": "PR100005R01",
+  "apps": [
+   {
+    "name": "tb-iot-gateway",
+    "status": {
+     "state": "running"
+    },
+    "generation": 23,
+    "orchestrator": "compose"
+   },
+   {
+    "name": "pangolin-newt",
+    "status": {
+     "state": "unhealthy",
+     "message": "container restarting (3 times in 10 min)"
+    },
+    "generation": 11,
+    "orchestrator": "compose"
+   },
+   {
+    "name": "revpi-dio-grafana",
+    "status": {
+     "state": "running"
+    },
+    "generation": 4,
+    "orchestrator": "compose"
+   }
+  ]
+ },
+ "Anlage_06_RevPi": {
+  "hw": {
+   "model": "RevPi Connect 5 16/4GB",
+   "board": "1.0",
+   "cpu": "Raspberry Pi Compute Module 5 Rev 1.0"
+  },
+  "os": "0.5.2-rc1",
+  "online": true,
+  "serial": "PR100006R02",
+  "state": "error"
+ },
+ "Anlage_07_RevPi": {
+  "hw": {
+   "model": "RevPi Connect 4 32/4GB",
+   "board": "1.3",
+   "cpu": "Raspberry Pi Compute Module 4 Rev 1.1"
+  },
+  "os": "0.5.0",
+  "online": false,
+  "serial": "PR100007R00",
+  "offlineMinutes": 1800
+ },
+ "Anlage_08_RevPi": {
+  "hw": {
+   "model": "RevPi Flat",
+   "board": "1.1",
+   "cpu": "Raspberry Pi Compute Module 4 Rev 1.1"
+  },
+  "os": "0.5.0",
+  "online": false,
+  "serial": "PR100008R01",
+  "offlineMinutes": 300
+ },
+ "Anlage_09_RevPi": {
+  "hw": {
+   "model": "RevPi Connect 5 16/4GB",
+   "board": "1.0",
+   "cpu": "Raspberry Pi Compute Module 5 Rev 1.0"
+  },
+  "os": "0.5.2-rc1",
+  "online": true,
+  "serial": "PR100009R02",
+  "apps": [
+   {
+    "name": "tb-iot-gateway",
+    "status": {
+     "state": "running"
+    },
+    "generation": 23,
+    "orchestrator": "compose"
+   },
+   {
+    "name": "pangolin-newt",
+    "status": {
+     "state": "running"
+    },
+    "generation": 11,
+    "orchestrator": "compose"
+   }
+  ],
+  "jobs": [
+   {
+    "title": "Install app bundle",
+    "kind": "app-install",
+    "status": "failed",
+    "minutesAgo": 95,
+    "lines": [
+     "unable to open HTTP bundle source"
+    ],
+    "failure": "rugix-ctrl failed: unable to create HTTP source"
+   }
+  ]
+ },
+ "Anlage_10_RevPi": {
+  "hw": {
+   "model": "RevPi Connect 4 32/4GB",
+   "board": "1.3",
+   "cpu": "Raspberry Pi Compute Module 4 Rev 1.1"
+  },
+  "os": "0.4.9",
+  "online": true,
+  "serial": "PR100010R00",
+  "apps": [
+   {
+    "name": "tb-iot-gateway",
+    "status": {
+     "state": "running"
+    },
+    "generation": 23,
+    "orchestrator": "compose"
+   }
+  ]
+ },
+ "Anlage_11_RevPi": {
+  "hw": {
+   "model": "RevPi Core S 1GB",
+   "board": "1.2",
+   "cpu": "Raspberry Pi Compute Module 4 Rev 1.1"
+  },
+  "os": "0.4.9",
+  "online": true,
+  "serial": "PR100011R01",
+  "consistent": false,
+  "apps": [
+   {
+    "name": "tb-iot-gateway",
+    "status": {
+     "state": "running"
+    },
+    "generation": 23,
+    "orchestrator": "compose"
+   },
+   {
+    "name": "pangolin-newt",
+    "status": {
+     "state": "running"
+    },
+    "generation": 11,
+    "orchestrator": "compose"
+   }
+  ]
+ },
+ "Anlage_12_RevPi": {
+  "hw": {
+   "model": "RevPi Connect 4 32/4GB",
+   "board": "1.3",
+   "cpu": "Raspberry Pi Compute Module 4 Rev 1.1"
+  },
+  "os": "0.5.1-dev3",
+  "online": false,
+  "serial": "PR100012R02",
+  "offlineMinutes": 3120
+ },
+ "Anlage_13_RevPi": {
+  "hw": {
+   "model": "RevPi Flat",
+   "board": "1.1",
+   "cpu": "Raspberry Pi Compute Module 4 Rev 1.1"
+  },
+  "os": "0.5.0",
+  "online": true,
+  "serial": "PR100013R00",
+  "jobs": [
+   {
+    "title": "Install system update",
+    "kind": "system-update",
+    "status": "running",
+    "minutesAgo": 3,
+    "lines": [
+     "Downloading bundle",
+     "Verifying signature"
+    ],
+    "failure": null
+   }
+  ]
+ },
+ "Anlage_14_RevPi": {
+  "hw": {
+   "model": "RevPi Connect 5 16/4GB",
+   "board": "1.0",
+   "cpu": "Raspberry Pi Compute Module 5 Rev 1.0"
+  },
+  "os": "0.5.2-rc1",
+  "online": true,
+  "serial": "PR100014R01",
+  "apps": [
+   {
+    "name": "tb-iot-gateway",
+    "status": {
+     "state": "running"
+    },
+    "generation": 23,
+    "orchestrator": "compose"
+   },
+   {
+    "name": "pangolin-newt",
+    "status": {
+     "state": "running"
+    },
+    "generation": 11,
+    "orchestrator": "compose"
+   },
+   {
+    "name": "revpi-dio-grafana",
+    "status": {
+     "state": "running"
+    },
+    "generation": 4,
+    "orchestrator": "compose"
+   }
+  ]
+ },
+ "Anlage_15_RevPi": {
+  "hw": {
+   "model": "RevPi Connect 4 32/4GB",
+   "board": "1.3",
+   "cpu": "Raspberry Pi Compute Module 4 Rev 1.1"
+  },
+  "os": "0.4.8",
+  "online": false,
+  "serial": "PR100015R02",
+  "insecure": true,
+  "offlineMinutes": 5760
+ },
+ "Anlage_16_RevPi": {
+  "hw": {
+   "model": "RevPi Core S 1GB",
+   "board": "1.2",
+   "cpu": "Raspberry Pi Compute Module 4 Rev 1.1"
+  },
+  "os": "0.5.1-dev3",
+  "online": true,
+  "serial": "PR100016R00",
+  "apps": [
+   {
+    "name": "tb-iot-gateway",
+    "status": {
+     "state": "running"
+    },
+    "generation": 23,
+    "orchestrator": "compose"
+   },
+   {
+    "name": "pangolin-newt",
+    "status": {
+     "state": "failed",
+     "message": "service exited with code 137"
+    },
+    "generation": 11,
+    "orchestrator": "compose"
+   }
+  ]
+ },
+ "Anlage_17_RevPi": {
+  "hw": {
+   "model": "RevPi Connect 4 32/4GB",
+   "board": "1.3",
+   "cpu": "Raspberry Pi Compute Module 4 Rev 1.1"
+  },
+  "os": "0.5.2-rc1",
+  "online": true,
+  "serial": "PR100017R01",
+  "jobs": [
+   {
+    "title": "Install system update",
+    "kind": "system-update",
+    "status": "succeeded",
+    "minutesAgo": 40,
+    "lines": [
+     "Downloading bundle",
+     "Writing system-a",
+     "Selecting boot group a"
+    ],
+    "failure": null
+   }
+  ]
+ },
+ "Anlage_18_RevPi": {
+  "hw": {
+   "model": "RevPi Flat",
+   "board": "1.1",
+   "cpu": "Raspberry Pi Compute Module 4 Rev 1.1"
+  },
+  "os": "0.5.0",
+  "online": false,
+  "serial": "PR100018R02",
+  "offlineMinutes": 17280
+ },
+ "Anlage_19_RevPi": {
+  "hw": {
+   "model": "RevPi Core S 1GB",
+   "board": "1.2",
+   "cpu": "Raspberry Pi Compute Module 4 Rev 1.1"
+  },
+  "os": "0.5.1-dev3",
+  "online": true,
+  "serial": "PR100019R00",
+  "apps": [
+   {
+    "name": "tb-iot-gateway",
+    "status": {
+     "state": "running"
+    },
+    "generation": 23,
+    "orchestrator": "compose"
+   }
+  ]
+ },
+ "Anlage_20_RevPi": {
+  "hw": {
+   "model": "RevPi Connect 5 16/4GB",
+   "board": "1.0",
+   "cpu": "Raspberry Pi Compute Module 5 Rev 1.0"
+  },
+  "os": "0.5.2-rc1",
+  "online": true,
+  "serial": "PR100020R01",
+  "insecure": true,
+  "apps": [
+   {
+    "name": "tb-iot-gateway",
+    "status": {
+     "state": "running"
+    },
+    "generation": 23,
+    "orchestrator": "compose"
+   },
+   {
+    "name": "pangolin-newt",
+    "status": {
+     "state": "running"
+    },
+    "generation": 11,
+    "orchestrator": "compose"
+   }
+  ]
+ }
+}
