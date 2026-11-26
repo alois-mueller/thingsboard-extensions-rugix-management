@@ -150,7 +150,7 @@
     <table class="rugix-table main-table">
       <thead>
         <tr>
-          <th class="w-check"><mat-checkbox [checked]="allChecked" (change)="toggleAll()" aria-label="Select all devices on this page"></mat-checkbox></th>
+          <th class="w-check"><mat-checkbox [checked]="allChecked" (change)="toggleAll(); releaseFocus()" aria-label="Select all devices on this page"></mat-checkbox></th>
           <th class="sortable c-dev" [class.sorted]="sortKey === 'name'" tabindex="0" role="button" (click)="sortBy('name')" (keydown.enter)="sortBy('name')">Device<mat-icon class="sort-icon">{{ sortKey === 'name' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
           <th class="sortable w-status" [class.sorted]="sortKey === 'status'" tabindex="0" role="button" (click)="sortBy('status')" (keydown.enter)="sortBy('status')">Connection<mat-icon class="sort-icon">{{ sortKey === 'status' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
           <th class="sortable c-os" [class.sorted]="sortKey === 'os'" tabindex="0" role="button" (click)="sortBy('os')" (keydown.enter)="sortBy('os')">Edge OS<mat-icon class="sort-icon">{{ sortKey === 'os' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
@@ -166,7 +166,7 @@
         @for (d of page; track trackById($index, d)) {
           <tr [class.selected]="d.id === selectedId" tabindex="0" (click)="select(d)" (keydown.enter)="select(d)">
             <td class="w-check" (click)="$event.stopPropagation()">
-              <mat-checkbox [checked]="checked.has(d.id)" (change)="toggle(d)" [attr.aria-label]="'Select ' + (d.label || d.name)"></mat-checkbox>
+              <mat-checkbox [checked]="checked.has(d.id)" (change)="toggle(d); releaseFocus()" [attr.aria-label]="'Select ' + (d.label || d.name)"></mat-checkbox>
             </td>
             <td>
               <div class="device">

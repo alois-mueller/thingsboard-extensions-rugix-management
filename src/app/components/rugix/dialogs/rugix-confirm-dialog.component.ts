@@ -55,6 +55,11 @@ export class RugixConfirmDialogComponent {
     this.dialogRef.close({checked: this.checked, text: this.text.trim()});
   }
 
+  /** A mouse click leaves the checkbox focused (round focus shadow stays on); drop the focus again. */
+  blurSoon(): void {
+    setTimeout(() => (document.activeElement as HTMLElement | null)?.blur?.());
+  }
+
   cancel(): void {
     this.dialogRef.close();
   }

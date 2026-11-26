@@ -927,6 +927,11 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     return this.page.length > 0 && this.page.every(d => this.checked.has(d.id));
   }
 
+  /** After a mouse click the checkbox keeps its focus ring ("round shadow"); drop the focus again. */
+  releaseFocus(): void {
+    setTimeout(() => (document.activeElement as HTMLElement | null)?.blur?.());
+  }
+
   toggleAll(): void {
     const all = this.allChecked;
     this.page.forEach(d => all ? this.checked.delete(d.id) : this.checked.add(d.id));

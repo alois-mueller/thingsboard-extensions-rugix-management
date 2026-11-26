@@ -188,6 +188,11 @@ export class RugixInstallDialogComponent implements OnInit {
     });
   }
 
+  /** A mouse click leaves the checkbox focused (round focus shadow stays on); drop the focus again. */
+  blurSoon(): void {
+    setTimeout(() => (document.activeElement as HTMLElement | null)?.blur?.());
+  }
+
   cancel(): void {
     if (!this.installing) {
       this.dialogRef.close();

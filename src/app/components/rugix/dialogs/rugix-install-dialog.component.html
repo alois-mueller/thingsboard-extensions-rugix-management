@@ -35,7 +35,7 @@
       </mat-form-field>
     }
     @if (packages.length) {
-      <mat-checkbox [(ngModel)]="useCustomUrl" name="useCustomUrl" [disabled]="installing">Enter URL manually</mat-checkbox>
+      <mat-checkbox (change)="blurSoon()" [(ngModel)]="useCustomUrl" name="useCustomUrl" [disabled]="installing">Enter URL manually</mat-checkbox>
     }
 
     <button type="button" class="rugix-advanced-toggle" (click)="advancedOpen = !advancedOpen" [attr.aria-expanded]="advancedOpen">
@@ -61,13 +61,13 @@
               </mat-select>
             </mat-form-field>
           }
-          <mat-checkbox [(ngModel)]="keepOverlay" name="keepOverlay" [disabled]="installing">Keep overlay of the target slot</mat-checkbox>
+          <mat-checkbox (change)="blurSoon()" [(ngModel)]="keepOverlay" name="keepOverlay" [disabled]="installing">Keep overlay of the target slot</mat-checkbox>
         }
         <mat-form-field appearance="outline" class="rugix-field">
           <mat-label>Expected bundle hash (optional)</mat-label>
           <input matInput name="bundleHash" [(ngModel)]="bundleHash" [disabled]="installing">
         </mat-form-field>
-        <mat-checkbox [(ngModel)]="skipCompatibilityCheck" name="skipCompat" [disabled]="installing">Skip component compatibility check</mat-checkbox>
+        <mat-checkbox (change)="blurSoon()" [(ngModel)]="skipCompatibilityCheck" name="skipCompat" [disabled]="installing">Skip component compatibility check</mat-checkbox>
 
         <div class="rugix-section-title">Download</div>
         <mat-form-field appearance="outline" class="rugix-field">
@@ -89,19 +89,19 @@
           </mat-form-field>
         </div>
         @if (isSystem) {
-          <mat-checkbox [(ngModel)]="disableRange" name="disableRange" [disabled]="installing">Disable HTTP range requests</mat-checkbox>
+          <mat-checkbox (change)="blurSoon()" [(ngModel)]="disableRange" name="disableRange" [disabled]="installing">Disable HTTP range requests</mat-checkbox>
         }
 
         @if (anyInsecure) {
           <div class="rugix-section-title warn">Security bypasses (development only)</div>
-          <mat-checkbox [(ngModel)]="insecureSkipVerification" name="insecureSkip" [disabled]="installing">Skip bundle signature verification</mat-checkbox>
-          <mat-checkbox [(ngModel)]="insecureAllowMissingBlockIndex" name="insecureBlockIndex" [disabled]="installing">Allow payloads without block index</mat-checkbox>
+          <mat-checkbox (change)="blurSoon()" [(ngModel)]="insecureSkipVerification" name="insecureSkip" [disabled]="installing">Skip bundle signature verification</mat-checkbox>
+          <mat-checkbox (change)="blurSoon()" [(ngModel)]="insecureAllowMissingBlockIndex" name="insecureBlockIndex" [disabled]="installing">Allow payloads without block index</mat-checkbox>
         }
       </div>
     }
 
     <div class="rugix-ack">
-      <mat-checkbox [(ngModel)]="acknowledged" name="ack" [disabled]="installing">{{ ackText }}</mat-checkbox>
+      <mat-checkbox (change)="blurSoon()" [(ngModel)]="acknowledged" name="ack" [disabled]="installing">{{ ackText }}</mat-checkbox>
     </div>
 
     @if (error) {
