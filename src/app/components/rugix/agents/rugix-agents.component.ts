@@ -720,6 +720,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     // polling must not trigger a change-detection run of the whole ThingsBoard app every 400 ms
     this.ngZone.runOutsideAngular(() => {
       this.arrowTimer = setInterval(() => {
+        this.syncFlowMode();
         this.syncDetailsLayout();
         const bar = this.host.nativeElement.querySelector('.tabbar') as HTMLElement;
         if (bar) {
@@ -743,6 +744,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     this.fleetTimer?.unsubscribe();
     this.destroy$.next();
     this.destroy$.complete();
+    this.restoreFlow();
     this.restoreClip();
     this.statsTimer?.unsubscribe();
     delete this.ctx.$scope.rugixAgentsComponent;
@@ -1194,6 +1196,9 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       return;
     }
     if (!this.clipSaved.length) {
+      // the docked panel scrolls on its own: hide the dashboard's own scrollbar (small screens) so there is only one
+      this.clipSaved.push({el: grid, overflow: grid.style.overflow, zIndex: grid.style.zIndex});
+      grid.style.overflow = 'hidden';
       let el: HTMLElement | null = root.querySelector('.rugix') as HTMLElement;
       while (el && el !== grid) {
         this.clipSaved.push({el, overflow: el.style.overflow, zIndex: el.style.zIndex});
@@ -1217,6 +1222,43 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     if (backdrop) {
       backdrop.style.inset = `${top}px ${right}px ${bottom}px ${left}px`;
     }
+  }
+
+  private flowSaved: { el: HTMLElement; height: string; overflow: string; prio: string }[] = [];
+
+  /**
+   * On small screens ThingsBoard stacks the widgets in a scrolling dashboard with a fixed widget height. The overview is longer than
+   * that, which gave two nested scrollbars. In that case let the widget grow with its content so only the dashboard scrolls.
+   */
+  private syncFlowMode(): void {
+    const root = this.host.nativeElement as HTMLElement;
+    const grid = root.closest('gridster') as HTMLElement | null;
+    const widget = root.querySelector('.rugix') as HTMLElement | null;
+    if (!widget || !grid) {
+      return;
+    }
+    const want = grid.classList.contains('mobile') && this.view === 'overview' && !this.selectedId;
+    widget.classList.toggle('flow', want);
+    if (want && !this.flowSaved.length) {
+      let el: HTMLElement | null = root;
+      while (el && el !== grid) {
+        this.flowSaved.push({el, height: el.style.getPropertyValue('height'), overflow: el.style.overflow, prio: el.style.getPropertyPriority('height')});
+        el.style.setProperty('height', 'auto', 'important');
+        el.style.overflow = 'visible';
+        el = el.parentElement;
+      }
+    } else if (!want && this.flowSaved.length) {
+      this.restoreFlow();
+    }
+  }
+
+  private restoreFlow(): void {
+    for (const s of this.flowSaved) {
+      s.el.style.removeProperty('height');
+      if (s.height) { s.el.style.setProperty('height', s.height, s.prio); }
+      s.el.style.overflow = s.overflow;
+    }
+    this.flowSaved = [];
   }
 
   private restoreClip(): void {
