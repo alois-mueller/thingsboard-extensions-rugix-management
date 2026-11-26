@@ -7,7 +7,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Subscription, timer } from 'rxjs';
 import { exhaustMap, takeWhile } from 'rxjs/operators';
 import { RugixDevice, RugixJobEvent, RugixJobStatus, RugixWidgetSettings } from '../models/rugix.models';
-import { fixMojibake, formatDateTime, isTerminalStatus, jobLabel } from '../models/rugix-parse';
+import { fixMojibake, formatDateTime, isRebootJob, isTerminalStatus, jobLabel } from '../models/rugix-parse';
 import { RugixRpcService } from '../services/rugix-rpc.service';
 
 export interface RugixJobDialogData {
@@ -69,6 +69,9 @@ export class RugixJobDialogComponent implements OnInit, OnDestroy {
   private recompute(): void {
     for (const e of this.events) {
       if (e.type === 'job-changed' && e.status && e.status !== 'unknown') {
+        if (isTerminalStatus(this.status) && !isTerminalStatus(e.status)) {
+          continue;
+        }
         this.status = e.status;
         this.title = e.title || this.title;
         this.kind = e.kind || this.kind;
@@ -81,6 +84,10 @@ export class RugixJobDialogComponent implements OnInit, OnDestroy {
       this.progress = this.progress === null ? null : 100;
     }
     this.done = isTerminalStatus(this.status);
+  }
+
+  get rebooting(): boolean {
+    return isRebootJob({title: this.title || this.data.title, kind: this.kind});
   }
 
   get logEvents(): RugixJobEvent[] {

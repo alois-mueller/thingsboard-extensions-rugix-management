@@ -247,7 +247,8 @@ export function applyValue(device: RugixDevice, key: string, raw: any, keys: Rug
   } else if (key === keys.defaultGroup) {
     device.defaultGroup = raw;
   } else if (key === keys.stateStatus) {
-    device.stateStatus = raw;
+    // devices report 'Active' / 'active' inconsistently
+    device.stateStatus = typeof raw === 'string' ? raw.trim().toLowerCase() : raw;
   } else if (key === keys.dataPartition) {
     device.dataPartition = raw;
   } else if (key === keys.apiVersion) {
@@ -472,7 +473,10 @@ export function foldJobEvent(state: RugixJobState | undefined, e: RugixJobEvent)
   if (e.type === 'job-changed') {
     st.title = e.title || st.title;
     st.kind = e.kind || st.kind;
-    st.status = e.status || st.status;
+    // a finished job stays finished, whatever order late or replayed events arrive in
+    if (!(isTerminalStatus(st.status) && e.status && !isTerminalStatus(e.status))) {
+      st.status = e.status || st.status;
+    }
     st.failure = e.failureMessage || st.failure;
     st.partial = false;
     if (st.status === 'succeeded' && st.progress !== null) {
@@ -577,4 +581,16 @@ export function urlIssue(url: string): { error?: string; warn?: string } {
 /** URL without query string and fragment, for display (keeps SAS tokens off the screen). */
 export function displayUrl(url: string): string {
   return (url || '').replace(/[?#].*$/, '');
+}
+
+/** Split a slot hash into algorithm and digest: key `sha512_256` with value `sha512-256:ee39…` shows once as `sha512-256` / `ee39…`. */
+export function hashParts(key: string, value: any): { algo: string; digest: string } {
+  const v = String(value ?? '');
+  const m = /^([a-z0-9_-]+):(.+)$/i.exec(v);
+  return m ? {algo: m[1], digest: m[2]} : {algo: String(key).replace(/_/g, '-'), digest: v};
+}
+
+/** Reboot jobs: the device restarts right away, so their events often arrive late. */
+export function isRebootJob(st: { title?: string; kind?: string } | undefined): boolean {
+  return /reboot/i.test(`${st?.title || ''} ${st?.kind || ''}`);
 }

@@ -26,7 +26,7 @@ import {
 } from '../models/rugix.models';
 import { RugixAppGeneration, RugixAppInfo, RugixDaemonFeature, RugixJobEvent, RugixJobState } from '../models/rugix.models';
 import { RugixDonutSegment } from '../charts/rugix-donut.component';
-import { channelTarget, CHANNEL_NAME, displayUrl, compareVersions, jobLabel, foldJobEvent, formatDateTime, fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots, firmwareState } from '../models/rugix-parse';
+import { hashParts, isRebootJob, isTerminalStatus, channelTarget, CHANNEL_NAME, displayUrl, compareVersions, jobLabel, foldJobEvent, formatDateTime, fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots, firmwareState } from '../models/rugix-parse';
 import { REVPI_ICON, RUGIX_LOGO } from '../models/rugix-icons';
 import { RugixJobHandle, RugixRpcService } from '../services/rugix-rpc.service';
 import {
@@ -293,6 +293,9 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   private jobStates = new Map<string, RugixJobState>();
   private jobSeeding = new Set<string>();
 
+  private verifyTimers = new Map<string, any>();
+  private streamRestarts = new Map<string, { n: number; at: number }>();
+
   private trackJob(d: RugixDevice): void {
     const ev = d.lastJobEvent;
     let st = this.jobStates.get(d.id);
@@ -319,6 +322,53 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
         }
       });
     }
+    // fast jobs (commit, reboot): only the newest `jobEvent` value is delivered, so the final status can be missed – look at the whole log
+    if (st && this.isJobActive(d)) {
+      this.scheduleVerify(d.id, 2500);
+    }
+  }
+
+  private scheduleVerify(deviceId: string, delay: number): void {
+    if (this.verifyTimers.has(deviceId)) {
+      return;
+    }
+    this.verifyTimers.set(deviceId, setTimeout(() => {
+      this.verifyTimers.delete(deviceId);
+      this.verifyJob(deviceId);
+    }, delay));
+  }
+
+  /** Fold all events of the running job (the log is complete even when the latest-value subscription skipped events). */
+  private verifyJob(deviceId: string): void {
+    const d = this.devices.find(x => x.id === deviceId);
+    const st = this.jobStates.get(deviceId);
+    if (!d || !st || isTerminalStatus(st.status)) {
+      return;
+    }
+    this.rpc.loadJobEvents(this.settings, d, 500, Date.now() - 24 * 3600000).pipe(takeUntil(this.destroy$)).subscribe(events => {
+      let rebuilt: RugixJobState | undefined;
+      for (const e of [...events].sort((a, b) => a.ts - b.ts).filter(e => e.jobId === st.id)) {
+        rebuilt = foldJobEvent(rebuilt, e);
+      }
+      const cur = this.jobStates.get(deviceId);
+      if (!cur || cur.id !== st.id) {
+        return;
+      }
+      if (rebuilt && (rebuilt.status !== cur.status || (rebuilt.progress ?? -1) !== (cur.progress ?? -1))) {
+        this.jobStates.set(deviceId, {...rebuilt, ts: Math.max(rebuilt.ts, cur.ts), progress: rebuilt.progress ?? cur.progress});
+        this.onDataUpdated();
+      }
+      const now = this.jobStates.get(deviceId);
+      if (now && !isTerminalStatus(now.status)) {
+        // a rebooting device drops the event stream; ask the gateway for the job's events again once the device answers
+        const r = this.streamRestarts.get(now.id) || {n: 0, at: 0};
+        if (isRebootJob(now) && d.active && Date.now() - now.ts > 8000 && r.n < 4 && Date.now() - r.at > 25000) {
+          this.streamRestarts.set(now.id, {n: r.n + 1, at: Date.now()});
+          this.rpc.startJobStream(this.settings, d, now.id).pipe(takeUntil(this.destroy$)).subscribe({error: () => undefined});
+        }
+        this.scheduleVerify(deviceId, 8000);
+      }
+    });
   }
 
   isJobActive(d: RugixDevice): boolean {
@@ -753,6 +803,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     clearInterval(this.arrowTimer);
+    this.verifyTimers.forEach(t => clearTimeout(t));
     clearTimeout(this.jobsReloadTimer);
     this.fleetTimer?.unsubscribe();
     this.destroy$.next();
@@ -848,6 +899,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   }
 
   displayUrl = displayUrl;
+  hashParts = hashParts;
 
   /** Online devices that run an older version than their channel target, grouped by target version. */
   get outdatedGroups(): { target: string; channels: string; devices: RugixDevice[] }[] {

@@ -79,14 +79,13 @@
         @if (!canEditPackages) { Packages are managed by tenant administrators. }
       </p>
       <table class="rugix-table pkg-table">
-        <thead><tr><th>Title</th><th>Version</th>@if (view === 'updates') { <th class="pk-chan">Active channel</th> }<th class="pk-tag">Tag</th><th class="pk-url">Bundle URL</th><th class="pk-added">Added</th><th class="w-actions"></th></tr></thead>
+        <thead><tr><th>Title</th><th>Version</th>@if (view === 'updates') { <th class="pk-chan">Active channel</th> }<th class="pk-url">Bundle URL</th><th class="pk-added">Added</th><th class="w-actions"></th></tr></thead>
         <tbody>
           @for (p of pkgList; track p.id.id) {
             <tr class="static-row">
-              <td><b>{{ p.title || p.version }}</b>@if (p.additionalInfo?.description) { <div class="sub">{{ p.additionalInfo.description }}</div> }</td>
+              <td><b>{{ p.title || p.version }}</b>@if (p.tag) { <div class="sub">{{ p.tag }}</div> }@if (p.additionalInfo?.description) { <div class="sub">{{ p.additionalInfo.description }}</div> }</td>
               <td class="nowrap">{{ p.version }}</td>
               @if (view === 'updates') { <td class="pk-chan nowrap">{{ channelsOf(p) || '—' }}</td> }
-              <td class="pk-tag">{{ p.tag || '—' }}</td>
               <td class="pk-url">
                 @if (p.url) {
                   <div class="pk-urlbox">
@@ -106,7 +105,7 @@
               </td>
             </tr>
           } @empty {
-            <tr class="static-row"><td [attr.colspan]="view === 'updates' ? 7 : 6" class="empty-row">{{ pkgLoading ? 'Loading…' : (view === 'apps' ? 'No apps yet.' : 'No firmware updates yet.') }}{{ canEditPackages && !pkgLoading ? ' Use "Add" to register a bundle URL.' : '' }}</td></tr>
+            <tr class="static-row"><td [attr.colspan]="view === 'updates' ? 6 : 5" class="empty-row">{{ pkgLoading ? 'Loading…' : (view === 'apps' ? 'No apps yet.' : 'No firmware updates yet.') }}{{ canEditPackages && !pkgLoading ? ' Use "Add" to register a bundle URL.' : '' }}</td></tr>
           }
         </tbody>
       </table>
@@ -402,6 +401,11 @@
         <button mat-flat-button color="primary" [disabled]="blocked(d, 'install') || busy.has(d.id)" (click)="openInstall([d], 'system')">
           <mat-icon>system_update_alt</mat-icon>Upgrade Firmware
         </button>
+        @if (d.firmware === 'outdated' && d.target && allowed('install')) {
+          <button mat-flat-button color="primary" [disabled]="blocked(d, 'install') || busy.has(d.id)" (click)="openInstall([d], 'system')" [matTooltip]="'Release channel ' + channelOf(d) + ' targets ' + d.target" matTooltipPosition="above" matTooltipClass="rugix-tip">
+            <mat-icon>upgrade</mat-icon>Upgrade to {{ d.target }}
+          </button>
+        }
         @for (a of systemActions; track a.action) {
           <button mat-flat-button [color]="a.warn ? 'warn' : (a.caution ? undefined : 'primary')" [class.caution]="a.caution"
                   [disabled]="blocked(d, kindOf(a), featureOf(a)) || busy.has(d.id)" (click)="runSystemAction(a, d)">
@@ -496,8 +500,6 @@
               </div>
               <div class="kv"><span>Channel target</span>
                 <b [class.good]="d.firmware === 'current'" [class.warn]="d.firmware === 'outdated'">{{ d.target || 'not configured' }}@if (d.firmware === 'outdated') { · update available } @else if (d.firmware === 'current') { · up to date } @else if (d.firmware === 'ahead') { · device is newer }</b>
-              
-                @if (d.firmware === 'outdated' && d.active && allowed('install')) { <button mat-stroked-button type="button" class="upg-inline" (click)="openInstall([d], 'system')"><mat-icon>upgrade</mat-icon>Upgrade to {{ d.target }}</button> }
               </div>
               <div class="kv"><span>Rugix Ctrl</span><b>{{ d.hardware.rugixCtrl || '—' }}</b></div>
               <div class="kv"><span>Rugix Admin</span><b>{{ d.adminVersion || '—' }}</b></div>
@@ -572,7 +574,7 @@
                   <div class="sub">{{ formatBytes(s.size) }}
                     @if (s.updatedAt) { · updated {{ fmt(s.updatedAt) }} }</div>
                   @for (h of s.hashes | keyvalue; track h.key) {
-                    <div class="hash" [matTooltip]="h.value">{{ h.key }}: {{ h.value }}</div>
+                    <div class="hash" [matTooltip]="hashParts(h.key, h.value).digest">{{ hashParts(h.key, h.value).algo }}: {{ hashParts(h.key, h.value).digest }}</div>
                   }
                 </div>
               } @empty { <div class="empty">No slot information.</div> }

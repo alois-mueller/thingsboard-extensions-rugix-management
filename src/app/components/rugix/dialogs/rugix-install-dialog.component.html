@@ -16,7 +16,7 @@
         <mat-select [(ngModel)]="selectedPackage" name="package" [disabled]="loadingPackages || installing">
           <mat-select-trigger>{{ selectedPackage?.title || selectedPackage?.tag }} <span class="version">– {{ selectedPackage?.version }}</span></mat-select-trigger>
           @for (p of packages; track p.id.id) {
-            <mat-option [value]="p">{{ p.title || p.tag }} <span class="version">– {{ p.version }}</span>@if (isTarget(p)) { <span class="target-tag">channel target</span> }</mat-option>
+            <mat-option [value]="p">{{ p.title || p.tag }} <span class="version">– {{ p.version }}</span>@if (isTarget(p)) { <span class="rugix-target-tag">channel target</span> }</mat-option>
           }
         </mat-select>
         @if (loadingPackages) {
