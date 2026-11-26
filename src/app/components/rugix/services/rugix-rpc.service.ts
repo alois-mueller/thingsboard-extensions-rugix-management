@@ -11,6 +11,7 @@ import { Device } from '@shared/models/device.models';
 import { EntityId } from '@shared/models/id/entity-id';
 import {
   RugixAppAction,
+  RugixAppInfo,
   RugixMachineStat,
   RugixDevice,
   RugixInstallOptions,
@@ -18,7 +19,7 @@ import {
   RugixSystemAction,
   RugixWidgetSettings
 } from '../models/rugix.models';
-import { parseJobEvent, parseMachineStat, uuidv4 } from '../models/rugix-parse';
+import { parseAppInfo, parseJobEvent, parseMachineStat, uuidv4 } from '../models/rugix-parse';
 
 export interface RugixJobHandle {
   jobId: string;
@@ -61,16 +62,26 @@ export class RugixRpcService {
   }
 
   installApp(settings: RugixWidgetSettings, device: RugixDevice, url: string,
-             options: { bundle_hash?: string; skip_compatibility_check?: boolean } = {}): Observable<RugixJobHandle> {
+             options: RugixInstallOptions = {}): Observable<RugixJobHandle> {
     const uuid = uuidv4();
     return this.callForJob(settings, device, settings.rpc.installApp,
-      {uuid, url, query: RugixRpcService.buildQuery(options)}, uuid);
+      {uuid, url, query: RugixRpcService.buildQuery(options as any)}, uuid);
   }
 
   appAction(settings: RugixWidgetSettings, device: RugixDevice, action: RugixAppAction, app: string,
             options: { generation?: number; keep?: number } = {}): Observable<RugixJobHandle> {
     return this.callForJob(settings, device, settings.rpc[action],
       {app, query: RugixRpcService.buildQuery(options)});
+  }
+
+  /** Generations and lifecycle state of one app (`GET /api/apps/{app}` through the gateway RPC `appInfo`). */
+  appInfo(settings: RugixWidgetSettings, device: RugixDevice, app: string): Observable<RugixAppInfo> {
+    if (!settings.rpc.appInfo) {
+      return throwError(() => new Error('RPC method "appInfo" is not configured in the widget settings.'));
+    }
+    return this.deviceService.sendTwoWayRpcCommand(device.id, {
+      method: settings.rpc.appInfo, params: {app}, timeout: settings.rpc.timeout
+    }, {ignoreErrors: true} as any).pipe(map(response => parseAppInfo(response)));
   }
 
   appsGarbageCollect(settings: RugixWidgetSettings, device: RugixDevice, keep?: number): Observable<RugixJobHandle> {

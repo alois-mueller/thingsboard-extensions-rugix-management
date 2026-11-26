@@ -37,6 +37,12 @@ The widget has two views in the top menu: **Overview** (fleet donuts for device 
 recent alerts such as offline, commit pending, failed jobs, security bypasses) and **Devices** (the table). Set
 `{"defaultView": "devices"}` in the widget settings to open on the table.
 
+### Jobs view, generations, boot groups
+- **Jobs** (top menu): job history of all devices from the `jobEvent` telemetry (last 24 h / 7 d / 30 d, filter by status, search, click a row opens the device's job log).
+- **Apps tab → click an app**: generations (created, last activated, state) with *Activate*; needs the `appInfo` RPC (see connector table).
+- **Overview → Boot groups**: reboot into a boot group (rugix-admin offers `reboot` for the active group and `reboot-spare` for the single other group).
+- **Install dialogs → Advanced**: transfer options (root certificate, retries/backoff, range requests); bypass options only for devices whose daemon runs with `dangerously_insecure`.
+
 ### Role restrictions and last seen
 `access` in the widget settings limits which ThingsBoard user authorities may use an action class
 (`SYS_ADMIN`, `TENANT_ADMIN`, `CUSTOMER_USER`). Default: install and reboot/commit for everyone, factory reset for
@@ -66,4 +72,5 @@ Derived from `rugix-request-connector-v1-0`:
 | 7 | `jobEvent` telemetry gets one row per output line | Set a telemetry TTL / retention for the device profile |
 | 8 | `auto_commit` toggle in the old dashboard only stores an attribute | Nothing consumes it – add a rule chain (activeGroup ≠ defaultGroup & auto_commit → RPC `commit`) |
 | 10 | Daemon policy and Admin version are not polled | Add `GET /api/daemon` → attribute `daemon.features = ${features}` (+ optionally `daemon.dangerouslyInsecure = ${dangerously_insecure}`; the whole response body also works) and `GET /api/info` → attribute `admin.version = ${version}`. Used to disable actions the daemon switched off, to show the "security bypasses enabled" warning and the Rugix Admin version |
+| 11 | No RPC for `GET /api/apps/{app}` | Add a server side RPC `appInfo` (GET `/api/apps/${params.app}`, return the response body). Used for the generations list of an app (Apps tab → click a row) incl. lifecycle state. Activating a generation uses the existing `appActivate` RPC with query `generation=<n>` |
 | 9 | `anonymous` security + `SSLVerify: false` | OK for tests; protect Rugix Admin / use TLS in production |

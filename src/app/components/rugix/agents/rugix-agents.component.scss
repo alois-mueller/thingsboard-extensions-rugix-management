@@ -255,6 +255,23 @@
   .jb-time { font-size: 12px; font-weight: 400; opacity: .8; }
   .tab-body > .banner { margin: 0 0 12px; }
   .fchip mat-icon.close { }
+  .view-tab .count.run { background: rgba(33, 150, 243, .16); color: #1565c0; }
+  .fleet .overview-head { gap: 16px; }
+  .fleet-filters { padding-left: 0; padding-right: 0; flex-wrap: wrap; overflow: visible; }
+  .fleet-filters .fchip .spin { margin: 0; }
+  .fleet-filters .fchip mat-icon.bad { color: #d12730; }
+  .fleet-filters .fchip mat-icon.good { color: #198038; }
+  .fleet-range { margin-left: auto; }
+  .fleet-range ~ .comp-filter { width: 220px; }
+  .log-table .fj-dev { width: 200px; }
+  .log-table .fj-job { width: 200px; }
+  .gen-table { margin-top: 4px; .w-actions { width: 120px; text-align: right; } }
+  .gen-activate { height: 32px; line-height: 30px; }
+  .apps-table .w-exp { width: 36px; }
+  .bg-list { padding: 4px 16px 12px; }
+  .bg-row { display: flex; align-items: center; gap: 8px; min-height: 48px; border-bottom: 1px solid rgba(0, 0, 0, .08); &:last-child { border-bottom: 0; } }
+  .bg-name { font: 500 16px/24px 'Roboto Mono', monospace; min-width: 28px; }
+  .bg-reboot { height: 34px; mat-icon { margin-right: 4px; } }
   .jb-fail { padding: 2px 0 4px 30px; font-size: 13px; }
   .jb-head mat-icon { flex: none; width: 22px; height: 22px; font-size: 22px; }
   .idrow { display: flex; align-items: center; gap: 4px; }

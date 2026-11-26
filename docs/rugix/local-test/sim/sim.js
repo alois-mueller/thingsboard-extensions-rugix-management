@@ -31,7 +31,7 @@ const DEFAULT_APPS = [{name: 'tb-iot-gateway', status: {state: 'running'}, gener
 for (const l of lines) {
   const [name, , token, ag, dg] = l.split(' ');
   const cfg = Object.assign({hw: {model: 'RevPi Connect 4 32/4GB', board: '1.3', cpu: 'Raspberry Pi Compute Module 4 Rev 1.1'}, os: '0.5.1-dev3', online: true, serial: 'PR100000R00'}, fleet[name] || {});
-  const apps = cfg.apps || DEFAULT_APPS;
+  const apps = JSON.parse(JSON.stringify(cfg.apps || DEFAULT_APPS));  // mutable: generation activation changes it
   const insecure = cfg.insecure !== undefined ? cfg.insecure : name.includes('Nord');
   const st = {ag, dg, groupsActive: ag};
   const c = mqtt.connect('mqtt://localhost:1883', {username: token});
@@ -95,7 +95,17 @@ for (const l of lines) {
     const reply = (v) => c.publish('v1/devices/me/rpc/response/' + id, JSON.stringify(v));
     const spare = st.ag === 'a' ? 'b' : 'a';
     if (method === 'installUpdateFromUrl') { reply({}); job(jobId, 'Install system update', 'system-update', ['Downloading bundle', 'Verifying signature', 'Writing system-' + spare, 'Writing boot-' + spare, 'Selecting boot group ' + spare], true, () => { st.dg = st.dg; }); }
-    else if (method === 'installAppFromUrl') { reply({}); job(jobId, 'Install app bundle', 'app-install', ['Downloading', 'Unpacking', 'Done'], false);  // app installs report no percentage }
+    else if (method === 'installAppFromUrl') { reply({}); job(jobId, 'Install app bundle', 'app-install', ['Downloading', 'Unpacking', 'Done'], false); /* app installs report no percentage */ }
+    else if (method === 'appInfo') {
+      const a = apps.find(x => x.name === params.app) || {name: params.app, generation: 1};
+      const gens = [0, 1, 2].map(i => ({number: (a.generation || 1) - i, created_at: new Date(Date.now() - (i + 1) * 86400000 * 3).toISOString(), complete: i !== 2 || a.generation > 3, active: i === 0,
+        last_activated: i === 0 ? new Date(Date.now() - 86400000).toISOString() : undefined, configuration_revision: 1})).filter(g => g.number > 0);
+      reply({name: a.name, status: a.status, lifecycle: {state: 'active', generation: a.generation}, orchestrator: a.orchestrator, generations: gens});
+    }
+    else if (method === 'appActivate') {
+      const g = Number(((params.query || '').match(/generation=(\d+)/) || [])[1]);
+      reply(jobId); job(jobId, 'Activate application generation', 'app-action', ['Activating generation ' + g], false, () => { const a = apps.find(x => x.name === params.app); if (a && g) { a.generation = g; } });
+    }
     else if (method === 'rebootSpare') { reply(jobId); job(jobId, 'Reboot into spare', 'system-action', ['Rebooting into ' + spare], false, () => { st.ag = spare; }); }
     else if (method === 'reboot') { reply(jobId); job(jobId, 'Reboot', 'system-action', ['Rebooting'], false); }
     else if (method === 'commit') { reply(jobId); job(jobId, 'Commit', 'system-action', ['Setting default boot group ' + st.ag], false, () => { st.dg = st.ag; }); }

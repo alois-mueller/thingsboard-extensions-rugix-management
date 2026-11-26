@@ -68,6 +68,35 @@
           <input matInput name="bundleHash" [(ngModel)]="bundleHash" [disabled]="installing">
         </mat-form-field>
         <mat-checkbox [(ngModel)]="skipCompatibilityCheck" name="skipCompat" [disabled]="installing">Skip component compatibility check</mat-checkbox>
+
+        <div class="rugix-section-title">Download</div>
+        <mat-form-field appearance="outline" class="rugix-field">
+          <mat-label>Root certificate path (optional)</mat-label>
+          <input matInput name="rootCert" [(ngModel)]="rootCert" placeholder="/etc/rugix/root.pem" [disabled]="installing">
+        </mat-form-field>
+        <div class="rugix-grid3">
+          <mat-form-field appearance="outline" class="rugix-field">
+            <mat-label>Retries</mat-label>
+            <input matInput type="number" min="0" name="maxRetries" [(ngModel)]="maxRetries" [disabled]="installing">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="rugix-field">
+            <mat-label>Backoff (s)</mat-label>
+            <input matInput type="number" min="0" name="initialBackoff" [(ngModel)]="initialBackoff" [disabled]="installing">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="rugix-field">
+            <mat-label>Max. backoff (s)</mat-label>
+            <input matInput type="number" min="0" name="maxBackoff" [(ngModel)]="maxBackoff" [disabled]="installing">
+          </mat-form-field>
+        </div>
+        @if (isSystem) {
+          <mat-checkbox [(ngModel)]="disableRange" name="disableRange" [disabled]="installing">Disable HTTP range requests</mat-checkbox>
+        }
+
+        @if (anyInsecure) {
+          <div class="rugix-section-title warn">Security bypasses (development only)</div>
+          <mat-checkbox [(ngModel)]="insecureSkipVerification" name="insecureSkip" [disabled]="installing">Skip bundle signature verification</mat-checkbox>
+          <mat-checkbox [(ngModel)]="insecureAllowMissingBlockIndex" name="insecureBlockIndex" [disabled]="installing">Allow payloads without block index</mat-checkbox>
+        }
       </div>
     }
 

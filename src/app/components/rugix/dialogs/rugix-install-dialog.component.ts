@@ -47,6 +47,15 @@ export class RugixInstallDialogComponent implements OnInit {
   bundleHash = '';
   keepOverlay = false;
   skipCompatibilityCheck = false;
+  // transfer / verification options (rugix-admin SystemInstallOptions / AppInstallOptions)
+  rootCert = '';
+  disableRange = false;
+  maxRetries: number | null = null;
+  initialBackoff: number | null = null;
+  maxBackoff: number | null = null;
+  // only honoured by daemons that run with security bypasses enabled (development)
+  insecureSkipVerification = false;
+  insecureAllowMissingBlockIndex = false;
 
   installing = false;
   error = '';
@@ -59,6 +68,11 @@ export class RugixInstallDialogComponent implements OnInit {
 
   get isSystem(): boolean {
     return this.data.mode === 'system';
+  }
+
+  /** The bypass options only work on daemons started with `dangerously_insecure`. */
+  get anyInsecure(): boolean {
+    return this.data.devices.some(d => d.insecure === true);
   }
 
   get bootGroups(): string[] {
@@ -129,12 +143,21 @@ export class RugixInstallDialogComponent implements OnInit {
     this.installing = true;
     this.error = '';
     const url = this.url;
+    const num = (v: number | null) => (v === null || v === undefined || isNaN(Number(v)) ? undefined : Number(v));
+    const insecure = this.anyInsecure;
     const base: RugixInstallOptions = {
       bundle_hash: this.bundleHash.trim() || undefined,
-      skip_compatibility_check: this.skipCompatibilityCheck || undefined
+      root_cert: this.rootCert.trim() || undefined,
+      skip_compatibility_check: this.skipCompatibilityCheck || undefined,
+      http_max_retries: num(this.maxRetries),
+      http_retry_initial_backoff: num(this.initialBackoff),
+      http_retry_max_backoff: num(this.maxBackoff),
+      insecure_skip_bundle_verification: insecure && this.insecureSkipVerification || undefined,
+      insecure_allow_missing_block_index: insecure && this.insecureAllowMissingBlockIndex || undefined
     };
     const systemOptions: RugixInstallOptions = {
       ...base,
+      disable_range_queries: this.disableRange || undefined,
       reboot: this.reboot,
       boot_group: this.bootGroup || undefined,
       keep_overlay: this.keepOverlay || undefined

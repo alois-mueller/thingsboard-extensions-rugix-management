@@ -6,8 +6,8 @@ import { ChangeDetectorRef, Component, ElementRef, NgZone, HostListener, Input, 
 import { MatDialog } from '@angular/material/dialog';
 import { PageEvent } from '@angular/material/paginator';
 import { WidgetContext } from '@home/models/widget-component.models';
-import { Observable, Subject, Subscription, timer } from 'rxjs';
-import { mergeMap, takeUntil } from 'rxjs/operators';
+import { from, Observable, Subject, Subscription, timer } from 'rxjs';
+import { map, mergeMap, takeUntil, toArray } from 'rxjs/operators';
 import { Device } from '@shared/models/device.models';
 import { AuditLogService } from '@core/public-api';
 import { AuditLog, EntityType, TimePageLink } from '@shared/public-api';
@@ -24,7 +24,7 @@ import {
   RugixStatsRange,
   RugixWidgetSettings
 } from '../models/rugix.models';
-import { RugixDaemonFeature, RugixJobEvent, RugixJobState } from '../models/rugix.models';
+import { RugixAppGeneration, RugixAppInfo, RugixDaemonFeature, RugixJobEvent, RugixJobState } from '../models/rugix.models';
 import { RugixDonutSegment } from '../charts/rugix-donut.component';
 import { jobLabel, foldJobEvent, formatDateTime, fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots } from '../models/rugix-parse';
 import { REVPI_ICON } from '../models/rugix-icons';
@@ -103,6 +103,159 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   private readonly destroy$ = new Subject<void>();
 
+  // ---- app generations (GET /api/apps/{app} via the gateway RPC "appInfo")
+  appOpen = new Set<string>();
+  appInfos = new Map<string, { loading: boolean; error: string; info?: RugixAppInfo }>();
+
+  private appKey(d: RugixDevice, a: RugixApp): string {
+    return d.id + '|' + a.name;
+  }
+
+  isAppOpen(d: RugixDevice, a: RugixApp): boolean {
+    return this.appOpen.has(this.appKey(d, a));
+  }
+
+  appState(d: RugixDevice, a: RugixApp): { loading: boolean; error: string; info?: RugixAppInfo } | undefined {
+    return this.appInfos.get(this.appKey(d, a));
+  }
+
+  toggleApp(d: RugixDevice, a: RugixApp): void {
+    const key = this.appKey(d, a);
+    if (this.appOpen.has(key)) {
+      this.appOpen.delete(key);
+    } else {
+      this.appOpen.add(key);
+      this.loadAppInfo(d, a);
+    }
+  }
+
+  loadAppInfo(d: RugixDevice, a: RugixApp): void {
+    const key = this.appKey(d, a);
+    const prev = this.appInfos.get(key);
+    this.appInfos.set(key, {loading: true, error: '', info: prev?.info});
+    this.rpc.appInfo(this.settings, d, a.name).pipe(takeUntil(this.destroy$)).subscribe({
+      next: info => { this.appInfos.set(key, {loading: false, error: '', info}); this.cd.markForCheck(); },
+      error: err => {
+        this.appInfos.set(key, {loading: false, error: err?.error?.message || err?.message || 'Generations could not be loaded (RPC "appInfo" configured in the gateway?).', info: prev?.info});
+        this.cd.markForCheck();
+      }
+    });
+  }
+
+  /** Lifecycle hint of an app (starting / stopping / switching / error), nothing for active / inactive. */
+  lifecycleNotice(info?: RugixAppInfo): { tone: 'info' | 'err'; text: string } | null {
+    const l = info?.lifecycle;
+    if (!l) { return null; }
+    const g = (n: any) => n === undefined || n === null ? '–' : String(n);
+    switch (l.state) {
+      case 'starting': return {tone: 'info', text: `Starting generation ${g(l.generation)}.`};
+      case 'stopping': return {tone: 'info', text: `Stopping generation ${g(l.generation)}.`};
+      case 'switching': return {tone: 'info', text: `${l.recovery ? 'Recovering application' : 'Switching generation'}: ${g(l.from)} → ${g(l.to)}.`};
+      case 'error': return {tone: 'err', text: `Generation transition failed (${g(l.from)} → ${g(l.to)}): ${l.message || ''}`};
+      default: return null;
+    }
+  }
+
+  activateGeneration(d: RugixDevice, app: RugixApp, g: RugixAppGeneration): void {
+    if (this.blocked(d, 'install', 'app_lifecycle')) {
+      return;
+    }
+    this.dialog.open<RugixConfirmDialogComponent, RugixConfirmDialogData, RugixConfirmDialogResult>(
+      RugixConfirmDialogComponent, {
+        data: {title: `Activate generation ${g.number}`, message: '', confirmLabel: 'Activate', caution: true,
+          acknowledge: `I understand that generation ${g.number} of app "${app.name}" becomes the active generation.`},
+        autoFocus: false, maxWidth: '95vw'
+      }).afterClosed().subscribe(r => {
+      if (r) {
+        this.track(d, `Activate ${app.name} (generation ${g.number})`, this.rpc.appAction(this.settings, d, 'appActivate', app.name, {generation: g.number}));
+        setTimeout(() => this.loadAppInfo(d, app), 8000);
+      }
+    });
+  }
+
+  // ---- boot groups: reboot into a specific group (rugix-admin: reboot = active group, reboot-spare = the other group)
+  bootGroupAction(d: RugixDevice, group: string): SystemActionInfo | undefined {
+    if (group === d.activeGroup) {
+      return this.systemActions.find(a => a.action === 'reboot');
+    }
+    const inactive = d.bootGroups.filter(g => g !== d.activeGroup);
+    return inactive.length === 1 && inactive[0] === group ? this.systemActions.find(a => a.action === 'rebootSpare') : undefined;
+  }
+
+  // ---- fleet job list (Jobs view)
+  fleetJobs: { device: RugixDevice; job: JobGroup }[] = [];
+  fleetLoading = false;
+  fleetDays = 7;
+  fleetStatus: '' | 'running' | 'failed' | 'succeeded' = '';
+  fleetSearch = '';
+  fleetPageIndex = 0;
+  readonly fleetPageSize = 10;
+  private fleetTimer?: Subscription;
+
+  get fleetFiltered(): { device: RugixDevice; job: JobGroup }[] {
+    const q = this.fleetSearch.trim().toLowerCase();
+    return this.fleetJobs.filter(f => {
+      const s = f.job.status;
+      const statusOk = !this.fleetStatus || (this.fleetStatus === 'running' ? (s === 'running' || s === 'queued') : s === this.fleetStatus);
+      return statusOk && (!q || [f.device.label, f.device.name, jobLabel(f.job.title, f.job.kind), f.job.id, f.job.status].some(v => (v || '').toLowerCase().includes(q)));
+    });
+  }
+
+  get fleetPage(): { device: RugixDevice; job: JobGroup }[] {
+    return this.fleetFiltered.slice(this.fleetPageIndex * this.fleetPageSize, (this.fleetPageIndex + 1) * this.fleetPageSize);
+  }
+
+  fleetCount(status: 'running' | 'failed' | 'succeeded'): number {
+    return this.fleetJobs.filter(f => status === 'running' ? (f.job.status === 'running' || f.job.status === 'queued') : f.job.status === status).length;
+  }
+
+  setFleetDays(d: number): void {
+    this.fleetDays = d;
+    this.fleetPageIndex = 0;
+    this.loadFleetJobs();
+  }
+
+  /** Job history of all devices (jobEvent telemetry), refreshed every 30 s while the Jobs view is open. */
+  private syncFleet(): void {
+    this.fleetTimer?.unsubscribe();
+    this.fleetTimer = undefined;
+    if (this.view === 'jobs') {
+      this.fleetTimer = timer(0, 30000).subscribe(i => this.loadFleetJobs(i > 0));
+    }
+  }
+
+  loadFleetJobs(silent = false): void {
+    const devices = [...this.devices];
+    if (!devices.length) {
+      this.fleetJobs = [];
+      return;
+    }
+    this.fleetLoading = !silent || !this.fleetJobs.length;
+    from(devices).pipe(
+      mergeMap(d => this.rpc.loadJobEvents(this.settings, d, 2000, Date.now() - this.fleetDays * 86400000)
+        .pipe(map(events => this.groupJobs(events).map(job => ({device: d, job})))), 4),
+      toArray(),
+      takeUntil(this.destroy$)
+    ).subscribe(parts => {
+      this.fleetJobs = ([] as { device: RugixDevice; job: JobGroup }[]).concat(...parts).sort((a, b) => b.job.start - a.job.start);
+      this.fleetLoading = false;
+      this.fleetPageIndex = Math.min(this.fleetPageIndex, Math.max(0, Math.ceil(this.fleetFiltered.length / this.fleetPageSize) - 1));
+      this.cd.markForCheck();
+    });
+  }
+
+  openDeviceJobs(f: { device: RugixDevice }): void {
+    const d = this.devices.find(x => x.id === f.device.id);
+    if (!d) {
+      return;
+    }
+    if (this.selectedId !== d.id) {
+      this.select(d);
+    }
+    this.tabIndex = this.jobsTab;
+    this.loadJobs(true);
+  }
+
   // ---- device creation time (device entity), loaded when a device is opened
   createdTimes = new Map<string, number>();
 
@@ -160,8 +313,8 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   // ---- fleet overview
   /** Selected view per widget; survives a re-initialisation of the widget (e.g. refresh -> updateAliases). */
-  private static readonly lastView = new Map<string, 'overview' | 'devices'>();
-  view: 'overview' | 'devices' = 'overview';
+  private static readonly lastView = new Map<string, 'overview' | 'devices' | 'jobs'>();
+  view: 'overview' | 'devices' | 'jobs' = 'overview';
 
   private get widgetKey(): string {
     return String((this.ctx as any).widget?.id || (this.ctx as any).id || 'rugix');
@@ -178,9 +331,10 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     return this.alertsExpanded ? this.alerts : this.alerts.slice(0, this.alertLimit);
   }
 
-  setView(v: 'overview' | 'devices'): void {
+  setView(v: 'overview' | 'devices' | 'jobs'): void {
     this.view = v;
     RugixAgentsComponent.lastView.set(this.widgetKey, v);
+    this.syncFleet();
     if (v === 'overview') {
       this.closeDetails();
     }
@@ -542,12 +696,14 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     this.settings = mergeRugixSettings(this.ctx.settings);
     this.pageSize = this.settings.defaultPageSize;
     this.view = RugixAgentsComponent.lastView.get(this.widgetKey) || (this.settings.defaultView === 'devices' ? 'devices' : 'overview');
+    this.syncFleet();
     this.onDataUpdated();
   }
 
   ngOnDestroy(): void {
     clearInterval(this.arrowTimer);
     clearTimeout(this.jobsReloadTimer);
+    this.fleetTimer?.unsubscribe();
     this.destroy$.next();
     this.destroy$.complete();
     this.restoreClip();

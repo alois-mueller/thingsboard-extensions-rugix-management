@@ -3,6 +3,7 @@
   <div class="view-tabs">
     <button type="button" class="view-tab" [class.active]="view === 'overview'" (click)="setView('overview')"><mat-icon>space_dashboard</mat-icon>Overview</button>
     <button type="button" class="view-tab" [class.active]="view === 'devices'" (click)="setView('devices')"><mat-icon>developer_board</mat-icon>Devices<span class="count">{{ devices.length }}</span></button>
+    <button type="button" class="view-tab" [class.active]="view === 'jobs'" (click)="setView('jobs')"><mat-icon>work_history</mat-icon>Jobs@if (fleetCount('running')) { <span class="count run">{{ fleetCount('running') }}</span> }</button>
   </div>
 
   @if (view === 'overview') {
@@ -36,6 +37,51 @@
           </button>
         }
       </div>
+    </div>
+  }
+
+  @if (view === 'jobs') {
+    <div class="overview fleet">
+      <div class="overview-head">
+        <span class="rugix-title">Jobs</span>
+        <span class="audit-hint">{{ fleetFiltered.length }} {{ fleetFiltered.length === 1 ? 'job' : 'jobs' }} in the last {{ fleetDays }} days on {{ devices.length }} devices</span>
+        <span class="flex-1"></span>
+        <button mat-icon-button type="button" (click)="loadFleetJobs()" [disabled]="fleetLoading" matTooltip="Refresh" aria-label="Refresh"><mat-icon>refresh</mat-icon></button>
+      </div>
+      <div class="rugix-filters fleet-filters">
+        <span class="fchip" role="button" tabindex="0" [class.on]="fleetStatus === ''" (click)="fleetStatus = ''; fleetPageIndex = 0" (keydown.enter)="fleetStatus = ''; fleetPageIndex = 0">All</span>
+        <span class="fchip" role="button" tabindex="0" [class.on]="fleetStatus === 'running'" (click)="fleetStatus = 'running'; fleetPageIndex = 0" (keydown.enter)="fleetStatus = 'running'; fleetPageIndex = 0"><span class="spin"></span>Running · {{ fleetCount('running') }}</span>
+        <span class="fchip" role="button" tabindex="0" [class.on]="fleetStatus === 'failed'" (click)="fleetStatus = 'failed'; fleetPageIndex = 0" (keydown.enter)="fleetStatus = 'failed'; fleetPageIndex = 0"><mat-icon class="bad">error</mat-icon>Failed · {{ fleetCount('failed') }}</span>
+        <span class="fchip" role="button" tabindex="0" [class.on]="fleetStatus === 'succeeded'" (click)="fleetStatus = 'succeeded'; fleetPageIndex = 0" (keydown.enter)="fleetStatus = 'succeeded'; fleetPageIndex = 0"><mat-icon class="good">check_circle</mat-icon>Succeeded · {{ fleetCount('succeeded') }}</span>
+        <span class="range fleet-range">
+          @for (n of [1, 7, 30]; track n) { <button type="button" [class.active]="fleetDays === n" (click)="setFleetDays(n)">{{ n === 1 ? '24 h' : n + ' d' }}</button> }
+        </span>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="comp-filter">
+          <mat-icon matPrefix>search</mat-icon>
+          <input matInput placeholder="Search jobs" [(ngModel)]="fleetSearch" (ngModelChange)="fleetPageIndex = 0">
+        </mat-form-field>
+      </div>
+      @if (fleetLoading) { <mat-progress-bar mode="indeterminate"></mat-progress-bar> }
+      <div class="rugix-table-wrap audit-wrap">
+        <table class="rugix-table compact log-table">
+          <thead><tr><th class="lc-time">Started</th><th class="fj-dev">Device</th><th class="fj-job">Job</th><th class="lc-status">Status</th><th class="lc-dur">Duration</th><th class="lc-id">Job ID</th></tr></thead>
+          <tbody>
+            @for (f of fleetPage; track f.job.id) {
+              <tr class="job-row" tabindex="0" (click)="openDeviceJobs(f)" (keydown.enter)="openDeviceJobs(f)">
+                <td class="nowrap">{{ fmt(f.job.start, true) }}</td>
+                <td class="nowrap"><b>{{ f.device.label || f.device.name }}</b></td>
+                <td class="nowrap"><mat-icon class="job-icon">{{ jobIcon(f.job.kind) }}</mat-icon>{{ jt(f.job.title, f.job.kind) || 'Job' }}</td>
+                <td><span class="pill" [class.run]="f.job.status === 'running' || f.job.status === 'queued'" [class.ok]="f.job.status === 'succeeded'" [class.err]="f.job.status === 'failed'" [matTooltip]="f.job.failure">{{ f.job.status }}@if ((f.job.status === 'running' || f.job.status === 'queued') && f.job.progress !== null) { · {{ f.job.progress | number:'1.0-0' }} %}</span></td>
+                <td class="nowrap">{{ jobDuration(f.job) || '—' }}</td>
+                <td class="job-id-cell" [matTooltip]="f.job.id"><span class="id-text">{{ f.job.id }}</span></td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6" class="empty">{{ fleetLoading ? 'Loading jobs…' : 'No jobs match in this period.' }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <mat-paginator class="log-paginator" [length]="fleetFiltered.length" [pageSize]="fleetPageSize" [pageIndex]="fleetPageIndex" hidePageSize showFirstLastButtons (page)="fleetPageIndex = $event.pageIndex"></mat-paginator>
     </div>
   }
 
@@ -314,6 +360,24 @@
               <b>{{ d.componentsConsistent === undefined ? '—' : (d.componentsConsistent ? 'yes' : 'no') }}</b></div>
           </div>
           </div>
+          @if (d.bootGroups.length) {
+            <div class="group-box">
+              <div class="group-title">Boot groups</div>
+              <div class="bg-list">
+                @for (g of d.bootGroups; track g) {
+                  <div class="bg-row">
+                    <span class="mono bg-name">{{ g }}</span>
+                    @if (g === d.activeGroup) { <span class="pill ok">active</span> }
+                    @if (g === d.defaultGroup) { <span class="pill run">default</span> }
+                    <span class="flex-1"></span>
+                    @if (bootGroupAction(d, g); as ba) {
+                      <button mat-stroked-button type="button" class="bg-reboot" [class.caution]="ba.caution" [disabled]="blocked(d, 'power', 'system_reboot')" (click)="runSystemAction(ba, d)" [attr.aria-label]="'Reboot into boot group ' + g"><mat-icon>{{ ba.icon }}</mat-icon>Reboot into {{ g }}</button>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
           <div class="group-box">
             <div class="group-title">Device Registration</div>
             <div class="tab-body grid tight">
@@ -352,17 +416,18 @@
               <button mat-stroked-button [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'app')"><mat-icon>add</mat-icon>Install App</button>
               <button mat-stroked-button [disabled]="blocked(d, 'install', 'app_lifecycle')" (click)="garbageCollectApps(d)"><mat-icon>cleaning_services</mat-icon>Clean up all apps</button>
             </div>
-            <table class="rugix-table compact">
-              <thead><tr><th>App</th><th>Version</th><th>Generation</th><th>Status</th><th class="c-md">Orchestrator</th><th class="w-actions"></th></tr></thead>
+            <table class="rugix-table compact apps-table">
+              <thead><tr><th class="w-exp"></th><th>App</th><th>Version</th><th>Generation</th><th>Status</th><th class="c-md">Orchestrator</th><th class="w-actions"></th></tr></thead>
               <tbody>
                 @for (a of d.apps; track a.name) {
-                  <tr>
+                  <tr class="job-row" [class.open]="isAppOpen(d, a)" tabindex="0" (click)="toggleApp(d, a)" (keydown.enter)="toggleApp(d, a)">
+                    <td class="w-exp"><mat-icon>{{ isAppOpen(d, a) ? 'expand_less' : 'expand_more' }}</mat-icon></td>
                     <td><b>{{ a.name }}</b></td>
                     <td class="nowrap">{{ a.version || '—' }}</td>
                     <td>{{ a.generation ?? '—' }}</td>
                     <td><span class="pill" [class.ok]="appStatusLabel(a.status) === 'running'" [class.warn]="appStatusLabel(a.status) === 'unhealthy'" [class.err]="appStatusLabel(a.status) === 'failed'" [matTooltip]="appStatusMessage(a.status)">{{ appStatusLabel(a.status) }}</span></td>
                     <td class="c-md">{{ a.orchestrator || '—' }}</td>
-                    <td class="w-actions">
+                    <td class="w-actions" (click)="$event.stopPropagation()">
                       <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="App actions" [disabled]="blocked(d, 'install', 'app_lifecycle')"><mat-icon>more_vert</mat-icon></button>
                       <mat-menu #appMenu="matMenu">
                         @for (x of appActions; track x.action) {
@@ -371,8 +436,48 @@
                       </mat-menu>
                     </td>
                   </tr>
+                  @if (isAppOpen(d, a)) {
+                    <tr class="job-detail">
+                      <td colspan="7">
+                        <div class="job-body">
+                          @let st = appState(d, a);
+                          @if (st?.loading && !st?.info) { <div class="empty small">Loading generations…</div> }
+                          @if (st?.error) { <div class="banner err"><mat-icon>error_outline</mat-icon><span>{{ st.error }}</span></div> }
+                          @if (lifecycleNotice(st?.info); as n) {
+                            <div class="banner" [class.err]="n.tone === 'err'" [class.neutral]="n.tone === 'info'"><mat-icon>{{ n.tone === 'err' ? 'error_outline' : 'sync' }}</mat-icon><span>{{ n.text }}</span></div>
+                          }
+                          @if (st?.info; as info) {
+                            <table class="rugix-table compact gen-table">
+                              <thead><tr><th>Generation</th><th>Created</th><th>Last activated</th><th>State</th><th class="w-actions"><button mat-icon-button type="button" (click)="loadAppInfo(d, a)" [disabled]="st.loading" matTooltip="Refresh" aria-label="Refresh generations"><mat-icon>refresh</mat-icon></button></th></tr></thead>
+                              <tbody>
+                                @for (g of info.generations; track g.number) {
+                                  <tr>
+                                    <td><b>{{ g.number }}</b>@if (g.configurationRevision !== undefined) { <span class="sub"> · config rev {{ g.configurationRevision }}</span> }</td>
+                                    <td class="nowrap">{{ g.createdAt ? fmt(g.createdAt) : '—' }}</td>
+                                    <td class="nowrap">{{ g.lastActivated ? fmt(g.lastActivated) : '—' }}</td>
+                                    <td>
+                                      @if (g.active) { <span class="pill ok">active</span> }
+                                      @else if (!g.complete) { <span class="pill warn">incomplete</span> }
+                                      @else { <span class="pill">inactive</span> }
+                                    </td>
+                                    <td class="w-actions">
+                                      @if (!g.active && g.complete) {
+                                        <button mat-stroked-button type="button" class="gen-activate" [disabled]="blocked(d, 'install', 'app_lifecycle')" (click)="activateGeneration(d, a, g)">Activate</button>
+                                      }
+                                    </td>
+                                  </tr>
+                                } @empty {
+                                  <tr><td colspan="5" class="empty">No generations reported.</td></tr>
+                                }
+                              </tbody>
+                            </table>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
                 } @empty {
-                  <tr><td colspan="6" class="empty">No apps reported.</td></tr>
+                  <tr><td colspan="7" class="empty">No apps reported.</td></tr>
                 }
               </tbody>
             </table>

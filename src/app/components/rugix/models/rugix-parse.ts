@@ -4,6 +4,7 @@
 
 import {
   RugixApp,
+  RugixAppInfo,
   RugixMachineStat,
   RugixCapability,
   RugixComponent,
@@ -49,6 +50,31 @@ export function parseSlots(slots: { [name: string]: any }): RugixSlot[] {
       hashes: info.hashes
     };
   });
+}
+
+/** `GET /api/apps/{app}` tolerant against snake/camel case and result wrappers. */
+export function parseAppInfo(value: any): RugixAppInfo {
+  let v = parseJson<any>(value, {});
+  for (const k of ['result', 'value']) {
+    if (v && typeof v === 'object' && v[k] !== undefined && v.generations === undefined) {
+      v = parseJson<any>(v[k], {});
+    }
+  }
+  const gens = Array.isArray(v?.generations) ? v.generations : [];
+  return {
+    name: v?.name,
+    status: v?.status,
+    lifecycle: v?.lifecycle && typeof v.lifecycle === 'object' ? v.lifecycle : {state: String(v?.lifecycle || 'inactive')},
+    orchestrator: v?.orchestrator,
+    generations: gens.map((g: any) => ({
+      number: Number(g.number),
+      createdAt: g.created_at ?? g.createdAt,
+      complete: !!g.complete,
+      active: !!g.active,
+      lastActivated: g.last_activated ?? g.lastActivated,
+      configurationRevision: g.configuration_revision ?? g.configurationRevision
+    })).sort((a: any, b: any) => b.number - a.number)
+  };
 }
 
 export function parseApps(value: any): RugixApp[] {

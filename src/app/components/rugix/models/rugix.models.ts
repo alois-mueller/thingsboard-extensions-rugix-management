@@ -44,6 +44,8 @@ export interface RugixRpcSettings {
   appRollback: string;
   appRemove: string;
   appGc: string;
+  /** Returns the `GET /api/apps/{app}` response (generations, lifecycle); params `{app}`. */
+  appInfo: string;
   appsGc: string;
   timeout: number;
 }
@@ -102,6 +104,7 @@ export const DEFAULT_RUGIX_SETTINGS: RugixWidgetSettings = {
     appRollback: 'appRollback',
     appRemove: 'appRemove',
     appGc: 'appGc',
+    appInfo: 'appInfo',
     appsGc: 'appsGarbageCollect',
     timeout: 30000
   },
@@ -293,10 +296,36 @@ export type RugixAppAction = 'appStart' | 'appStop' | 'appActivate' | 'appDeacti
 export interface RugixInstallOptions {
   reboot?: 'yes' | 'no' | 'set' | 'deferred';
   bundle_hash?: string;
+  root_cert?: string;
   boot_group?: string;
   keep_overlay?: boolean;
   skip_compatibility_check?: boolean;
   insecure_skip_bundle_verification?: boolean;
+  insecure_allow_missing_block_index?: boolean;
+  disable_range_queries?: boolean;
+  http_max_retries?: number;
+  http_retry_initial_backoff?: number;
+  http_retry_max_backoff?: number;
+}
+
+/** One generation of an app (`AppGeneration` of rugix-admin). */
+export interface RugixAppGeneration {
+  number: number;
+  createdAt?: string;
+  complete: boolean;
+  active: boolean;
+  lastActivated?: string;
+  configurationRevision?: number;
+}
+
+/** `GET /api/apps/{app}` (`AppInfoResponse`). */
+export interface RugixAppInfo {
+  name: string;
+  status?: any;
+  /** Lifecycle state: inactive / active / starting / stopping / switching / error (+ details). */
+  lifecycle: { state: string; [key: string]: any };
+  orchestrator?: string;
+  generations: RugixAppGeneration[];
 }
 
 export const RUGIX_REBOOT_MODES: { value: RugixInstallOptions['reboot']; label: string; hint: string }[] = [
