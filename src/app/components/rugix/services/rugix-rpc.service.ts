@@ -170,6 +170,14 @@ export class RugixRpcService {
   }
 
   /** Walk the `Created` relations up to the gateway device that owns the Rugix device. */
+  /** Creation time (ms epoch) of the device entity. */
+  getDeviceCreated(deviceId: string): Observable<number | undefined> {
+    return this.deviceService.getDevice(deviceId, {ignoreLoading: true, ignoreErrors: true}).pipe(
+      map(d => d?.createdTime),
+      catchError(() => of(undefined))
+    );
+  }
+
   resolveGateway(settings: RugixWidgetSettings, deviceId: string): Observable<Device> {
     const seen = new Set<string>();
     let fallback: Device | null = null;

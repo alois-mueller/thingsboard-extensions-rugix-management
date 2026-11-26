@@ -203,21 +203,30 @@
         }
       </div>
 
-      @if (isJobActive(d)) {
-        <div class="job-banner">
-          <div class="jb-head">
-            <span class="spin"></span>
+      <div class="job-banner" [class.ok]="d.job?.status === 'succeeded'" [class.err]="d.job?.status === 'failed'" [class.idle]="!d.job || d.job.status === 'unknown'">
+        <div class="jb-head">
+          @if (isJobActive(d)) { <span class="spin"></span> }
+          @else if (d.job?.status === 'succeeded') { <mat-icon>check_circle</mat-icon> }
+          @else if (d.job?.status === 'failed') { <mat-icon>error</mat-icon> }
+          @else { <mat-icon>history_toggle_off</mat-icon> }
+          @if (d.job && d.job.status !== 'unknown') {
             <b>{{ jt(d.job.title, d.job.kind) || 'Job' }}</b>
-            <span class="pill run">{{ d.job.status }}</span>
+            <span class="pill" [class.run]="isJobActive(d)" [class.ok]="d.job.status === 'succeeded'" [class.err]="d.job.status === 'failed'">{{ d.job.status === 'succeeded' ? 'success' : (d.job.status === 'failed' ? 'fail' : d.job.status) }}</span>
             <span class="flex-1"></span>
-            @if (d.job.progress !== null) { <b>{{ d.job.progress | number:'1.0-1' }} %</b> }
+            @if (isJobActive(d) && d.job.progress !== null) { <b>{{ d.job.progress | number:'1.0-1' }} %</b> }
+            @else if (!isJobActive(d)) { <span class="jb-time">{{ fmt(d.job.ts) }}</span> }
             <button mat-button type="button" (click)="tabIndex = jobsTab; loadJobs()">Show log</button>
-          </div>
-          @if (d.job.progress !== null) {
-            <div class="jb-bar"><span [style.width.%]="d.job.progress"></span></div>
+          } @else {
+            <span>No job has run on this device yet <span class="jb-time">(as of {{ fmt(now()) }})</span></span>
           }
         </div>
-      }
+        @if (isJobActive(d) && d.job.progress !== null) {
+          <div class="jb-bar"><span [style.width.%]="d.job.progress"></span></div>
+        }
+        @if (d.job?.status === 'failed' && d.job.failure) {
+          <div class="jb-fail">{{ d.job.failure }}</div>
+        }
+      </div>
       @if (restrictionNote) { <div class="hint">{{ restrictionNote }}</div> }
       @if (d.insecure) {
         <div class="banner err insecure">
@@ -255,6 +264,14 @@
         }
       </div>
         @if (tabIndex === 0) {
+          <div class="group-box">
+            <div class="group-title">Created</div>
+            <div class="tab-body grid tight">
+              <div class="kv"><span>Created on</span><b>{{ createdTimes.get(d.id) ? fmt(createdTimes.get(d.id)) : '—' }}</b></div>
+              <div class="kv"><span>Age</span><b>{{ createdTimes.get(d.id) ? ago(createdTimes.get(d.id)).replace(' ago', '') : '—' }}</b></div>
+              <div class="kv"><span>Device ID</span><b class="mono">{{ d.id }}</b></div>
+            </div>
+          </div>
           @if (d.componentList.length) {
             <div class="group-box">
             <div class="group-title">Hardware</div>

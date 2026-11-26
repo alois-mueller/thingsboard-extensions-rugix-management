@@ -249,6 +249,13 @@
   .chip.run { color: #1565c0; background: rgba(33, 150, 243, .12); }
   .mini-bar { display: none; width: 90px; height: 4px; margin-top: 4px; border-radius: 2px; background: rgba(0, 0, 0, .1); overflow: hidden; span { display: block; height: 100%; background: #1565c0; transition: width .4s; } }
   .job-banner { margin: 12px 24px 0; padding: 10px 16px; border-radius: 4px; background: rgba(33, 150, 243, .1); color: #0d47a1; }
+  .job-banner.ok { background: rgba(25, 128, 56, .1); color: #146c2e; }
+  .job-banner.err { background: rgba(209, 39, 48, .09); color: #a01e26; }
+  .job-banner.idle { background: rgba(0, 0, 0, .05); color: rgba(0, 0, 0, .65); }
+  .jb-time { font-size: 12px; font-weight: 400; opacity: .8; }
+  .jb-fail { padding: 2px 0 4px 30px; font-size: 13px; }
+  .jb-head mat-icon { flex: none; width: 22px; height: 22px; font-size: 22px; }
+  .kv b.mono { font: 12px/18px 'Roboto Mono', monospace; word-break: break-all; }
   .jb-head { display: flex; align-items: center; gap: 8px; min-height: 32px; .spin { margin-right: 2px; } }
   .jb-bar { height: 6px; margin-top: 6px; border-radius: 3px; background: rgba(0, 0, 0, .12); overflow: hidden; span { display: block; height: 100%; background: #1565c0; transition: width .4s; } }
   @keyframes rugix-spin { to { transform: rotate(360deg); } }

@@ -101,6 +101,25 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   searchOpen = false;
   tabIndex = 0;
 
+  // ---- device creation time (device entity), loaded when a device is opened
+  createdTimes = new Map<string, number>();
+
+  private loadCreated(id: string | null): void {
+    if (!id || this.createdTimes.has(id)) {
+      return;
+    }
+    this.rpc.getDeviceCreated(id).subscribe(ts => {
+      if (ts) {
+        this.createdTimes.set(id, ts);
+        this.cd.markForCheck();
+      }
+    });
+  }
+
+  now(): number {
+    return Date.now();
+  }
+
   // ---- current job per device (folded from the latest jobEvent of each update)
   private jobStates = new Map<string, RugixJobState>();
   private jobSeeding = new Set<string>();
@@ -725,6 +744,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   select(d: RugixDevice): void {
     this.selectedId = this.selectedId === d.id ? null : d.id;
+    this.loadCreated(this.selectedId);
     this.tabIndex = 0;
     this.auditDeviceId = '';
     this.jobsDeviceId = '';
