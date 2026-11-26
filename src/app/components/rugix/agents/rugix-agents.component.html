@@ -108,17 +108,17 @@
                 @if (isRevPi(d)) { <img class="device-icon" [src]="revpiIcon" alt="Revolution Pi" matTooltip="Revolution Pi"> }
                 <div class="device-text">
                   <div class="name">
-                    <span class="name-text" [matTooltip]="d.label ? d.label + ' (' + d.name + ')' : d.name" matTooltipShowDelay="300">{{ d.label || d.name }}</span>
-                    @if (d.commitPending) { <mat-icon class="warn-icon commit-icon" matTooltip="Warning: Commit pending – running a non-default system. Commit to keep it, otherwise the device falls back on next boot.">warning</mat-icon> }
-                    @if (d.insecure) { <mat-icon class="warn-icon insecure-icon" matTooltip="Warning: Rugix Ctrl security bypasses enabled (development only)">warning</mat-icon> }
+                    <span class="name-text" [matTooltip]="d.label ? d.label + ' (' + d.name + ')' : d.name" matTooltipShowDelay="300" matTooltipPosition="above" matTooltipClass="rugix-tip">{{ d.label || d.name }}</span>
+                    @if (d.commitPending) { <mat-icon class="warn-icon commit-icon" matTooltipPosition="above" matTooltipClass="rugix-tip" matTooltip="Warning: Commit pending – running a non-default system. Commit to keep it, otherwise the device falls back on next boot.">warning</mat-icon> }
+                    @if (d.insecure) { <mat-icon class="warn-icon insecure-icon" matTooltipPosition="above" matTooltipClass="rugix-tip" matTooltip="Warning: Rugix Ctrl security bypasses enabled (development only)">warning</mat-icon> }
                   </div>
                   @if (d.label) { <div class="sub">{{ d.name }}</div> }
                 </div>
               </div>
             </td>
             <td>
-              <span class="status" [class]="statusClass(d)" [matTooltip]="d.active && d.stateSince ? 'Online since ' + fmt(d.stateSince) : ''"><span class="dot"></span>{{ d.active ? 'Online' : 'Offline' }}</span>
-              @if (!d.active && d.lastSeen) { <div class="sub" [matTooltip]="'Offline since ' + fmt(d.lastSeen)">{{ ago(d.lastSeen) }}</div> }
+              <span class="status" [class]="statusClass(d)" [matTooltip]="d.active && d.stateSince ? 'Online since ' + fmt(d.stateSince) : ''" matTooltipPosition="above" matTooltipClass="rugix-tip"><span class="dot"></span>{{ d.active ? 'Online' : 'Offline' }}</span>
+              @if (!d.active && d.lastSeen) { <div class="sub" [matTooltip]="'Offline since ' + fmt(d.lastSeen)" matTooltipPosition="above" matTooltipClass="rugix-tip">{{ ago(d.lastSeen) }}</div> }
             </td>
             <td class="nowrap">{{ d.hardware.osVersion || '—' }}</td>
             <td class="c-l3">
