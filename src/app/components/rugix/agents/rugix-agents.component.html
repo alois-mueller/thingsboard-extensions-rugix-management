@@ -8,10 +8,13 @@
 
   @if (view === 'overview') {
     <div class="overview">
-      <div class="overview-head">
-        <span class="rugix-title">Fleet overview</span>
-        <span class="flex-1"></span>
-        <button mat-icon-button type="button" (click)="refresh()" matTooltip="Refresh"><mat-icon>refresh</mat-icon></button>
+      <div class="overview-head intro">
+        <img class="rugix-logo" [src]="rugixLogo" alt="Rugix">
+        <div class="intro-text">
+          <div class="rugix-title">Rugix Fleet Overview</div>
+          <p>Monitor and manage your Rugix devices: connection, system health, firmware and app versions. Open <b>Devices</b> to upgrade firmware, install apps and reboot or commit a device, and <b>Jobs</b> to follow all running and finished operations.</p>
+        </div>
+        <button mat-icon-button type="button" (click)="refresh()" matTooltip="Refresh" aria-label="Refresh"><mat-icon>refresh</mat-icon></button>
       </div>
       <div class="donuts">
         <tb-rugix-donut title="Device status" [segments]="overviewStatus" [clickable]="true" (segmentClick)="onStatusSegment($event)"></tb-rugix-donut>
@@ -43,7 +46,7 @@
   @if (view === 'jobs') {
     <!-- same structure as the device table: toolbar, filters, scrolling table, pinned paginator -->
     <div class="rugix-toolbar">
-      <span class="rugix-title">Jobs</span>
+      <span class="rugix-title">Rugix Jobs</span>
       <span class="audit-hint fleet-hint">{{ fleetFiltered.length }} {{ fleetFiltered.length === 1 ? 'job' : 'jobs' }} in the last {{ fleetDays }} days</span>
       <span class="flex-1"></span>
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="rugix-search" [class.open]="searchOpen">
@@ -97,6 +100,12 @@
   <div class="rugix-toolbar" [class.selection]="checked.size">
     @if (!checked.size) {
       <span class="rugix-title">{{ settings.title }}</span>
+      <span class="fleet-summary">
+        <span class="fs ok"><i></i>{{ fleetSummary.online }} online</span>
+        <span class="fs off"><i></i>{{ fleetSummary.offline }} offline</span>
+        <span class="fs err"><i></i>{{ fleetSummary.error }} {{ fleetSummary.error === 1 ? 'error' : 'errors' }}</span>
+        <span class="fs warn"><i></i>{{ fleetSummary.warning }} {{ fleetSummary.warning === 1 ? 'warning' : 'warnings' }}</span>
+      </span>
       <span class="flex-1"></span>
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="rugix-search" [class.open]="searchOpen">
         <mat-icon matPrefix>search</mat-icon>

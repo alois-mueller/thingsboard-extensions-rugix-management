@@ -84,7 +84,7 @@ export interface RugixSseSettings {
 }
 
 export const DEFAULT_RUGIX_SETTINGS: RugixWidgetSettings = {
-  title: 'Rugix Management',
+  title: 'Rugix Devices',
   enableSearch: true,
   defaultPageSize: 10,
   defaultView: 'overview',

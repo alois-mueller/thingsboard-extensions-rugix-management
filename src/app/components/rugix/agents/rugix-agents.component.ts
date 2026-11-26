@@ -27,7 +27,7 @@ import {
 import { RugixAppGeneration, RugixAppInfo, RugixDaemonFeature, RugixJobEvent, RugixJobState } from '../models/rugix.models';
 import { RugixDonutSegment } from '../charts/rugix-donut.component';
 import { jobLabel, foldJobEvent, formatDateTime, fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots } from '../models/rugix-parse';
-import { REVPI_ICON } from '../models/rugix-icons';
+import { REVPI_ICON, RUGIX_LOGO } from '../models/rugix-icons';
 import { RugixJobHandle, RugixRpcService } from '../services/rugix-rpc.service';
 import {
   RugixConfirmDialogComponent,
@@ -334,6 +334,16 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   alerts: FleetAlert[] = [];
   readonly alertLimit = 8;
   alertsExpanded = false;
+
+  /** Online / offline / error / warning counts for the Devices toolbar. */
+  get fleetSummary(): { online: number; offline: number; error: number; warning: number } {
+    const c = {online: 0, offline: 0, error: 0, warning: 0};
+    for (const d of this.devices) {
+      if (d.active) { c.online++; } else { c.offline++; }
+      if (d.health === 'error') { c.error++; } else if (d.health === 'warning') { c.warning++; }
+    }
+    return c;
+  }
 
   get shownAlerts(): FleetAlert[] {
     return this.alertsExpanded ? this.alerts : this.alerts.slice(0, this.alertLimit);
@@ -664,6 +674,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   ];
 
   readonly revpiIcon = REVPI_ICON;
+  readonly rugixLogo = RUGIX_LOGO;
   readonly capabilityLabel = capabilityLabel;
   componentFilter = '';
   readonly formatBytes = formatBytes;
