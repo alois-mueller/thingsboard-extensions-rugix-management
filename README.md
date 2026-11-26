@@ -117,6 +117,15 @@ The `examples/` directory contains ready-to-use widget examples configured for d
 - **[example-of-using-third-party-library](examples/example-of-using-third-party-library)** — third-party npm packages (PrimeNG)
 - **[example-action](examples/example-action)** — custom actions with HTML templates
 
+## Rugix management widget
+
+This fork adds **`tb-rugix-agents`**, a widget to manage [Rugix](https://github.com/rugix/rugix) devices (overview, devices, jobs, firmware updates and apps, release channels) through the ThingsBoard IoT Gateway.
+
+- Widget code: [`src/app/components/rugix`](src/app/components/rugix)
+- Documentation (features, settings, gateway connector changes, security notes): [`docs/rugix/README.md`](docs/rugix/README.md)
+- Open items: [`docs/rugix/TODO.md`](docs/rugix/TODO.md)
+- Local test setup with a simulated device fleet: [`docs/rugix/local-test`](docs/rugix/local-test)
+
 ## Migration & Updates
 
 To ensure your extension remains compatible with the latest platform features, periodic updates are required.
