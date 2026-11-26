@@ -55,18 +55,27 @@ for (const l of lines) {
       const ev = (offset, jobEvent) => c.publish('v1/devices/me/telemetry', JSON.stringify({ts: t0 + offset, values: {jobEvent}}));
       const mk = (status) => ({type: 'job-changed', job: {id, title: j.title, kind: j.kind, status: status === 'failed' ? {status, message: j.failure, exitCode: 1} : {status}}});
       ev(0, mk('queued')); ev(400, mk('running'));
-      j.lines.forEach((line, i) => ev(1000 + i * 900, {type: 'job-output', job_id: id, stream: 'stderr', line}));
+      j.lines.forEach((line, i) => ev(1000 + i * 900, {type: 'job-output', jobId: id, stream: 'stderr', line}));
       if (j.status !== 'running') { ev(2000 + j.lines.length * 900, mk(j.status)); }
     }
   };
   const pushState = () => { tel({'boot.activeGroup': st.ag, 'boot.defaultGroup': st.dg}); attrs(); };
   const sleep = ms => new Promise(r => setTimeout(r, ms));
+  // Event shapes as forwarded by the gateway SSE connector (camelCase, see rugix-admin AdminEvent).
   async function job(id, title, kind, outLines, progress, mutate) {
-    const j = (status) => ({type: 'job-changed', job: {id, title, kind, status: typeof status === 'string' ? {status} : status, created_at: '', updated_at: ''}});
+    const j = (status) => ({type: 'job-changed', job: {id, title, kind, status: typeof status === 'string' ? {status} : status, createdAt: '', updatedAt: ''}});
+    const out = (line) => tel({jobEvent: {type: 'job-output', jobId: id, stream: 'stderr', line}});
     tel({jobEvent: j('queued')}); await sleep(600); tel({jobEvent: j('running')});
-    for (const [i, line] of outLines.entries()) {
-      await sleep(900); tel({jobEvent: {type: 'job-output', job_id: id, stream: 'stderr', line}});
-      if (progress) tel({jobEvent: {type: 'install-progress', job_id: id, progress: Math.round((i + 1) / outLines.length * 100)}});
+    if (progress) {
+      // install: percentage 0..100 in small steps, output lines are spread over the run
+      const steps = 25, perLine = Math.max(1, Math.floor(steps / outLines.length));
+      for (let i = 0; i <= steps; i++) {
+        await sleep(700 + Math.random() * 300);
+        if (i % perLine === 0 && outLines[i / perLine]) { out(outLines[i / perLine]); }
+        tel({jobEvent: {type: 'install-progress', jobId: id, progress: Math.round(i * 100 / steps * 10) / 10}});
+      }
+    } else {
+      for (const line of outLines) { await sleep(900); out(line); }
     }
     mutate && mutate(); await sleep(500); tel({jobEvent: j('succeeded')}); pushState();
   }

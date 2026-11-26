@@ -252,7 +252,7 @@ const STATUS_VALUES: RugixJobStatus[] = ['queued', 'running', 'succeeded', 'fail
 /** Normalize a raw `AdminEvent` (as forwarded by the gateway SSE connector into `jobEvent` telemetry). */
 export function parseJobEvent(raw: any, ts: number): RugixJobEvent {
   const e = parseJson<any>(raw, {}) || {};
-  const event: RugixJobEvent = {ts, type: e.type ?? 'unknown', raw: e, jobId: e.job_id ?? e.job?.id};
+  const event: RugixJobEvent = {ts, type: e.type ?? 'unknown', raw: e, jobId: e.jobId ?? e.job_id ?? e.job?.id};
   switch (e.type) {
     case 'job-changed': {
       const status = e.job?.status?.status;
