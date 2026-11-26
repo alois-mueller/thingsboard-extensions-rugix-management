@@ -186,6 +186,26 @@ export class RugixRpcService {
     return this.attributeService.saveEntityAttributes(entityId, AttributeScope.SERVER_SCOPE, [{key: settings.keys.channel, value: channel}]);
   }
 
+  /** Channel configuration stored as tenant server attribute (`null` when not stored or not readable). */
+  loadChannelConfig(settings: RugixWidgetSettings, tenantId: string): Observable<{ channels: { [name: string]: string }; defaultChannel: string } | null> {
+    const entityId = {entityType: EntityType.TENANT, id: tenantId} as EntityId;
+    return this.attributeService.getEntityAttributes(entityId, AttributeScope.SERVER_SCOPE, [settings.channelsAttribute], {ignoreLoading: true, ignoreErrors: true}).pipe(
+      map(attrs => {
+        let v = attrs?.[0]?.value;
+        if (typeof v === 'string') {
+          try { v = JSON.parse(v); } catch { v = null; }
+        }
+        return v && typeof v === 'object' && v.channels && typeof v.channels === 'object' ? {channels: v.channels, defaultChannel: v.defaultChannel} : null;
+      }),
+      catchError(() => of(null))
+    );
+  }
+
+  saveChannelConfig(settings: RugixWidgetSettings, tenantId: string, config: { channels: { [name: string]: string }; defaultChannel: string }): Observable<any> {
+    const entityId = {entityType: EntityType.TENANT, id: tenantId} as EntityId;
+    return this.attributeService.saveEntityAttributes(entityId, AttributeScope.SERVER_SCOPE, [{key: settings.channelsAttribute, value: config}]);
+  }
+
   /** Creation time (ms epoch) of the device entity. */
   getDeviceCreated(deviceId: string): Observable<number | undefined> {
     return this.deviceService.getDevice(deviceId, {ignoreLoading: true, ignoreErrors: true}).pipe(

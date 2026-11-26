@@ -4,6 +4,7 @@
     <button type="button" class="view-tab" [class.active]="view === 'overview'" (click)="setView('overview')"><mat-icon>space_dashboard</mat-icon>Overview</button>
     <button type="button" class="view-tab" [class.active]="view === 'devices'" (click)="setView('devices')"><mat-icon>developer_board</mat-icon>Devices<span class="count">{{ devices.length }}</span></button>
     <button type="button" class="view-tab" [class.active]="view === 'jobs'" (click)="setView('jobs')"><mat-icon>work_history</mat-icon>Jobs@if (fleetCount('running')) { <span class="count run">{{ fleetCount('running') }}</span> }</button>
+    <button type="button" class="view-tab" [class.active]="view === 'channels'" (click)="setView('channels')"><mat-icon>alt_route</mat-icon>Channels</button>
   </div>
 
   @if (view === 'overview') {
@@ -47,6 +48,62 @@
           </button>
         }
       </div>
+    </div>
+  }
+
+  @if (view === 'channels') {
+    <div class="rugix-toolbar">
+      <span class="rugix-title">Rugix Channels</span>
+      <span class="audit-hint fleet-hint">{{ chDraft.length }} {{ chDraft.length === 1 ? 'channel' : 'channels' }}</span>
+      <span class="flex-1"></span>
+      @if (canEditChannels) {
+        <button mat-button type="button" [disabled]="!chDirty || chSaving" (click)="resetDraft()">Discard</button>
+        <button mat-flat-button color="primary" type="button" [disabled]="!chDirty || !chValid || chSaving" (click)="saveChannels()"><mat-icon>save</mat-icon>Save</button>
+      }
+    </div>
+    <div class="rugix-table-wrap">
+      <p class="channels-intro">A release channel targets an Edge OS version. Devices follow the channel in their attribute <code>{{ settings.keys.channel }}</code> (default: <b>{{ settings.defaultChannel }}</b>) and are flagged as outdated when they run an older version.
+        @if (canEditChannels) {
+          @if (chSource === 'tenant') { Stored as tenant attribute <code>{{ settings.channelsAttribute }}</code>. } @else { Not saved yet, showing the widget settings – save to store the channels as tenant attribute <code>{{ settings.channelsAttribute }}</code>. }
+        } @else {
+          Channels are managed by tenant administrators.
+        }
+      </p>
+      <table class="rugix-table channels-table">
+        <thead><tr><th>Channel</th><th>Target version</th><th>Devices</th><th>Up to date</th><th>Outdated</th><th class="w-actions">Default</th><th class="w-actions"></th></tr></thead>
+        <tbody>
+          @for (c of chDraft; track c.name) {
+            <tr class="static-row">
+              <td><b>{{ c.name }}</b></td>
+              <td>
+                @if (canEditChannels) {
+                  <input class="ch-input" [class.invalid]="chVersionInvalid(c.version)" [(ngModel)]="c.version" (ngModelChange)="chDirty = true" placeholder="e.g. 0.5.0" aria-label="Target version of {{ c.name }}" spellcheck="false">
+                } @else {
+                  {{ c.version || '—' }}
+                }
+              </td>
+              <td>{{ channelStats(c.name).devices }}</td>
+              <td>{{ channelStats(c.name).current }}</td>
+              <td><span [class.fw-out]="channelStats(c.name).outdated">{{ channelStats(c.name).outdated }}</span></td>
+              <td class="w-actions">
+                <button mat-icon-button type="button" [disabled]="!canEditChannels" (click)="chDefault = c.name; chDirty = true" [matTooltip]="chDefault === c.name ? 'Default channel' : 'Make default channel'" [attr.aria-label]="'Make ' + c.name + ' the default channel'"><mat-icon>{{ chDefault === c.name ? 'radio_button_checked' : 'radio_button_unchecked' }}</mat-icon></button>
+              </td>
+              <td class="w-actions">
+                @if (canEditChannels) {
+                  <button mat-icon-button type="button" [disabled]="channelUsedBy(c.name) > 0 || chDraft.length < 2" (click)="removeChannel(c.name)" [matTooltip]="channelUsedBy(c.name) > 0 ? 'In use by ' + channelUsedBy(c.name) + ' devices' : 'Remove channel'" [attr.aria-label]="'Remove channel ' + c.name"><mat-icon>delete</mat-icon></button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      @if (canEditChannels) {
+        <div class="ch-add">
+          <input class="ch-input" [(ngModel)]="chNew" (keydown.enter)="addChannel()" placeholder="New channel name" aria-label="New channel name" spellcheck="false">
+          <button mat-stroked-button type="button" [disabled]="!!chNameError(chNew.trim().toLowerCase())" (click)="addChannel()"><mat-icon>add</mat-icon>Add channel</button>
+          @if (chNew.trim() && chNameError(chNew.trim().toLowerCase()); as err) { <span class="ch-err">{{ err }}</span> }
+        </div>
+      }
     </div>
   }
 

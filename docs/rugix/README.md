@@ -10,12 +10,13 @@ widget ──RPC──▶ ThingsBoard ──▶ TB IoT Gateway (request connecto
 ```
 
 ## Features
-Three views in the top menu:
+Four views in the top menu:
 
 | View | What it shows |
 |------|---------------|
 | **Overview** | Fleet donuts (device status, Edge OS versions, firmware vs. release channel, last job), recent alerts (offline, commit pending, failed jobs, state errors, security bypasses), Rugix logo, GitHub link and version badges |
 | **Devices** | Sortable / searchable / paginated table (connection incl. online/offline since, Edge OS, active / default boot group, boot flow, state, API, last job with live progress), health and connection filters, bulk *Upgrade Firmware* / *Install App*, details side panel |
+| **Channels** | Release channels with target versions and per-channel device counts (editable by tenant administrators) |
 | **Jobs** | Job history of all devices (24 h / 7 d / 30 d), status filter, search; a row opens the device's job log |
 
 Details panel tabs: **Overview** (hardware, firmware, daemon capabilities, boot info, boot groups with *reboot into group*, device registration), **Slots**, **Apps** (start/stop/activate/deactivate/rollback/gc/remove, generations with *Activate*), **Components** (+ consistency problems), **Resources**, **Job log** (grouped by job id, 30 days) and **Audit log** (ThingsBoard audit log of the device).
@@ -58,13 +59,15 @@ The Apps tab generations list needs the `appInfo` RPC (see connector table); ins
 (`root_cert`, `http_max_retries`, …) to the existing install RPCs.
 
 ### Release channels
-Each device follows a release channel (`stable` or `testing`) that targets an Edge OS version. Configure the versions in the widget settings:
+Each device follows a release channel (e.g. `stable`, `testing`) that targets an Edge OS version. Channels are edited in the **Channels** view (name, target version, default channel, devices per channel / up to date / outdated) and stored as the **tenant server attribute** `rugix.channels`, so they are shared by all dashboards and widgets of the tenant:
 
 ```json
 {"channels": {"stable": "0.5.0", "testing": "0.5.2-rc1"}, "defaultChannel": "stable"}
 ```
 
-The channel of a device is the server-scope attribute `rugix.channel` (add it as data key; devices without it use `defaultChannel`). The details panel shows the channel, its target version and lets users with the *install* permission switch the channel. Devices running an older version than their channel target get an orange upgrade icon in the table; the **Outdated** filter chip and the *Firmware vs. channel* donut on the Overview page list them (select them and use *Upgrade Firmware* for a bulk update). Versions are compared semver-style, pre-releases sort before their release (`0.5.0-rc1 < 0.5.0`); devices newer than the channel are shown as *Ahead*.
+Only users listed in `access.channels` (default `TENANT_ADMIN`) can save; everybody else sees the channels read-only. As long as nothing is stored, the widget settings `channels` / `defaultChannel` are used as initial values. A channel that devices still follow cannot be removed.
+
+The channel of a device is its server-scope attribute `rugix.channel` (add it as data key; devices without it use the default channel). The details panel shows the channel and its target version and lets users with the *install* permission switch the channel (with confirmation). Devices older than their channel target get an orange upgrade icon next to the device name; the **Outdated** filter chip and the *Firmware vs. channel* donut on the Overview page list them (select them and use *Upgrade Firmware* for a bulk update). Versions are compared semver-style, pre-releases sort before their release (`0.5.0-rc1 < 0.5.0`); devices newer than the channel are shown as *Ahead*.
 
 ### Role restrictions and last seen
 `access` in the widget settings limits which ThingsBoard user authorities may use an action class

@@ -26,7 +26,7 @@ import {
 } from '../models/rugix.models';
 import { RugixAppGeneration, RugixAppInfo, RugixDaemonFeature, RugixJobEvent, RugixJobState } from '../models/rugix.models';
 import { RugixDonutSegment } from '../charts/rugix-donut.component';
-import { jobLabel, foldJobEvent, formatDateTime, fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots, firmwareState } from '../models/rugix-parse';
+import { compareVersions, jobLabel, foldJobEvent, formatDateTime, fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots, firmwareState } from '../models/rugix-parse';
 import { REVPI_ICON, RUGIX_LOGO } from '../models/rugix-icons';
 import { RugixJobHandle, RugixRpcService } from '../services/rugix-rpc.service';
 import {
@@ -321,8 +321,8 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   // ---- fleet overview
   /** Selected view per widget; survives a re-initialisation of the widget (e.g. refresh -> updateAliases). */
-  private static readonly lastView = new Map<string, 'overview' | 'devices' | 'jobs'>();
-  view: 'overview' | 'devices' | 'jobs' = 'overview';
+  private static readonly lastView = new Map<string, 'overview' | 'devices' | 'jobs' | 'channels'>();
+  view: 'overview' | 'devices' | 'jobs' | 'channels' = 'overview';
 
   private get widgetKey(): string {
     return String((this.ctx as any).widget?.id || (this.ctx as any).id || 'rugix');
@@ -351,7 +351,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     return this.alertsExpanded ? this.alerts : this.alerts.slice(0, this.alertLimit);
   }
 
-  setView(v: 'overview' | 'devices' | 'jobs'): void {
+  setView(v: 'overview' | 'devices' | 'jobs' | 'channels'): void {
     this.view = v;
     RugixAgentsComponent.lastView.set(this.widgetKey, v);
     this.syncFleet();
@@ -734,6 +734,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     this.view = RugixAgentsComponent.lastView.get(this.widgetKey) || (this.settings.defaultView === 'devices' ? 'devices' : 'overview');
     this.syncFleet();
     this.onDataUpdated();
+    this.loadChannels();
   }
 
   ngOnDestroy(): void {
@@ -806,6 +807,123 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   firmwareFilter = false;
   channelSaving = false;
+
+  // ---- Channels view (config stored as tenant attribute)
+  chDraft: { name: string; version: string }[] = [];
+  chDefault = '';
+  chNew = '';
+  chDirty = false;
+  chSaving = false;
+  /** Where the effective channel configuration comes from. */
+  chSource: 'tenant' | 'widget' = 'widget';
+
+  private get tenantId(): string | undefined {
+    return (this.ctx.currentUser as any)?.tenantId;
+  }
+
+  get canEditChannels(): boolean {
+    return !!this.tenantId && (this.settings.access.channels || []).includes(this.ctx.currentUser?.authority);
+  }
+
+  private loadChannels(): void {
+    this.resetDraft();
+    if (!this.tenantId) {
+      return;
+    }
+    this.rpc.loadChannelConfig(this.settings, this.tenantId).pipe(takeUntil(this.destroy$)).subscribe(cfg => {
+      if (cfg) {
+        this.settings.channels = cfg.channels;
+        this.settings.defaultChannel = cfg.defaultChannel in cfg.channels ? cfg.defaultChannel : Object.keys(cfg.channels)[0] || '';
+        this.chSource = 'tenant';
+        this.resetDraft();
+        this.refreshFirmware();
+      }
+    });
+  }
+
+  private refreshFirmware(): void {
+    for (const d of this.devices) {
+      d.target = this.settings.channels[this.channelOf(d)] || undefined;
+      d.firmware = d.target ? firmwareState(d.hardware.osVersion, d.target) : 'unknown';
+    }
+    this.computeOverview();
+    this.cd.markForCheck();
+    this.ctx.detectChanges();
+  }
+
+  resetDraft(): void {
+    this.chDraft = Object.entries(this.settings.channels).map(([name, version]) => ({name, version: version || ''}));
+    this.chDefault = this.settings.defaultChannel;
+    this.chDirty = false;
+    this.chNew = '';
+  }
+
+  /** Devices following a channel, and how many of them are outdated. */
+  channelStats(name: string): { devices: number; outdated: number; current: number } {
+    const list = this.devices.filter(d => this.channelOf(d) === name);
+    return {devices: list.length, outdated: list.filter(d => d.firmware === 'outdated').length, current: list.filter(d => d.firmware === 'current').length};
+  }
+
+  addChannel(): void {
+    const name = this.chNew.trim().toLowerCase();
+    if (this.chNameError(name)) {
+      return;
+    }
+    this.chDraft = [...this.chDraft, {name, version: ''}];
+    if (!this.chDefault) { this.chDefault = name; }
+    this.chNew = '';
+    this.chDirty = true;
+  }
+
+  removeChannel(name: string): void {
+    this.chDraft = this.chDraft.filter(c => c.name !== name);
+    if (this.chDefault === name) { this.chDefault = this.chDraft[0]?.name || ''; }
+    this.chDirty = true;
+  }
+
+  /** `''` when the new channel name is acceptable. */
+  chNameError(name: string): string {
+    if (!name) { return 'Enter a name'; }
+    if (!/^[a-z0-9][a-z0-9._-]{0,31}$/.test(name)) { return 'Use lower-case letters, digits, . _ -'; }
+    return this.chDraft.some(c => c.name === name) ? 'Channel exists' : '';
+  }
+
+  chVersionInvalid(v: string): boolean {
+    return !!v.trim() && compareVersions(v, v) === null;
+  }
+
+  get chValid(): boolean {
+    return this.chDraft.length > 0 && this.chDraft.some(c => c.name === this.chDefault) && !this.chDraft.some(c => this.chVersionInvalid(c.version));
+  }
+
+  saveChannels(): void {
+    if (!this.canEditChannels || !this.chValid || this.chSaving) {
+      return;
+    }
+    const channels: { [name: string]: string } = {};
+    this.chDraft.forEach(c => channels[c.name] = c.version.trim());
+    const config = {channels, defaultChannel: this.chDefault};
+    this.chSaving = true;
+    this.rpc.saveChannelConfig(this.settings, this.tenantId, config).pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        this.settings.channels = channels;
+        this.settings.defaultChannel = this.chDefault;
+        this.chSource = 'tenant';
+        this.chSaving = false;
+        this.resetDraft();
+        this.refreshFirmware();
+      },
+      error: err => {
+        this.chSaving = false;
+        this.ctx.showErrorToast(`Could not save channels: ${err?.error?.message || err?.message || err}`);
+        this.cd.markForCheck();
+      }
+    });
+  }
+
+  channelUsedBy(name: string): number {
+    return this.channelStats(name).devices;
+  }
 
   get filtersActive(): boolean {
     return this.statusFilter !== 'all' || !!this.healthFilter || this.firmwareFilter;

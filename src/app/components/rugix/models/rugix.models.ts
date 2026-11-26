@@ -19,6 +19,8 @@ export interface RugixWidgetSettings {
   channels: { [channel: string]: string };
   /** Channel of devices without a `channel` attribute. */
   defaultChannel: string;
+  /** Tenant server attribute holding the channels edited in the Channels view (overrides `channels` / `defaultChannel`). */
+  channelsAttribute: string;
 }
 
 /**
@@ -31,6 +33,8 @@ export interface RugixAccessSettings {
   /** Reboot, Reboot (Spare), Commit. */
   power: string[];
   factoryReset: string[];
+  /** Edit the release channels (stored as tenant attribute, so only tenant users can save). */
+  channels: string[];
 }
 
 /** Names of the server side RPC methods configured in the gateway connector. */
@@ -138,10 +142,12 @@ export const DEFAULT_RUGIX_SETTINGS: RugixWidgetSettings = {
   access: {
     install: ['SYS_ADMIN', 'TENANT_ADMIN', 'CUSTOMER_USER'],
     power: ['SYS_ADMIN', 'TENANT_ADMIN', 'CUSTOMER_USER'],
-    factoryReset: ['SYS_ADMIN', 'TENANT_ADMIN']
+    factoryReset: ['SYS_ADMIN', 'TENANT_ADMIN'],
+    channels: ['TENANT_ADMIN']
   },
   channels: {stable: '', testing: ''},
   defaultChannel: 'stable',
+  channelsAttribute: 'rugix.channels',
   sse: {
     rpcMethod: 'request_startSse',
     urlTemplate: '/api/jobs/{jobId}/events',
