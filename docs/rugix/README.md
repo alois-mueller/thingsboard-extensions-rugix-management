@@ -10,10 +10,29 @@ widget ──RPC──▶ ThingsBoard ──▶ TB IoT Gateway (request connecto
 ```
 
 ## Features
-- Device table: online status, boot flow, active boot group, **"commit pending"** hint (active ≠ default group), state management, API version, last job
-- Details tabs: Overview, A/B Slots, Apps (start/stop/activate/deactivate/rollback/gc/remove), Components (+ problems), Last job
-- Actions (single + bulk): install system update / app bundle from OTA package URL, reboot, reboot into spare, commit, factory reset (optional backup)
-- Job dialog: live status, install progress and process output from `jobEvent` telemetry
+Three views in the top menu:
+
+| View | What it shows |
+|------|---------------|
+| **Overview** | Fleet donuts (device status, Edge OS versions, last job), recent alerts (offline, commit pending, failed jobs, state errors, security bypasses), Rugix logo, GitHub link and version badges |
+| **Devices** | Sortable / searchable / paginated table (connection incl. online/offline since, Edge OS, active / default boot group, boot flow, state, API, last job with live progress), health and connection filters, bulk *Upgrade Firmware* / *Install App*, details side panel |
+| **Jobs** | Job history of all devices (24 h / 7 d / 30 d), status filter, search; a row opens the device's job log |
+
+Details panel tabs: **Overview** (hardware, firmware, daemon capabilities, boot info, boot groups with *reboot into group*, device registration), **Slots**, **Apps** (start/stop/activate/deactivate/rollback/gc/remove, generations with *Activate*), **Components** (+ consistency problems), **Resources**, **Job log** (grouped by job id, 30 days) and **Audit log** (ThingsBoard audit log of the device).
+
+Actions (single + bulk): *Upgrade Firmware* / *Install App* from an OTA package URL (advanced: reboot mode, boot group, overlay, bundle hash, compatibility check, root certificate, retries/backoff, range requests, bypass options on insecure daemons), *Reboot*, *Reboot (Spare)*, *Commit*, *Factory reset* (optional backup). Every action asks for confirmation with an acknowledge checkbox. Actions are disabled for offline devices, for features the Rugix Ctrl daemon switched off, while a job runs is shown as a banner, and by the `access` role settings (see below).
+
+Live job state: progress of a running update is shown in the table, in the details banner and in the job dialog (from the `jobEvent` telemetry). Dates are shown as `dd.MM.yyyy HH:mm Uhr`.
+
+## Preview
+Screenshots of the real widget (ThingsBoard 4.4.1, local test instance with the simulated fleet from `local-test/`):
+
+| | |
+|---|---|
+| ![Overview](preview/overview.png) | ![Devices](preview/devices.png) |
+| ![Jobs](preview/jobs.png) | ![Details](preview/details-overview.png) |
+| ![Job log](preview/details-job-log.png) | ![App generations](preview/details-apps-generations.png) |
+| ![Mobile devices](preview/mobile-devices.png) | ![Mobile details](preview/mobile-details.png) |
 
 ## Resources tab (CPU / memory / storage)
 The *Resources* tab charts the `machineStats` telemetry of the **TB IoT Gateway device that owns the Rugix device**
@@ -32,16 +51,11 @@ The *Resources* tab charts the `machineStats` telemetry of the **TB IoT Gateway 
 Widget settings (JSON, all optional) allow renaming RPC methods and data keys, see `DEFAULT_RUGIX_SETTINGS` in
 [`rugix.models.ts`](../../src/app/components/rugix/models/rugix.models.ts).
 
-### Views
-The widget has two views in the top menu: **Overview** (fleet donuts for device status, Edge OS versions and last job, plus
-recent alerts such as offline, commit pending, failed jobs, security bypasses) and **Devices** (the table). Set
-`{"defaultView": "devices"}` in the widget settings to open on the table.
-
-### Jobs view, generations, boot groups
-- **Jobs** (top menu): job history of all devices from the `jobEvent` telemetry (last 24 h / 7 d / 30 d, filter by status, search, click a row opens the device's job log).
-- **Apps tab → click an app**: generations (created, last activated, state) with *Activate*; needs the `appInfo` RPC (see connector table).
-- **Overview → Boot groups**: reboot into a boot group (rugix-admin offers `reboot` for the active group and `reboot-spare` for the single other group).
-- **Install dialogs → Advanced**: transfer options (root certificate, retries/backoff, range requests); bypass options only for devices whose daemon runs with `dangerously_insecure`.
+### Settings
+Widget settings (JSON, all optional): `title` (default "Rugix Devices"), `defaultView` (`overview` | `devices` | `jobs`), `defaultPageSize`,
+`access` (see below), RPC method names (`rpc.*`, incl. `appInfo`), data keys (`keys.*`), SSE options.
+The Apps tab generations list needs the `appInfo` RPC (see connector table); install options are passed as query string
+(`root_cert`, `http_max_retries`, …) to the existing install RPCs.
 
 ### Role restrictions and last seen
 `access` in the widget settings limits which ThingsBoard user authorities may use an action class
@@ -55,8 +69,7 @@ tenant/system administrators only:
 This is a **UI-level** gate. The server side RPC permission is still decided by ThingsBoard (customer roles /
 dashboard access), so restrict who may open the dashboard or send RPC as well.
 
-Offline devices show "offline since" taken from the timestamp of the `active` attribute. Add the device attribute
-`lastActivityTime` as an optional data key to use the real last activity time instead.
+Offline devices show "offline since" (timestamp of the `active` attribute, or the optional `lastActivityTime` data key); online devices show "online since" on hover.
 
 ## Gateway connector – recommended changes
 Derived from `rugix-request-connector-v1-0`:
