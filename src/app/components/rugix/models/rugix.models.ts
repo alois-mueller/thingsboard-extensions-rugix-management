@@ -15,6 +15,10 @@ export interface RugixWidgetSettings {
   keys: RugixKeySettings;
   sse: RugixSseSettings;
   access: RugixAccessSettings;
+  /** Release channels: channel name → Edge OS version devices on that channel should run. */
+  channels: { [channel: string]: string };
+  /** Channel of devices without a `channel` attribute. */
+  defaultChannel: string;
 }
 
 /**
@@ -72,6 +76,8 @@ export interface RugixKeySettings {
   machineStats: string;
   /** Optional device attribute (ms epoch) used for "last seen"; falls back to the timestamp of the `active` attribute. */
   lastActivityTime: string;
+  /** Optional device attribute with the release channel of the device (`stable` / `testing`). */
+  channel: string;
   slotPrefix: string;
 }
 
@@ -126,6 +132,7 @@ export const DEFAULT_RUGIX_SETTINGS: RugixWidgetSettings = {
     jobEvent: 'jobEvent',
     machineStats: 'machineStats',
     lastActivityTime: 'lastActivityTime',
+    channel: 'rugix.channel',
     slotPrefix: 'slots.'
   },
   access: {
@@ -133,6 +140,8 @@ export const DEFAULT_RUGIX_SETTINGS: RugixWidgetSettings = {
     power: ['SYS_ADMIN', 'TENANT_ADMIN', 'CUSTOMER_USER'],
     factoryReset: ['SYS_ADMIN', 'TENANT_ADMIN']
   },
+  channels: {stable: '', testing: ''},
+  defaultChannel: 'stable',
   sse: {
     rpcMethod: 'request_startSse',
     urlTemplate: '/api/jobs/{jobId}/events',
@@ -150,7 +159,8 @@ export function mergeRugixSettings(settings: Partial<RugixWidgetSettings> | unde
     rpc: {...DEFAULT_RUGIX_SETTINGS.rpc, ...(s.rpc || {})},
     keys: {...DEFAULT_RUGIX_SETTINGS.keys, ...(s.keys || {})},
     sse: {...DEFAULT_RUGIX_SETTINGS.sse, ...(s.sse || {})},
-    access: {...DEFAULT_RUGIX_SETTINGS.access, ...(s.access || {})}
+    access: {...DEFAULT_RUGIX_SETTINGS.access, ...(s.access || {})},
+    channels: {...DEFAULT_RUGIX_SETTINGS.channels, ...(s.channels || {})}
   };
 }
 
@@ -235,6 +245,11 @@ export interface RugixDevice {
   /** Daemon allows bypassing bundle verification / compatibility checks (development only). */
   insecure?: boolean;
   adminVersion?: string;
+  /** Release channel from the `channel` attribute (falls back to the default channel in the component). */
+  channel?: string;
+  /** Edge OS version the channel targets and how the device compares to it. */
+  target?: string;
+  firmware?: 'current' | 'outdated' | 'ahead' | 'unknown';
   slots: RugixSlot[];
   components: any;
   componentList: RugixComponent[];

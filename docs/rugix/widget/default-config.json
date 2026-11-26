@@ -122,12 +122,23 @@
           "type": "attribute",
           "label": "lastActivityTime",
           "settings": {}
+        },
+        {
+          "name": "rugix.channel",
+          "type": "attribute",
+          "label": "rugix.channel",
+          "settings": {}
         }
       ]
     }
   ],
   "settings": {
-    "title": "Rugix Devices"
+    "title": "Rugix Devices",
+    "channels": {
+      "stable": "0.5.0",
+      "testing": "0.5.2-rc1"
+    },
+    "defaultChannel": "stable"
   },
   "showTitle": false,
   "padding": "0px",

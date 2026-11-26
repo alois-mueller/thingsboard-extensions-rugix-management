@@ -259,6 +259,8 @@ export function applyValue(device: RugixDevice, key: string, raw: any, keys: Rug
     if (daemon.insecure !== undefined) {
       device.insecure = daemon.insecure;
     }
+  } else if (key === keys.channel) {
+    device.channel = typeof raw === 'string' && raw.trim() ? raw.trim().toLowerCase() : undefined;
   } else if (key === keys.adminVersion) {
     device.adminVersion = typeof raw === 'string' ? raw : (parseJson<any>(raw)?.version ?? undefined);
   } else if (key === keys.components) {
@@ -493,4 +495,46 @@ export function jobLabel(title?: string, kind?: string): string {
     return 'Install App';
   }
   return title || '';
+}
+
+/** Split `1.2.3-rc.1+build` into numeric core and pre-release identifiers (leading `v` ignored). */
+function splitVersion(v: string): { core: number[]; pre: string[] } | null {
+  const m = /^v?(\d+(?:\.\d+)*)(?:-([0-9A-Za-z.-]+))?(?:\+.*)?$/.exec((v || '').trim());
+  return m ? {core: m[1].split('.').map(Number), pre: m[2] ? m[2].split('.') : []} : null;
+}
+
+/**
+ * Semver-style comparison (`-1` a < b, `0` equal, `1` a > b, `null` when a version cannot be parsed).
+ * A pre-release sorts before its release (`0.5.0-rc1 < 0.5.0`); identifiers compare numerically where possible (`rc2 < rc10`).
+ */
+export function compareVersions(a: string | undefined, b: string | undefined): number | null {
+  const x = splitVersion(a || ''), y = splitVersion(b || '');
+  if (!x || !y) {
+    return null;
+  }
+  for (let i = 0; i < Math.max(x.core.length, y.core.length); i++) {
+    const d = (x.core[i] || 0) - (y.core[i] || 0);
+    if (d) {
+      return d < 0 ? -1 : 1;
+    }
+  }
+  if (!x.pre.length || !y.pre.length) {
+    return x.pre.length === y.pre.length ? 0 : (x.pre.length ? -1 : 1);
+  }
+  for (let i = 0; i < Math.max(x.pre.length, y.pre.length); i++) {
+    if (x.pre[i] === undefined || y.pre[i] === undefined) {
+      return x.pre[i] === undefined ? -1 : 1;
+    }
+    const c = x.pre[i].localeCompare(y.pre[i], undefined, {numeric: true, sensitivity: 'base'});
+    if (c) {
+      return c < 0 ? -1 : 1;
+    }
+  }
+  return 0;
+}
+
+/** Firmware state of a device relative to the version its release channel targets. */
+export function firmwareState(current: string | undefined, target: string | undefined): 'current' | 'outdated' | 'ahead' | 'unknown' {
+  const c = compareVersions(current, target);
+  return c === null ? 'unknown' : (c < 0 ? 'outdated' : (c > 0 ? 'ahead' : 'current'));
 }
