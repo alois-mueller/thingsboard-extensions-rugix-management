@@ -264,14 +264,6 @@
         }
       </div>
         @if (tabIndex === 0) {
-          <div class="group-box">
-            <div class="group-title">Created</div>
-            <div class="tab-body grid tight">
-              <div class="kv"><span>Created on</span><b>{{ createdTimes.get(d.id) ? fmt(createdTimes.get(d.id)) : '—' }}</b></div>
-              <div class="kv"><span>Age</span><b>{{ createdTimes.get(d.id) ? ago(createdTimes.get(d.id)).replace(' ago', '') : '—' }}</b></div>
-              <div class="kv"><span>Device ID</span><b class="mono">{{ d.id }}</b></div>
-            </div>
-          </div>
           @if (d.componentList.length) {
             <div class="group-box">
             <div class="group-title">Hardware</div>
@@ -318,6 +310,17 @@
             <div class="kv"><span>Components consistent</span>
               <b>{{ d.componentsConsistent === undefined ? '—' : (d.componentsConsistent ? 'yes' : 'no') }}</b></div>
           </div>
+          </div>
+          <div class="group-box">
+            <div class="group-title">Device Registration</div>
+            <div class="tab-body grid tight">
+              <div class="kv"><span>Created on</span><b>{{ createdTimes.get(d.id) ? fmt(createdTimes.get(d.id)) : '—' }}</b></div>
+              <div class="kv"><span>Age</span><b>{{ createdTimes.get(d.id) ? ago(createdTimes.get(d.id)).replace(' ago', '') : '—' }}</b></div>
+              <div class="kv"><span>Device ID</span>
+                <b class="idrow"><span class="mono" [matTooltip]="d.id" matTooltipPosition="above" matTooltipClass="rugix-tip">{{ d.id.slice(0, 8) }}…</span>
+                  <button mat-icon-button type="button" class="copy-btn" aria-label="Copy device ID" matTooltip="Copy" (click)="copy(d.id)"><mat-icon>{{ copied === d.id ? 'check' : 'content_copy' }}</mat-icon></button></b>
+              </div>
+            </div>
           </div>
         }
 

@@ -391,8 +391,12 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     return s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${s % 60} s`;
   }
 
+  copied = '';
+
   copy(text: string): void {
     try { navigator.clipboard?.writeText(text); } catch { /* ignore */ }
+    this.copied = text;
+    setTimeout(() => { this.copied = ''; this.cd.markForCheck(); }, 1500);
   }
 
   // ---- audit log (ThingsBoard audit logs of the device entity)
