@@ -10,13 +10,14 @@ widget ──RPC──▶ ThingsBoard ──▶ TB IoT Gateway (request connecto
 ```
 
 ## Features
-Four views in the top menu:
+Six views in the top menu:
 
 | View | What it shows |
 |------|---------------|
 | **Overview** | Fleet donuts (device status, Edge OS versions, firmware vs. release channel, last job), recent alerts (offline, commit pending, failed jobs, state errors, security bypasses), Rugix logo, GitHub link and version badges |
 | **Devices** | Sortable / searchable / paginated table (connection incl. online/offline since, Edge OS, active / default boot group, boot flow, state, API, last job with live progress), health and connection filters, bulk *Upgrade Firmware* / *Install App*, details side panel |
-| **Channels** | Release channels with target versions and per-channel device counts (editable by tenant administrators) |
+| **Updates** / **Apps** | The firmware updates and app bundles that can be installed: ThingsBoard OTA packages (type firmware / software) that point to an external bundle URL. Add, edit (replace) and remove them here; the *Upgrade Firmware* / *Install App* dialogs offer the same packages |
+| **Channels** | Release channels with target versions (dropdown of the firmware versions from *Updates*) and per-channel device counts (editable by tenant administrators) |
 | **Jobs** | Job history of all devices (24 h / 7 d / 30 d), status filter, search; a row opens the device's job log |
 
 Details panel tabs: **Overview** (hardware, firmware, daemon capabilities, boot info, boot groups with *reboot into group*, device registration), **Slots**, **Apps** (start/stop/activate/deactivate/rollback/gc/remove, generations with *Activate*), **Components** (+ consistency problems), **Resources**, **Job log** (grouped by job id, 30 days) and **Audit log** (ThingsBoard audit log of the device).
@@ -68,6 +69,9 @@ Each device follows a release channel (e.g. `stable`, `testing`) that targets an
 Only users listed in `access.channels` (default `TENANT_ADMIN`) can save; everybody else sees the channels read-only. As long as nothing is stored, the widget settings `channels` / `defaultChannel` are used as initial values. A channel that devices still follow cannot be removed.
 
 The channel of a device is its server-scope attribute `rugix.channel` (add it as data key; devices without it use the default channel). The details panel shows the channel and its target version and lets users with the *install* permission switch the channel (with confirmation). Devices older than their channel target get an orange upgrade icon next to the device name; the **Outdated** filter chip and the *Firmware vs. channel* donut on the Overview page list them (select them and use *Upgrade Firmware* for a bulk update). Versions are compared semver-style, pre-releases sort before their release (`0.5.0-rc1 < 0.5.0`); devices newer than the channel are shown as *Ahead*.
+
+### Updates and Apps (OTA packages)
+The two views list and manage ThingsBoard OTA packages (*Firmware* → Updates, *Software* → Apps). A package needs a title, version, device profile and an **external bundle URL** (Rugix pulls the bundle itself, uploaded files cannot be installed). ThingsBoard treats title, version, tag and URL as immutable and only allows changing the description, so *Edit* replaces the package (removes and re-adds it, restoring the old one if adding fails) when one of those fields changes. Users in `access.packages` (default `TENANT_ADMIN`) can add / edit / remove, everybody else sees the lists read-only. Removing a firmware version that a channel still targets shows a warning.
 
 ### Role restrictions and last seen
 `access` in the widget settings limits which ThingsBoard user authorities may use an action class

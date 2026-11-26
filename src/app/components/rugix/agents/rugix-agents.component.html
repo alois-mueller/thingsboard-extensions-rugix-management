@@ -8,6 +8,8 @@
     <button type="button" class="view-tab" [class.active]="view === 'overview'" (click)="setView('overview')"><mat-icon>space_dashboard</mat-icon>Overview</button>
     <button type="button" class="view-tab" [class.active]="view === 'devices'" (click)="setView('devices')"><mat-icon>developer_board</mat-icon>Devices<span class="count">{{ devices.length }}</span></button>
     <button type="button" class="view-tab" [class.active]="view === 'jobs'" (click)="setView('jobs')"><mat-icon>work_history</mat-icon>Jobs@if (runningJobs) { <span class="count run">{{ runningJobs }}</span> }</button>
+    <button type="button" class="view-tab" [class.active]="view === 'updates'" (click)="setView('updates')"><mat-icon>system_update_alt</mat-icon>Updates</button>
+    <button type="button" class="view-tab" [class.active]="view === 'apps'" (click)="setView('apps')"><mat-icon>apps</mat-icon>Apps</button>
     <button type="button" class="view-tab" [class.active]="view === 'channels'" (click)="setView('channels')"><mat-icon>alt_route</mat-icon>Channels</button>
   </div>
     @if (vtCanRight) {
@@ -59,6 +61,48 @@
     </div>
   }
 
+  @if (view === 'updates' || view === 'apps') {
+    <div class="rugix-toolbar">
+      <span class="rugix-title">{{ view === 'apps' ? 'Rugix Apps' : 'Rugix Updates' }}</span>
+      <span class="audit-hint fleet-hint">{{ pkgList.length }} {{ pkgList.length === 1 ? 'package' : 'packages' }}</span>
+      <span class="flex-1"></span>
+      @if (canEditPackages) {
+        <button mat-flat-button color="primary" type="button" (click)="openPackage()"><mat-icon>add</mat-icon><span class="lbl">Add {{ view === 'apps' ? 'app' : 'update' }}</span></button>
+      }
+      <button mat-icon-button type="button" (click)="loadPackages()" [disabled]="pkgLoading" matTooltip="Refresh" aria-label="Refresh"><mat-icon>refresh</mat-icon></button>
+    </div>
+    @if (pkgLoading) { <mat-progress-bar mode="indeterminate"></mat-progress-bar> }
+    <div class="rugix-table-wrap">
+      <p class="channels-intro">
+        @if (view === 'apps') { App bundles that can be installed on devices (<i>Install App</i>). } @else { Firmware bundles that can be installed on devices (<i>Upgrade Firmware</i>) and chosen as target version of a release channel. }
+        They are ThingsBoard OTA packages that point to an external bundle URL.
+        @if (!canEditPackages) { Packages are managed by tenant administrators. }
+      </p>
+      <table class="rugix-table pkg-table">
+        <thead><tr><th>Title</th><th>Version</th><th class="pk-tag">Tag</th><th class="pk-url">Bundle URL</th><th class="pk-added">Added</th><th class="w-actions"></th></tr></thead>
+        <tbody>
+          @for (p of pkgList; track p.id.id) {
+            <tr class="static-row">
+              <td><b>{{ p.title || p.version }}</b>@if (p.additionalInfo?.description) { <div class="sub">{{ p.additionalInfo.description }}</div> }</td>
+              <td class="nowrap">{{ p.version }}</td>
+              <td class="pk-tag">{{ p.tag || '—' }}</td>
+              <td class="pk-url">@if (p.url) { <span class="pk-link" [matTooltip]="p.url" matTooltipPosition="above" matTooltipClass="rugix-tip">{{ p.url }}</span> } @else { <span class="sub" matTooltip="Uploaded file – Rugix needs an external URL to pull a bundle" matTooltipPosition="above" matTooltipClass="rugix-tip">uploaded file</span> }</td>
+              <td class="pk-added nowrap">{{ p.createdTime ? fmt(p.createdTime) : '—' }}</td>
+              <td class="w-actions">
+                @if (canEditPackages) {
+                  <button mat-icon-button type="button" (click)="openPackage(p)" matTooltip="Edit" [attr.aria-label]="'Edit ' + (p.title || p.version)"><mat-icon>edit</mat-icon></button>
+                  <button mat-icon-button type="button" (click)="deletePackage(p)" matTooltip="Remove" [attr.aria-label]="'Remove ' + (p.title || p.version)"><mat-icon>delete</mat-icon></button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr class="static-row"><td colspan="6" class="empty-row">{{ pkgLoading ? 'Loading…' : (view === 'apps' ? 'No apps yet.' : 'No firmware updates yet.') }}{{ canEditPackages && !pkgLoading ? ' Use "Add" to register a bundle URL.' : '' }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
   @if (view === 'channels') {
     <div class="rugix-toolbar">
       <span class="rugix-title">Rugix Channels</span>
@@ -70,7 +114,7 @@
       }
     </div>
     <div class="rugix-table-wrap">
-      <p class="channels-intro">A release channel targets an Edge OS version. Devices follow the channel in their attribute <code>{{ settings.keys.channel }}</code> (default: <b>{{ settings.defaultChannel }}</b>) and are flagged as outdated when they run an older version.
+      <p class="channels-intro">A release channel targets an Edge OS version, chosen from the firmware updates in the <b>Updates</b> view. Devices follow the channel in their attribute <code>{{ settings.keys.channel }}</code> (default: <b>{{ settings.defaultChannel }}</b>) and are flagged as outdated when they run an older version.
         @if (canEditChannels) {
           @if (chSource === 'tenant') { Stored as tenant attribute <code>{{ settings.channelsAttribute }}</code>. } @else { Not saved yet, showing the widget settings – save to store the channels as tenant attribute <code>{{ settings.channelsAttribute }}</code>. }
         } @else {
@@ -85,7 +129,12 @@
               <td><b>{{ c.name }}</b></td>
               <td>
                 @if (canEditChannels) {
-                  <input class="ch-input" [class.invalid]="chVersionInvalid(c.version)" [(ngModel)]="c.version" (ngModelChange)="chDirty = true" placeholder="e.g. 0.5.0" aria-label="Target version of {{ c.name }}" spellcheck="false">
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="ch-select">
+                    <mat-select [(ngModel)]="c.version" (ngModelChange)="chDirty = true" [attr.aria-label]="'Target version of ' + c.name" placeholder="No target" [name]="'v-' + c.name">
+                      <mat-option value="">No target</mat-option>
+                      @for (v of versionOptions(c.version); track v) { <mat-option [value]="v">{{ v }}</mat-option> }
+                    </mat-select>
+                  </mat-form-field>
                 } @else {
                   {{ c.version || '—' }}
                 }

@@ -186,6 +186,8 @@
     animation: rugix-spin .8s linear infinite;
   }
 
+  .rugix-note { padding: 8px 12px; border-radius: 6px; font-size: 13px; line-height: 18px; background: rgba(245, 158, 11, .14); color: #8a4b00; }
+
   .rugix-error {
     display: flex;
     align-items: flex-start;

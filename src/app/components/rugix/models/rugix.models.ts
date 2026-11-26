@@ -35,6 +35,8 @@ export interface RugixAccessSettings {
   factoryReset: string[];
   /** Edit the release channels (stored as tenant attribute, so only tenant users can save). */
   channels: string[];
+  /** Add / edit / remove the OTA packages (firmware updates and apps) in the Updates and Apps views. */
+  packages: string[];
 }
 
 /** Names of the server side RPC methods configured in the gateway connector. */
@@ -143,7 +145,8 @@ export const DEFAULT_RUGIX_SETTINGS: RugixWidgetSettings = {
     install: ['SYS_ADMIN', 'TENANT_ADMIN', 'CUSTOMER_USER'],
     power: ['SYS_ADMIN', 'TENANT_ADMIN', 'CUSTOMER_USER'],
     factoryReset: ['SYS_ADMIN', 'TENANT_ADMIN'],
-    channels: ['TENANT_ADMIN']
+    channels: ['TENANT_ADMIN'],
+    packages: ['TENANT_ADMIN']
   },
   channels: {stable: '', testing: ''},
   defaultChannel: 'stable',

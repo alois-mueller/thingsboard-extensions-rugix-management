@@ -10,7 +10,7 @@ import { from, Observable, Subject, Subscription, timer } from 'rxjs';
 import { map, mergeMap, takeUntil, toArray } from 'rxjs/operators';
 import { Device } from '@shared/models/device.models';
 import { AuditLogService } from '@core/public-api';
-import { AuditLog, EntityType, TimePageLink } from '@shared/public-api';
+import { AuditLog, EntityType, OtaPackageInfo, OtaUpdateType, TimePageLink } from '@shared/public-api';
 import {
   mergeRugixSettings,
   RugixApp,
@@ -40,6 +40,7 @@ import {
   RugixInstallDialogResult
 } from '../dialogs/rugix-install-dialog.component';
 import { RugixJobDialogComponent, RugixJobDialogData } from '../dialogs/rugix-job-dialog.component';
+import { RugixPackageDialogComponent, RugixPackageDialogData } from '../dialogs/rugix-package-dialog.component';
 
 interface FleetAlert {
   severity: 'error' | 'warning';
@@ -326,8 +327,8 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   // ---- fleet overview
   /** Selected view per widget; survives a re-initialisation of the widget (e.g. refresh -> updateAliases). */
-  private static readonly lastView = new Map<string, 'overview' | 'devices' | 'jobs' | 'channels'>();
-  view: 'overview' | 'devices' | 'jobs' | 'channels' = 'overview';
+  private static readonly lastView = new Map<string, 'overview' | 'devices' | 'jobs' | 'updates' | 'apps' | 'channels'>();
+  view: 'overview' | 'devices' | 'jobs' | 'updates' | 'apps' | 'channels' = 'overview';
 
   private get widgetKey(): string {
     return String((this.ctx as any).widget?.id || (this.ctx as any).id || 'rugix');
@@ -356,7 +357,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     return this.alertsExpanded ? this.alerts : this.alerts.slice(0, this.alertLimit);
   }
 
-  setView(v: 'overview' | 'devices' | 'jobs' | 'channels'): void {
+  setView(v: 'overview' | 'devices' | 'jobs' | 'updates' | 'apps' | 'channels'): void {
     this.view = v;
     RugixAgentsComponent.lastView.set(this.widgetKey, v);
     setTimeout(() => this.centerView(true));
@@ -746,6 +747,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     this.syncFleet();
     this.onDataUpdated();
     this.loadChannels();
+    this.loadPackages();
     setTimeout(() => this.centerView(false), 300);
   }
 
@@ -820,6 +822,69 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   firmwareFilter = false;
   channelSaving = false;
+
+  // ---- Updates / Apps views (ThingsBoard OTA packages with an external URL)
+  packagesAll: OtaPackageInfo[] = [];
+  pkgLoading = false;
+
+  get canEditPackages(): boolean {
+    return (this.settings.access.packages || []).includes(this.ctx.currentUser?.authority) && this.ctx.currentUser?.authority !== 'SYS_ADMIN';
+  }
+
+  get pkgType(): OtaUpdateType {
+    return this.view === 'apps' ? OtaUpdateType.SOFTWARE : OtaUpdateType.FIRMWARE;
+  }
+
+  get pkgList(): OtaPackageInfo[] {
+    return this.packagesAll.filter(p => p.type === this.pkgType);
+  }
+
+  loadPackages(): void {
+    this.pkgLoading = true;
+    this.rpc.listPackages().pipe(takeUntil(this.destroy$)).subscribe({
+      next: list => { this.packagesAll = list; this.pkgLoading = false; this.cd.markForCheck(); this.ctx.detectChanges(); },
+      error: () => { this.pkgLoading = false; this.cd.markForCheck(); }
+    });
+  }
+
+  /** Firmware versions known from the Updates view, newest first – the choices for a channel's target version. */
+  get firmwareVersions(): string[] {
+    const set = new Set(this.packagesAll.filter(p => p.type === OtaUpdateType.FIRMWARE && p.version).map(p => p.version));
+    return Array.from(set).sort((a, b) => compareVersions(b, a) || 0);
+  }
+
+  /** Dropdown options for a target version; keeps a stored version that is no longer in the Updates list. */
+  versionOptions(current: string): string[] {
+    const list = this.firmwareVersions;
+    return current && !list.includes(current) ? [current, ...list] : list;
+  }
+
+  openPackage(pkg?: OtaPackageInfo): void {
+    if (!this.canEditPackages) {
+      return;
+    }
+    this.dialog.open<RugixPackageDialogComponent, RugixPackageDialogData, boolean>(RugixPackageDialogComponent, {
+      data: {type: this.pkgType as OtaUpdateType.FIRMWARE | OtaUpdateType.SOFTWARE, pkg}, autoFocus: false, maxWidth: '95vw', width: '520px'
+    }).afterClosed().subscribe(saved => saved && this.loadPackages());
+  }
+
+  deletePackage(pkg: OtaPackageInfo): void {
+    if (!this.canEditPackages) {
+      return;
+    }
+    const used = pkg.type === OtaUpdateType.FIRMWARE ? Object.entries(this.settings.channels).filter(([, v]) => v === pkg.version).map(([k]) => k) : [];
+    this.dialog.open<RugixConfirmDialogComponent, RugixConfirmDialogData, RugixConfirmDialogResult>(RugixConfirmDialogComponent, {
+      data: {
+        title: `Remove ${pkg.type === OtaUpdateType.FIRMWARE ? 'firmware update' : 'app'}`,
+        message: `Remove "${pkg.title || pkg.version}" (${pkg.version}) from ThingsBoard?${used.length ? ` The ${used.join(', ')} channel still targets this version.` : ''}`,
+        confirmLabel: 'Remove', warn: true,
+        acknowledge: 'I understand that the package is deleted and can no longer be installed from here.'
+      }, autoFocus: false, maxWidth: '95vw'
+    }).afterClosed().subscribe(r => r && this.rpc.deletePackage(pkg.id.id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => this.loadPackages(),
+      error: err => this.ctx.showErrorToast(`Could not remove: ${err?.error?.message || err?.message || err}`)
+    }));
+  }
 
   // ---- Channels view (config stored as tenant attribute)
   chDraft: { name: string; version: string }[] = [];

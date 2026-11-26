@@ -10,6 +10,7 @@ import { RugixConfirmDialogComponent } from './dialogs/rugix-confirm-dialog.comp
 import { RugixInstallDialogComponent } from './dialogs/rugix-install-dialog.component';
 import { RugixDonutComponent } from './charts/rugix-donut.component';
 import { RugixLineChartComponent } from './charts/rugix-line-chart.component';
+import { RugixPackageDialogComponent } from './dialogs/rugix-package-dialog.component';
 import { RugixJobDialogComponent } from './dialogs/rugix-job-dialog.component';
 
 @NgModule({
@@ -18,6 +19,7 @@ import { RugixJobDialogComponent } from './dialogs/rugix-job-dialog.component';
     RugixConfirmDialogComponent,
     RugixInstallDialogComponent,
     RugixJobDialogComponent,
+    RugixPackageDialogComponent,
     RugixLineChartComponent,
     RugixDonutComponent
   ],
@@ -30,6 +32,7 @@ import { RugixJobDialogComponent } from './dialogs/rugix-job-dialog.component';
     RugixConfirmDialogComponent,
     RugixInstallDialogComponent,
     RugixJobDialogComponent,
+    RugixPackageDialogComponent,
     RugixLineChartComponent,
     RugixDonutComponent
   ]

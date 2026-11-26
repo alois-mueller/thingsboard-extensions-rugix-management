@@ -3,8 +3,8 @@
 ///
 
 import { Injectable } from '@angular/core';
-import { DeviceService, AttributeService, EntityRelationService, DeviceProfileService } from '@core/public-api';
-import { AggregationType, AttributeScope, DataSortOrder, EntityType } from '@shared/public-api';
+import { DeviceService, AttributeService, EntityRelationService, DeviceProfileService, OtaPackageService } from '@core/public-api';
+import { AggregationType, AttributeScope, DataSortOrder, EntityType, OtaPackageInfo, OtaUpdateType, PageLink } from '@shared/public-api';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, map, mergeMap } from 'rxjs/operators';
 import { Device } from '@shared/models/device.models';
@@ -40,7 +40,8 @@ export class RugixRpcService {
   constructor(private deviceService: DeviceService,
               private attributeService: AttributeService,
               private relationService: EntityRelationService,
-              private deviceProfileService: DeviceProfileService) {
+              private deviceProfileService: DeviceProfileService,
+              private otaService: OtaPackageService) {
   }
 
   // ---------------------------------------------------------------- system actions
@@ -178,6 +179,27 @@ export class RugixRpcService {
         return {jobId, response};
       })
     );
+  }
+
+  /** All OTA packages of the tenant (firmware and software), newest first. */
+  listPackages(): Observable<OtaPackageInfo[]> {
+    return this.otaService.getOtaPackages(new PageLink(1000, 0, null, {property: 'createdTime', direction: 'DESC' as any}), {ignoreLoading: true})
+      .pipe(map(page => (page.data || []).filter(p => p.type === OtaUpdateType.FIRMWARE || p.type === OtaUpdateType.SOFTWARE)));
+  }
+
+  /** Device profiles an OTA package can belong to. */
+  listProfiles(): Observable<{ id: string; name: string }[]> {
+    return this.deviceProfileService.getDeviceProfileInfos(new PageLink(100, 0, null, {property: 'name', direction: 'ASC' as any}), undefined, {ignoreLoading: true})
+      .pipe(map(page => (page.data || []).map(p => ({id: p.id.id, name: p.name}))));
+  }
+
+  /** Create (external URL) or update the metadata (title, tag, description) of an OTA package. */
+  savePackage(pkg: Partial<OtaPackageInfo>): Observable<any> {
+    return this.otaService.saveOtaPackageInfo(pkg as OtaPackageInfo);
+  }
+
+  deletePackage(id: string): Observable<any> {
+    return this.otaService.deleteOtaPackage(id);
   }
 
   /** Store the release channel as server-scope attribute of the device. */
