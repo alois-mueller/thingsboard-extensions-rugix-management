@@ -239,6 +239,8 @@
     &.err { color: rgb(209, 39, 48); }
   }
 
+  .groups { white-space: nowrap; &.mismatch { color: #ef6c00; font-weight: 500; } }
+
   .sub.job-active { display: none; }
   .sub.dev-name.has-job { display: block; }
   .sub.job-active { color: #1565c0; font-weight: 500; }

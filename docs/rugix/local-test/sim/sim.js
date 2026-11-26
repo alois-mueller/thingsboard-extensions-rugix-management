@@ -95,7 +95,7 @@ for (const l of lines) {
     const reply = (v) => c.publish('v1/devices/me/rpc/response/' + id, JSON.stringify(v));
     const spare = st.ag === 'a' ? 'b' : 'a';
     if (method === 'installUpdateFromUrl') { reply({}); job(jobId, 'Install system update', 'system-update', ['Downloading bundle', 'Verifying signature', 'Writing system-' + spare, 'Writing boot-' + spare, 'Selecting boot group ' + spare], true, () => { st.dg = st.dg; }); }
-    else if (method === 'installAppFromUrl') { reply({}); job(jobId, 'Install app', 'app-install', ['Downloading', 'Unpacking', 'Done'], true); }
+    else if (method === 'installAppFromUrl') { reply({}); job(jobId, 'Install app bundle', 'app-install', ['Downloading', 'Unpacking', 'Done'], false);  // app installs report no percentage }
     else if (method === 'rebootSpare') { reply(jobId); job(jobId, 'Reboot into spare', 'system-action', ['Rebooting into ' + spare], false, () => { st.ag = spare; }); }
     else if (method === 'reboot') { reply(jobId); job(jobId, 'Reboot', 'system-action', ['Rebooting'], false); }
     else if (method === 'commit') { reply(jobId); job(jobId, 'Commit', 'system-action', ['Setting default boot group ' + st.ag], false, () => { st.dg = st.ag; }); }
