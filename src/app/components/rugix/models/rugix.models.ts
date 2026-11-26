@@ -243,6 +243,8 @@ export interface RugixDevice {
   commitPending: boolean;
   /** Latest `jobEvent` telemetry. */
   lastJobEvent?: RugixJobEvent;
+  /** Overall health used by the overview donut: healthy / warning / error / offline. */
+  health?: 'healthy' | 'warning' | 'error' | 'offline';
   /** Current / most recent job incl. progress (derived from the job events). */
   job?: RugixJobState;
   /** ms epoch of the last known activity (offline since / last seen). */

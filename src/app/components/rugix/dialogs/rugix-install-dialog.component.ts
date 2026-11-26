@@ -19,6 +19,8 @@ export interface RugixInstallDialogData {
 
 export interface RugixInstallDialogResult {
   jobs: { device: RugixDevice; handle: RugixJobHandle }[];
+  /** Devices on which the installation could not be started. */
+  failed?: { device: RugixDevice; message: string }[];
 }
 
 /** Install a system update (OTA firmware package) or an app bundle on one or many Rugix devices. */
@@ -146,15 +148,20 @@ export class RugixInstallDialogComponent implements OnInit {
           // starting the live stream is best-effort, the install itself is already running
           catchError(() => of(null)),
           mergeMap(() => [{device, handle}])
-        ))
+        )),
+        // one failing device must not hide the installs that did start on the others
+        catchError(err => of({device, error: err?.error?.message || err?.message || 'Installation could not be started.'}))
       );
     });
-    forkJoin(jobs$).subscribe({
-      next: jobs => this.dialogRef.close({jobs}),
-      error: err => {
+    forkJoin(jobs$).subscribe(results => {
+      const jobs = results.filter((r: any) => !r.error) as { device: RugixDevice; handle: RugixJobHandle }[];
+      const failed = results.filter((r: any) => !!r.error).map((r: any) => ({device: r.device as RugixDevice, message: r.error as string}));
+      if (!jobs.length) {
         this.installing = false;
-        this.error = err?.error?.message || err?.message || 'Installation could not be started.';
+        this.error = failed[0]?.message || 'Installation could not be started.';
+        return;
       }
+      this.dialogRef.close({jobs, failed});
     });
   }
 

@@ -27,7 +27,7 @@ export function parseJson<T = any>(value: any, fallback?: T): T {
   if (typeof value === 'string') {
     try {
       return JSON.parse(value) as T;
-    } catch (e) {
+    } catch {
       return value as unknown as T;
     }
   }
@@ -133,6 +133,11 @@ export function parseProblems(value: any): RugixComponentProblem[] {
     return [];
   }
   return parsed.map(p => {
+    if (p && typeof p.kind === 'string') {
+      // internally tagged: {"kind": "UnsatisfiedRequirement", "component": {...}, "selector": {...}}
+      const {kind, ...rest} = p;
+      return {type: kind, detail: rest};
+    }
     const type = Object.keys(p || {}).find(k => k !== 'detail') || 'problem';
     return {type: p?.type ?? type, detail: p?.[type] ?? p};
   });
@@ -167,17 +172,17 @@ export function parseDaemon(value: any): { features?: RugixDaemonFeatures; insec
   }
   const f = v.features && typeof v.features === 'object' ? v.features : v;
   const features: RugixDaemonFeatures = {};
-  let any = false;
+  let found = false;
   for (const k of FEATURE_KEYS) {
     const camel = k.replace(/_(\w)/g, (_, c) => c.toUpperCase());
     const flag = f[k] ?? f[camel];
     if (flag !== undefined) {
       features[k] = toBoolean(flag);
-      any = true;
+      found = true;
     }
   }
   const ins = v.dangerously_insecure ?? v.dangerouslyInsecure ?? f.dangerously_insecure;
-  return {features: any ? features : undefined, insecure: ins === undefined ? undefined : toBoolean(ins)};
+  return {features: found ? features : undefined, insecure: ins === undefined ? undefined : toBoolean(ins)};
 }
 
 export function appStatusMessage(status: any): string {

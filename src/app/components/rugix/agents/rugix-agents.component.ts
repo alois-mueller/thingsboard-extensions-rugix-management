@@ -2,12 +2,12 @@
 /// Rugix management extension for ThingsBoard
 ///
 
-import { ChangeDetectorRef, Component, ElementRef, HostListener, Input, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, NgZone, HostListener, Input, OnDestroy, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { PageEvent } from '@angular/material/paginator';
 import { WidgetContext } from '@home/models/widget-component.models';
-import { Observable, Subscription, timer } from 'rxjs';
-import { mergeMap } from 'rxjs/operators';
+import { Observable, Subject, Subscription, timer } from 'rxjs';
+import { mergeMap, takeUntil } from 'rxjs/operators';
 import { Device } from '@shared/models/device.models';
 import { AuditLogService } from '@core/public-api';
 import { AuditLog, EntityType, TimePageLink } from '@shared/public-api';
@@ -101,6 +101,8 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   searchOpen = false;
   tabIndex = 0;
 
+  private readonly destroy$ = new Subject<void>();
+
   // ---- device creation time (device entity), loaded when a device is opened
   createdTimes = new Map<string, number>();
 
@@ -108,7 +110,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     if (!id || this.createdTimes.has(id)) {
       return;
     }
-    this.rpc.getDeviceCreated(id).subscribe(ts => {
+    this.rpc.getDeviceCreated(id).pipe(takeUntil(this.destroy$)).subscribe(ts => {
       if (ts) {
         this.createdTimes.set(id, ts);
         this.cd.markForCheck();
@@ -137,7 +139,8 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     // we joined in the middle of a job: only progress/output events seen, load the history to learn the title/status
     if (st?.partial && !this.jobSeeding.has(st.id)) {
       this.jobSeeding.add(st.id);
-      this.rpc.loadJobEvents(this.settings, d, 500, Date.now() - 24 * 3600000).subscribe(events => {
+      this.rpc.loadJobEvents(this.settings, d, 500, Date.now() - 24 * 3600000).pipe(takeUntil(this.destroy$)).subscribe(events => {
+        this.jobSeeding.delete(st.id);
         let rebuilt: RugixJobState | undefined;
         for (const e of [...events].sort((a, b) => a.ts - b.ts).filter(e => e.jobId === st.id)) {
           rebuilt = foldJobEvent(rebuilt, e);
@@ -183,14 +186,11 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Devices tab pre-filtered, e.g. from a donut legend or an alert. */
-  showDevices(filter?: 'online' | 'offline' | 'pending'): void {
+  /** Devices tab pre-filtered by the health class of an overview donut segment. */
+  showDevices(health?: 'healthy' | 'warning' | 'error' | 'offline'): void {
     this.clearFilters();
-    if (filter === 'online' || filter === 'offline') {
-      this.statusFilter = filter;
-    } else if (filter === 'pending') {
-      this.pendingOnly = true;
-    }
+    this.search = '';
+    this.healthFilter = health || '';
     this.setView('devices');
   }
 
@@ -202,7 +202,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   }
 
   onStatusSegment(key: string): void {
-    this.showDevices(key === 'offline' ? 'offline' : (key === 'warning' ? 'pending' : 'online'));
+    this.showDevices(key as 'healthy' | 'warning' | 'error' | 'offline');
   }
 
   private computeOverview(): void {
@@ -238,6 +238,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
         push(d, 'error', 'job', `Job failed: ${d.job.failure || jobLabel(d.job.title, d.job.kind)}`.trim(), d.job.ts);
         if (d.active) { raise('error'); }
       }
+      d.health = level;
       count[level]++;
       const v = d.hardware.osVersion || 'unknown';
       os.set(v, (os.get(v) || 0) + 1);
@@ -274,6 +275,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   readonly jobsTab = 5;
   jobGroups: JobGroup[] = [];
   jobEventCount = 0;
+  jobsTruncated = false;
   readonly logPageSize = 5;
   jobPageIndex = 0;
   auditPageIndex = 0;
@@ -312,11 +314,12 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     this.jobsDeviceId = d.id;
     this.jobsLastTs = d.lastJobEvent?.ts || 0;
     this.jobsLoading = !silent || !this.jobGroups.length;
-    this.rpc.loadJobEvents(this.settings, d, 5000, Date.now() - this.jobsDays * 86400000).subscribe(events => {
+    this.rpc.loadJobEvents(this.settings, d, 5000, Date.now() - this.jobsDays * 86400000).pipe(takeUntil(this.destroy$)).subscribe(events => {
       if (this.selectedId !== d.id) {
         return;
       }
       this.jobEventCount = events.length;
+      this.jobsTruncated = events.length >= 5000;
       this.jobGroups = this.groupJobs(events);
       this.jobPageIndex = Math.min(this.jobPageIndex, Math.max(0, Math.ceil(this.jobGroups.length / this.logPageSize) - 1));
       this.jobsLoading = false;
@@ -364,7 +367,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     return Array.from(groups.values()).sort((a, b) => b.start - a.start);
   }
 
-  jobOpen(j: JobGroup, index: number): boolean {
+  jobOpen(j: JobGroup): boolean {
     return this.jobToggled.has(j.id);
   }
 
@@ -417,7 +420,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     this.auditError = '';
     const now = Date.now();
     const link = new TimePageLink(100, 0, null, {property: 'createdTime', direction: 'DESC' as any}, now - this.auditDays * 86400000, now);
-    this.auditService.getAuditLogsByEntityId({entityType: EntityType.DEVICE, id}, link, {ignoreLoading: true, ignoreErrors: true} as any).subscribe({
+    this.auditService.getAuditLogsByEntityId({entityType: EntityType.DEVICE, id}, link, {ignoreLoading: true, ignoreErrors: true} as any).pipe(takeUntil(this.destroy$)).subscribe({
       next: page => {
         if (this.selectedId === id) {
           this.auditLogs = page.data || [];
@@ -510,7 +513,8 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
               private rpc: RugixRpcService,
               private auditService: AuditLogService,
               private cd: ChangeDetectorRef,
-              private host: ElementRef<HTMLElement>) {
+              private host: ElementRef<HTMLElement>,
+              private ngZone: NgZone) {
   }
 
   @HostListener('document:keydown.escape')
@@ -523,13 +527,18 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.ctx.$scope.rugixAgentsComponent = this;
-    this.arrowTimer = setInterval(() => {
-      this.syncDetailsLayout();
-      const bar = this.host.nativeElement.querySelector('.tabbar') as HTMLElement;
-      if (bar) { this.updateTabArrows(bar); } else if (this.tabCanLeft || this.tabCanRight) {
-        this.tabCanLeft = this.tabCanRight = false; this.cd.markForCheck();
-      }
-    }, 400);
+    // polling must not trigger a change-detection run of the whole ThingsBoard app every 400 ms
+    this.ngZone.runOutsideAngular(() => {
+      this.arrowTimer = setInterval(() => {
+        this.syncDetailsLayout();
+        const bar = this.host.nativeElement.querySelector('.tabbar') as HTMLElement;
+        if (bar) {
+          this.updateTabArrows(bar);
+        } else if (this.tabCanLeft || this.tabCanRight) {
+          this.ngZone.run(() => { this.tabCanLeft = this.tabCanRight = false; this.cd.markForCheck(); });
+        }
+      }, 400);
+    });
     this.settings = mergeRugixSettings(this.ctx.settings);
     this.pageSize = this.settings.defaultPageSize;
     this.view = RugixAgentsComponent.lastView.get(this.widgetKey) || (this.settings.defaultView === 'devices' ? 'devices' : 'overview');
@@ -539,6 +548,8 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     clearInterval(this.arrowTimer);
     clearTimeout(this.jobsReloadTimer);
+    this.destroy$.next();
+    this.destroy$.complete();
     this.restoreClip();
     this.statsTimer?.unsubscribe();
     delete this.ctx.$scope.rugixAgentsComponent;
@@ -588,8 +599,9 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       this.scheduleJobsReload();
     }
     if (this.selectedId && !byId.has(this.selectedId)) {
-      this.selectedId = null;
+      this.closeDetails();
     }
+    this.pageIndex = Math.min(this.pageIndex, Math.max(0, Math.ceil(this.filtered.length / this.pageSize) - 1));
     [...this.checked].filter(id => !byId.has(id)).forEach(id => this.checked.delete(id));
     this.cd.markForCheck();
     this.ctx.detectChanges();
@@ -597,9 +609,10 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   statusFilter: 'all' | 'online' | 'offline' = 'all';
   pendingOnly = false;
+  healthFilter: '' | 'healthy' | 'warning' | 'error' | 'offline' = '';
 
   get filtersActive(): boolean {
-    return this.statusFilter !== 'all' || this.pendingOnly;
+    return this.statusFilter !== 'all' || this.pendingOnly || !!this.healthFilter;
   }
 
   setStatusFilter(v: 'all' | 'online' | 'offline'): void {
@@ -610,6 +623,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   clearFilters(): void {
     this.statusFilter = 'all';
     this.pendingOnly = false;
+    this.healthFilter = '';
     this.pageIndex = 0;
   }
 
@@ -702,7 +716,8 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     const q = this.search.trim().toLowerCase();
     const base = this.devices.filter(d =>
       (this.statusFilter === 'all' || (this.statusFilter === 'online') === d.active)
-      && (!this.pendingOnly || d.commitPending));
+      && (!this.pendingOnly || d.commitPending)
+      && (!this.healthFilter || d.health === this.healthFilter));
     const list = q ? base.filter(d =>
       [d.name, d.label, d.hardware.osVersion, d.hardware.model, d.hardware.serial, d.bootFlow, d.activeGroup, d.defaultGroup,
         d.stateStatus, d.apiVersion, d.job?.status, d.job?.title, d.active ? 'online' : 'offline']
@@ -743,11 +758,16 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   }
 
   toggle(d: RugixDevice): void {
-    this.checked.has(d.id) ? this.checked.delete(d.id) : this.checked.add(d.id);
+    if (this.checked.has(d.id)) {
+      this.checked.delete(d.id);
+    } else {
+      this.checked.add(d.id);
+    }
   }
 
   select(d: RugixDevice): void {
     this.selectedId = this.selectedId === d.id ? null : d.id;
+    this.resetDeviceState();
     this.loadCreated(this.selectedId);
     this.tabIndex = 0;
     this.auditDeviceId = '';
@@ -759,8 +779,25 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     setTimeout(() => this.syncDetailsLayout());
   }
 
+  /** Data of the previously opened device must not show up under the next one while it loads. */
+  private resetDeviceState(): void {
+    this.jobGroups = [];
+    this.jobEventCount = 0;
+    this.jobsTruncated = false;
+    this.auditLogs = [];
+    this.auditError = '';
+    this.statsLatest = undefined;
+    this.statsError = '';
+    this.statsGateway = null;
+    this.cpuSeries = [];
+    this.memSeries = [];
+    this.rssSeries = [];
+    this.diskSeries = [];
+  }
+
   closeDetails(): void {
     this.selectedId = null;
+    this.resetDeviceState();
     this.syncStats();
     setTimeout(() => this.syncDetailsLayout());
   }
@@ -828,9 +865,11 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     const left = bar.scrollLeft > 2;
     const right = bar.scrollLeft + bar.clientWidth < bar.scrollWidth - 2;
     if (left !== this.tabCanLeft || right !== this.tabCanRight) {
-      this.tabCanLeft = left;
-      this.tabCanRight = right;
-      this.cd.markForCheck();
+      this.ngZone.run(() => {
+        this.tabCanLeft = left;
+        this.tabCanRight = right;
+        this.cd.markForCheck();
+      });
     }
   }
 
@@ -879,7 +918,8 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       ? new Observable<Device>(s => { s.next(this.gateways.get(device.id)); s.complete(); })
       : this.rpc.resolveGateway(this.settings, device.id);
     const end = Date.now();
-    gateway$.pipe(
+    const range = this.statsRange;
+    gateway$.pipe(takeUntil(this.destroy$),
       mergeMap(gw => {
         this.gateways.set(device.id, gw);
         this.statsGateway = gw;
@@ -887,7 +927,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       })
     ).subscribe({
       next: stats => {
-        if (this.selectedId !== device.id) {
+        if (this.selectedId !== device.id || this.statsRange !== range) {
           return;
         }
         this.statsLoading = false;
@@ -949,6 +989,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   // ------------------------------------------------------------------ actions
 
   openInstall(devices: RugixDevice[], mode: 'system' | 'app'): void {
+    devices = devices.filter(d => d.active);
     if (!devices.length || !this.allowed('install')) {
       return;
     }
@@ -957,6 +998,9 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
         data: {mode, devices, settings: this.settings},
         autoFocus: false, disableClose: true, maxWidth: '95vw'
       }).afterClosed().subscribe(result => {
+      if (result?.failed?.length) {
+        this.ctx.showErrorToast(`Could not start on ${result.failed.map(f => f.device.label || f.device.name).join(', ')}: ${result.failed[0].message}`, 'top', 'left');
+      }
       if (result?.jobs?.length) {
         this.ctx.showSuccessToast(`Installation started on ${result.jobs.length} device(s).`, 3000, 'top', 'left');
         if (result.jobs.length === 1) {
@@ -980,7 +1024,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   }
 
   runSystemAction(info: SystemActionInfo, device: RugixDevice): void {
-    if (!this.allowed(this.kindOf(info))) {
+    if (this.blocked(device, this.kindOf(info), this.featureOf(info))) {
       return;
     }
     const data: RugixConfirmDialogData = {
@@ -1005,7 +1049,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   }
 
   runAppAction(device: RugixDevice, app: RugixApp, action: RugixAppAction, label: string, warn?: boolean): void {
-    if (!this.allowed('install')) {
+    if (this.blocked(device, 'install', 'app_lifecycle')) {
       return;
     }
     const ack: { [a in RugixAppAction]: string } = {
@@ -1027,6 +1071,9 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   }
 
   garbageCollectApps(device: RugixDevice): void {
+    if (this.blocked(device, 'install', 'app_lifecycle')) {
+      return;
+    }
     this.dialog.open<RugixConfirmDialogComponent, RugixConfirmDialogData, RugixConfirmDialogResult>(
       RugixConfirmDialogComponent, {
         data: {title: 'Clean up all apps', message: `Remove unused generations of all apps on "${device.label || device.name}"?`,
@@ -1070,6 +1117,24 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   slotCount(d: RugixDevice): string {
     const active = d.slots.find(s => s.active);
     return active ? active.name : '—';
+  }
+
+  /** Human readable text of a component consistency problem (rugix-admin `ComponentProblem`). */
+  problemTitle(p: { type: string }): string {
+    const t = String(p.type || 'problem').replace(/([a-z])([A-Z])/g, '$1 $2');
+    return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
+  }
+
+  problemText(p: { type: string; detail: any }): string {
+    const d = p.detail || {};
+    const sel = (x: any) => x ? `${x.id}${x.version ? ' ' + x.version : ''}${x.value ? ' = ' + x.value : ''}` : '';
+    switch (p.type) {
+      case 'UnsatisfiedRequirement': return `${d.component?.id} requires ${sel(d.selector)}`;
+      case 'Conflict': return `${d.component?.id} conflicts with ${d.provider?.id} (${sel(d.capability || d.selector)})`;
+      case 'DuplicateComponent': return `Component ${d.id} is declared more than once`;
+      case 'DuplicateClaim': return `Resource ${d.id} is claimed by ${(d.components || []).map((c: any) => c.id).join(', ')}`;
+      default: return this.jsonOf(p.detail);
+    }
   }
 
   jsonOf(value: any): string {

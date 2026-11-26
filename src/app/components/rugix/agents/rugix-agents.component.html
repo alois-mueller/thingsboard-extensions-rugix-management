@@ -71,10 +71,13 @@
 
   <!-- ===== filters ===== -->
   <div class="rugix-filters">
-    <span class="fchip" [class.on]="statusFilter === 'all'" (click)="setStatusFilter('all')">All</span>
-    <span class="fchip" [class.on]="statusFilter === 'online'" (click)="setStatusFilter('online')"><span class="dot ok"></span>Online</span>
-    <span class="fchip" [class.on]="statusFilter === 'offline'" (click)="setStatusFilter('offline')"><span class="dot"></span>Offline</span>
-    <span class="fchip" [class.on]="pendingOnly" (click)="pendingOnly = !pendingOnly; pageIndex = 0"><mat-icon>sync_problem</mat-icon>Commit pending</span>
+    <span class="fchip" role="button" tabindex="0" [class.on]="statusFilter === 'all'" (click)="setStatusFilter('all')" (keydown.enter)="setStatusFilter('all')">All</span>
+    <span class="fchip" role="button" tabindex="0" [class.on]="statusFilter === 'online'" (click)="setStatusFilter('online')" (keydown.enter)="setStatusFilter('online')"><span class="dot ok"></span>Online</span>
+    <span class="fchip" role="button" tabindex="0" [class.on]="statusFilter === 'offline'" (click)="setStatusFilter('offline')" (keydown.enter)="setStatusFilter('offline')"><span class="dot"></span>Offline</span>
+    <span class="fchip" role="button" tabindex="0" [class.on]="pendingOnly" (click)="pendingOnly = !pendingOnly; pageIndex = 0" (keydown.enter)="pendingOnly = !pendingOnly; pageIndex = 0"><mat-icon>sync_problem</mat-icon>Commit pending</span>
+    @if (healthFilter) {
+      <span class="fchip on" role="button" tabindex="0" (click)="healthFilter = ''; pageIndex = 0" (keydown.enter)="healthFilter = ''; pageIndex = 0">Health: {{ healthFilter }}<mat-icon>close</mat-icon></span>
+    }
     @if (filtersActive) {
       <button mat-button type="button" class="fclear" (click)="clearFilters()">Clear</button>
     }
@@ -85,23 +88,23 @@
     <table class="rugix-table main-table">
       <thead>
         <tr>
-          <th class="w-check"><mat-checkbox [checked]="allChecked" (change)="toggleAll()"></mat-checkbox></th>
-          <th class="sortable c-dev" [class.sorted]="sortKey === 'name'" (click)="sortBy('name')">Device<mat-icon class="sort-icon">{{ sortKey === 'name' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
-          <th class="sortable w-status" [class.sorted]="sortKey === 'status'" (click)="sortBy('status')">Connection<mat-icon class="sort-icon">{{ sortKey === 'status' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
-          <th class="sortable c-os" [class.sorted]="sortKey === 'os'" (click)="sortBy('os')">Edge OS<mat-icon class="sort-icon">{{ sortKey === 'os' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
-          <th class="sortable c-l3 c-group" [class.sorted]="sortKey === 'group'" (click)="sortBy('group')">Active / default<mat-icon class="sort-icon">{{ sortKey === 'group' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
-          <th class="sortable c-l2 c-flow" [class.sorted]="sortKey === 'flow'" (click)="sortBy('flow')">Boot flow<mat-icon class="sort-icon">{{ sortKey === 'flow' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
-          <th class="sortable c-l2 c-state" [class.sorted]="sortKey === 'state'" (click)="sortBy('state')">State<mat-icon class="sort-icon">{{ sortKey === 'state' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
-          <th class="sortable c-l1 c-api" [class.sorted]="sortKey === 'api'" (click)="sortBy('api')">Rugix API<mat-icon class="sort-icon">{{ sortKey === 'api' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
-          <th class="sortable c-l1 c-job" [class.sorted]="sortKey === 'job'" (click)="sortBy('job')">Last job<mat-icon class="sort-icon">{{ sortKey === 'job' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="w-check"><mat-checkbox [checked]="allChecked" (change)="toggleAll()" aria-label="Select all devices on this page"></mat-checkbox></th>
+          <th class="sortable c-dev" [class.sorted]="sortKey === 'name'" tabindex="0" role="button" (click)="sortBy('name')" (keydown.enter)="sortBy('name')">Device<mat-icon class="sort-icon">{{ sortKey === 'name' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable w-status" [class.sorted]="sortKey === 'status'" tabindex="0" role="button" (click)="sortBy('status')" (keydown.enter)="sortBy('status')">Connection<mat-icon class="sort-icon">{{ sortKey === 'status' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-os" [class.sorted]="sortKey === 'os'" tabindex="0" role="button" (click)="sortBy('os')" (keydown.enter)="sortBy('os')">Edge OS<mat-icon class="sort-icon">{{ sortKey === 'os' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-l3 c-group" [class.sorted]="sortKey === 'group'" tabindex="0" role="button" (click)="sortBy('group')" (keydown.enter)="sortBy('group')">Active / default<mat-icon class="sort-icon">{{ sortKey === 'group' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-l2 c-flow" [class.sorted]="sortKey === 'flow'" tabindex="0" role="button" (click)="sortBy('flow')" (keydown.enter)="sortBy('flow')">Boot flow<mat-icon class="sort-icon">{{ sortKey === 'flow' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-l2 c-state" [class.sorted]="sortKey === 'state'" tabindex="0" role="button" (click)="sortBy('state')" (keydown.enter)="sortBy('state')">State<mat-icon class="sort-icon">{{ sortKey === 'state' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-l1 c-api" [class.sorted]="sortKey === 'api'" tabindex="0" role="button" (click)="sortBy('api')" (keydown.enter)="sortBy('api')">Rugix API<mat-icon class="sort-icon">{{ sortKey === 'api' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
+          <th class="sortable c-l1 c-job" [class.sorted]="sortKey === 'job'" tabindex="0" role="button" (click)="sortBy('job')" (keydown.enter)="sortBy('job')">Last job<mat-icon class="sort-icon">{{ sortKey === 'job' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
           <th class="w-actions"></th>
         </tr>
       </thead>
       <tbody>
         @for (d of page; track trackById($index, d)) {
-          <tr [class.selected]="d.id === selectedId" (click)="select(d)">
+          <tr [class.selected]="d.id === selectedId" tabindex="0" (click)="select(d)" (keydown.enter)="select(d)">
             <td class="w-check" (click)="$event.stopPropagation()">
-              <mat-checkbox [checked]="checked.has(d.id)" (change)="toggle(d)"></mat-checkbox>
+              <mat-checkbox [checked]="checked.has(d.id)" (change)="toggle(d)" [attr.aria-label]="'Select ' + (d.label || d.name)"></mat-checkbox>
             </td>
             <td>
               <div class="device">
@@ -148,10 +151,10 @@
                 <mat-spinner diameter="20"></mat-spinner>
               } @else {
                 <span class="qa-inline">
-                  <button mat-icon-button [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'system')" matTooltip="Upgrade Firmware"><mat-icon>system_update_alt</mat-icon></button>
-                  <button mat-icon-button [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'app')" matTooltip="Install App"><mat-icon>apps</mat-icon></button>
+                  <button mat-icon-button [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'system')" matTooltip="Upgrade Firmware" aria-label="Upgrade Firmware"><mat-icon>system_update_alt</mat-icon></button>
+                  <button mat-icon-button [disabled]="blocked(d, 'install')" (click)="openInstall([d], 'app')" matTooltip="Install App" aria-label="Install App"><mat-icon>apps</mat-icon></button>
                   @for (a of tableActions; track a.action) {
-                    <button mat-icon-button [disabled]="blocked(d, kindOf(a), featureOf(a))" (click)="runSystemAction(a, d)" [matTooltip]="a.label"><mat-icon [class.caution-icon]="a.caution">{{ a.icon }}</mat-icon></button>
+                    <button mat-icon-button [disabled]="blocked(d, kindOf(a), featureOf(a))" (click)="runSystemAction(a, d)" [matTooltip]="a.label" [attr.aria-label]="a.label"><mat-icon [class.caution-icon]="a.caution">{{ a.icon }}</mat-icon></button>
                   }
                 </span>
                 <span class="qa-menu">
@@ -179,7 +182,7 @@
 
   <!-- ===== details ===== -->
   @if (selected; as d) {
-    <div class="rugix-backdrop" (click)="closeDetails()"></div>
+    <div class="rugix-backdrop" tabindex="-1" (click)="closeDetails()" (keydown.escape)="closeDetails()"></div>
     <div class="rugix-details">
       <mat-toolbar color="primary" class="details-toolbar">
         @if (isRevPi(d)) { <img class="details-icon" [src]="revpiIcon" alt="Revolution Pi"> }
@@ -360,7 +363,7 @@
                     <td><span class="pill" [class.ok]="appStatusLabel(a.status) === 'running'" [class.warn]="appStatusLabel(a.status) === 'unhealthy'" [class.err]="appStatusLabel(a.status) === 'failed'" [matTooltip]="appStatusMessage(a.status)">{{ appStatusLabel(a.status) }}</span></td>
                     <td class="c-md">{{ a.orchestrator || '—' }}</td>
                     <td class="w-actions">
-                      <button mat-icon-button [matMenuTriggerFor]="appMenu" [disabled]="blocked(d, 'install', 'app_lifecycle')"><mat-icon>more_vert</mat-icon></button>
+                      <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="App actions" [disabled]="blocked(d, 'install', 'app_lifecycle')"><mat-icon>more_vert</mat-icon></button>
                       <mat-menu #appMenu="matMenu">
                         @for (x of appActions; track x.action) {
                           <button mat-menu-item (click)="runAppAction(d, a, x.action, x.label, x.warn)"><mat-icon>{{ x.icon }}</mat-icon>{{ x.label }}</button>
@@ -379,7 +382,7 @@
         @if (tabIndex === 3) {
           <div class="tab-body">
             @for (p of d.componentsProblems; track $index) {
-              <div class="banner err"><mat-icon>error_outline</mat-icon><span><b>{{ p.type }}</b> {{ jsonOf(p.detail) }}</span></div>
+              <div class="banner err"><mat-icon>error_outline</mat-icon><span><b>{{ problemTitle(p) }}:</b> {{ problemText(p) }}</span></div>
             }
             <div class="tab-actions">
               <mat-form-field appearance="outline" subscriptSizing="dynamic" class="comp-filter">
@@ -394,7 +397,7 @@
               <table class="rugix-table compact">
                 <thead><tr><th>Component</th><th>Version</th><th>Source</th><th class="c-md">Provides</th><th class="c-md">Requires</th></tr></thead>
                 <tbody>
-                  @for (c of filteredComponents(d); track c.id) {
+                  @for (c of filteredComponents(d); track $index) {
                     <tr>
                       <td><div class="name">{{ c.id }}</div>@if (c.path) { <div class="sub path" [matTooltip]="c.path">{{ c.path }}</div> }</td>
                       <td class="nowrap">{{ c.version || '—' }}</td>
@@ -444,7 +447,7 @@
               <div class="banner err stats-banner"><mat-icon>error_outline</mat-icon><span>{{ statsError }}</span></div>
             }
             @if (statsLoading) { <mat-progress-bar mode="indeterminate"></mat-progress-bar> }
-            @if (statsLatest) {
+            @if (statsLatest && !statsError) {
               <div class="kpis">
                 <div class="kpi"><span>CPU</span><b>{{ statsLatest.cpu ?? '—' }}<small>%</small></b></div>
                 <div class="kpi"><span>Memory used</span><b>{{ statsLatest.memUsed !== undefined ? (statsLatest.memUsed | number:'1.0-1') : '—' }}<small>%</small></b></div>
@@ -454,6 +457,7 @@
                 <div class="kpi"><span>Messages sent</span><b>{{ statsLatest.msgsSent ?? '—' }}</b></div>
               </div>
             }
+            @if (!statsError) {
             <div class="charts">
               <div class="chart-card">
                 <div class="chart-title">CPU usage</div>
@@ -476,6 +480,7 @@
                 <tb-rugix-line-chart [series]="rssSeries" unit="MiB" [decimals]="0"></tb-rugix-line-chart>
               </div>
             </div>
+            }
           </div>
         }
 
@@ -483,7 +488,7 @@
           <div class="tab-body">
             <div class="tab-actions">
               <button mat-stroked-button (click)="loadJobs(true)" [disabled]="jobsLoading"><mat-icon>refresh</mat-icon>Refresh</button>
-              <span class="audit-hint">{{ jobGroups.length }} {{ jobGroups.length === 1 ? 'job' : 'jobs' }} in the last {{ jobsDays }} days</span>
+              <span class="audit-hint">{{ jobGroups.length }} {{ jobGroups.length === 1 ? 'job' : 'jobs' }} in the last {{ jobsDays }} days@if (jobsTruncated) { · only the most recent {{ jobEventCount }} events are loaded }</span>
             </div>
             @if (jobsLoading && !jobGroups.length) {
               <div class="empty"><mat-spinner diameter="24" style="margin: 0 auto"></mat-spinner></div>
@@ -494,8 +499,8 @@
                   <thead><tr><th class="w-exp"></th><th class="lc-time">Started</th><th>Job</th><th class="lc-status">Status</th><th class="lc-dur">Duration</th><th class="lc-id">Job ID</th></tr></thead>
                   <tbody>
                     @for (j of jobPage; track j.id; let i = $index) {
-                      <tr class="job-row" [class.open]="jobOpen(j, i)" (click)="toggleJob(j)">
-                        <td class="w-exp"><mat-icon>{{ jobOpen(j, i) ? 'expand_less' : 'expand_more' }}</mat-icon></td>
+                      <tr class="job-row" [class.open]="jobOpen(j)" (click)="toggleJob(j)">
+                        <td class="w-exp"><mat-icon>{{ jobOpen(j) ? 'expand_less' : 'expand_more' }}</mat-icon></td>
                         <td class="nowrap">{{ fmt(j.start, true) }}</td>
                         <td class="nowrap"><mat-icon class="job-icon">{{ jobIcon(j.kind) }}</mat-icon>{{ jt(j.title, j.kind) || 'Job' }}</td>
                         <td><span class="pill" [class.ok]="j.status === 'succeeded'" [class.err]="j.status === 'failed'" [class.run]="j.status === 'running' || j.status === 'queued'">{{ j.status }}</span></td>
@@ -504,7 +509,7 @@
                           <button mat-icon-button type="button" class="copy" matTooltip="Copy job id" (click)="$event.stopPropagation(); copy(j.id)"><mat-icon>content_copy</mat-icon></button>
                         </td>
                       </tr>
-                      @if (jobOpen(j, i)) {
+                      @if (jobOpen(j)) {
                         <tr class="job-detail">
                           <td colspan="6">
                             <div class="job-body">

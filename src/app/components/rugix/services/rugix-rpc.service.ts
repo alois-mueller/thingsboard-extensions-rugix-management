@@ -160,7 +160,7 @@ export class RugixRpcService {
     return this.deviceService.sendTwoWayRpcCommand(device.id, {method, params, timeout: settings.rpc.timeout}).pipe(
       map(response => {
         // For installs the job id is chosen by us (`/api/system/update/{uuid}/url`), otherwise it is returned.
-        const jobId = RugixRpcService.extractJobId(response) ?? preassignedJobId;
+        const jobId = preassignedJobId ?? RugixRpcService.extractJobId(response);
         if (!jobId) {
           throw new Error(`No Rugix job id returned for "${method}" on "${device.name}".`);
         }
@@ -169,7 +169,6 @@ export class RugixRpcService {
     );
   }
 
-  /** Walk the `Created` relations up to the gateway device that owns the Rugix device. */
   /** Creation time (ms epoch) of the device entity. */
   getDeviceCreated(deviceId: string): Observable<number | undefined> {
     return this.deviceService.getDevice(deviceId, {ignoreLoading: true, ignoreErrors: true}).pipe(
@@ -178,6 +177,7 @@ export class RugixRpcService {
     );
   }
 
+  /** Walk the `Created` relations up to the gateway device that owns the Rugix device. */
   resolveGateway(settings: RugixWidgetSettings, deviceId: string): Observable<Device> {
     const seen = new Set<string>();
     let fallback: Device | null = null;

@@ -28,7 +28,8 @@ export interface RugixDonutSegment {
         </svg>
         <div class="legend">
           @for (s of segments; track s.key) {
-            <div class="legend-row" [class.clickable]="clickable" (click)="clickable && segmentClick.emit(s.key)">
+            <div class="legend-row" [class.clickable]="clickable && s.value > 0" [attr.role]="clickable && s.value > 0 ? 'button' : null" [attr.tabindex]="clickable && s.value > 0 ? 0 : null"
+                 (click)="clickable && s.value > 0 && segmentClick.emit(s.key)" (keydown.enter)="clickable && s.value > 0 && segmentClick.emit(s.key)">
               <span class="dot" [style.background]="s.color"></span>
               <span class="lbl">{{ s.label }}</span>
               <span class="val">{{ s.value }}</span>
