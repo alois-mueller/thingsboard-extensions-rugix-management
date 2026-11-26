@@ -826,9 +826,24 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   /** Switch the release channel of a device (server attribute) and re-evaluate its firmware state. */
   setChannel(d: RugixDevice, channel: string): void {
-    if (!channel || channel === this.channelOf(d) || this.channelSaving) {
+    if (!channel || channel === this.channelOf(d) || this.channelSaving || !this.allowed('install')) {
       return;
     }
+    const from = this.channelOf(d), target = this.settings.channels[channel];
+    this.dialog.open<RugixConfirmDialogComponent, RugixConfirmDialogData, RugixConfirmDialogResult>(
+      RugixConfirmDialogComponent, {
+        data: {
+          title: 'Switch release channel',
+          message: `"${d.label || d.name}" will follow the ${channel} channel${target ? ` (target ${target})` : ''} instead of ${from}. This does not install anything by itself.`,
+          confirmLabel: 'Switch channel', caution: true,
+          acknowledge: 'I understand that the firmware status of this device is evaluated against the new channel.',
+          transition: {from, to: channel, caption: 'Channel'}
+        },
+        autoFocus: false, maxWidth: '95vw'
+      }).afterClosed().subscribe(r => r && this.applyChannel(d, channel));
+  }
+
+  private applyChannel(d: RugixDevice, channel: string): void {
     this.channelSaving = true;
     this.rpc.setChannel(this.settings, d, channel).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
