@@ -79,14 +79,24 @@
         @if (!canEditPackages) { Packages are managed by tenant administrators. }
       </p>
       <table class="rugix-table pkg-table">
-        <thead><tr><th>Title</th><th>Version</th><th class="pk-tag">Tag</th><th class="pk-url">Bundle URL</th><th class="pk-added">Added</th><th class="w-actions"></th></tr></thead>
+        <thead><tr><th>Title</th><th>Version</th>@if (view === 'updates') { <th class="pk-chan">Active channel</th> }<th class="pk-tag">Tag</th><th class="pk-url">Bundle URL</th><th class="pk-added">Added</th><th class="w-actions"></th></tr></thead>
         <tbody>
           @for (p of pkgList; track p.id.id) {
             <tr class="static-row">
               <td><b>{{ p.title || p.version }}</b>@if (p.additionalInfo?.description) { <div class="sub">{{ p.additionalInfo.description }}</div> }</td>
               <td class="nowrap">{{ p.version }}</td>
+              @if (view === 'updates') { <td class="pk-chan nowrap">{{ channelsOf(p) || '—' }}</td> }
               <td class="pk-tag">{{ p.tag || '—' }}</td>
-              <td class="pk-url">@if (p.url) { <span class="pk-link" [matTooltip]="p.url" matTooltipPosition="above" matTooltipClass="rugix-tip">{{ p.url }}</span> } @else { <span class="sub" matTooltip="Uploaded file – Rugix needs an external URL to pull a bundle" matTooltipPosition="above" matTooltipClass="rugix-tip">uploaded file</span> }</td>
+              <td class="pk-url">
+                @if (p.url) {
+                  <div class="pk-urlbox">
+                    <span class="pk-link" [matTooltip]="p.url" matTooltipPosition="above" matTooltipClass="rugix-tip">{{ p.url }}</span>
+                    <button mat-icon-button type="button" class="copy-btn" matTooltip="Copy URL" matTooltipPosition="above" matTooltipClass="rugix-tip" aria-label="Copy bundle URL" (click)="copy(p.url)"><mat-icon>{{ copied === p.url ? 'check' : 'content_copy' }}</mat-icon></button>
+                  </div>
+                } @else {
+                  <span class="sub" matTooltip="Uploaded file – Rugix needs an external URL to pull a bundle" matTooltipPosition="above" matTooltipClass="rugix-tip">uploaded file</span>
+                }
+              </td>
               <td class="pk-added nowrap">{{ p.createdTime ? fmt(p.createdTime) : '—' }}</td>
               <td class="w-actions">
                 @if (canEditPackages) {
@@ -96,7 +106,7 @@
               </td>
             </tr>
           } @empty {
-            <tr class="static-row"><td colspan="6" class="empty-row">{{ pkgLoading ? 'Loading…' : (view === 'apps' ? 'No apps yet.' : 'No firmware updates yet.') }}{{ canEditPackages && !pkgLoading ? ' Use "Add" to register a bundle URL.' : '' }}</td></tr>
+            <tr class="static-row"><td [attr.colspan]="view === 'updates' ? 7 : 6" class="empty-row">{{ pkgLoading ? 'Loading…' : (view === 'apps' ? 'No apps yet.' : 'No firmware updates yet.') }}{{ canEditPackages && !pkgLoading ? ' Use "Add" to register a bundle URL.' : '' }}</td></tr>
           }
         </tbody>
       </table>

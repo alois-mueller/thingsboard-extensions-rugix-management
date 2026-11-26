@@ -847,6 +847,11 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Release channels whose target version is this firmware package (comma separated, empty when none). */
+  channelsOf(p: OtaPackageInfo): string {
+    return Object.entries(this.settings.channels).filter(([, v]) => !!v && v === p.version).map(([k]) => k).join(', ');
+  }
+
   /** Firmware versions known from the Updates view, newest first – the choices for a channel's target version. */
   get firmwareVersions(): string[] {
     const set = new Set(this.packagesAll.filter(p => p.type === OtaUpdateType.FIRMWARE && p.version).map(p => p.version));
