@@ -268,13 +268,9 @@
     font-size: 12px; font-weight: 500; color: rgba(0, 0, 0, .75); text-decoration: none;
     &:hover { background: rgba(0, 0, 0, .05); }
   }
-  // shields.io style "label | value" badge
-  .badge {
-    display: inline-flex; height: 20px; border-radius: 3px; overflow: hidden; text-decoration: none; color: #fff;
-    font: 11px/20px Verdana, 'DejaVu Sans', sans-serif; white-space: nowrap;
-    .b-label { padding: 0 6px; background: #555; }
-    .b-value { padding: 0 6px; background: #007ec6; }
-    &:hover { filter: brightness(1.1); }
+  .badge-link {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: rgba(0, 0, 0, .7); text-decoration: none;
+    img { display: block; height: 20px; }
   }
 
   .fleet-summary { display: flex; align-items: center; gap: 14px; flex: none; margin-left: 4px; font-size: 13px; color: rgba(0, 0, 0, .7); white-space: nowrap; }

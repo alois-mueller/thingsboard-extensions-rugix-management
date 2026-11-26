@@ -335,31 +335,6 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   readonly alertLimit = 8;
   alertsExpanded = false;
 
-  /** Version badge value: most common version, "+n" when the fleet runs several, tooltip lists all. */
-  versionBadge(pick: (d: RugixDevice) => string | undefined): { text: string; title: string } {
-    const counts = new Map<string, number>();
-    for (const d of this.devices) {
-      const v = (pick(d) || '').replace(/^v/i, '');
-      if (v) { counts.set(v, (counts.get(v) || 0) + 1); }
-    }
-    const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
-    if (!sorted.length) {
-      return {text: '—', title: 'No version reported'};
-    }
-    return {
-      text: 'v' + sorted[0][0] + (sorted.length > 1 ? ` +${sorted.length - 1}` : ''),
-      title: sorted.map(([v, n]) => `v${v} (${n} ${n === 1 ? 'device' : 'devices'})`).join(', ')
-    };
-  }
-
-  get ctrlBadge(): { text: string; title: string } {
-    return this.versionBadge(d => d.hardware.rugixCtrl);
-  }
-
-  get apiBadge(): { text: string; title: string } {
-    return this.versionBadge(d => d.apiVersion);
-  }
-
   /** Online / offline / error / warning counts for the Devices toolbar. */
   get fleetSummary(): { online: number; offline: number; error: number; warning: number; healthy: number } {
     const c = {online: 0, offline: 0, error: 0, warning: 0, healthy: 0};
