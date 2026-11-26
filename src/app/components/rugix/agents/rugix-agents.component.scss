@@ -709,7 +709,7 @@
 @container rugix (max-width: 560px) {
   .c-l3 { display: none; }
   :host .main-table .c-l3 { display: none; }
-  :host .main-table { --rugix-cols: 44px minmax(140px, 2.4fr) minmax(104px, 1.2fr) minmax(88px, 1fr) 56px; }
+  :host .main-table { --rugix-cols: 48px minmax(140px, 2.4fr) minmax(104px, 1.2fr) minmax(88px, 1fr) 56px; }
   .warn-icon { display: inline-block; }
 }
 
@@ -742,7 +742,7 @@
   .rugix-toolbar .lbl { display: none; }
   .rugix-toolbar.selection button[mat-flat-button] { min-width: 0; padding: 0 12px; }
   .rugix-toolbar.selection button[mat-flat-button] mat-icon { margin: 0; }
-  .rugix-table td, .rugix-table th { padding-left: 6px; }
+  .rugix-table:not(.main-table) td, .rugix-table:not(.main-table) th { padding-left: 6px; }
   .rugix-details { width: 100%; }
   .details-toolbar { padding-left: 16px; }
   .details-buttons { padding: 12px 16px; }
