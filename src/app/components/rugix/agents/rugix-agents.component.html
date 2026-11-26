@@ -1,10 +1,18 @@
 <div class="rugix">
   <!-- ===== view tabs ===== -->
-  <div class="view-tabs">
+  <div class="view-tabs-wrap">
+    @if (vtCanLeft) {
+      <button type="button" class="tab-arrow left" aria-label="Scroll left" (click)="scrollTabs(-1, vbar)"><mat-icon>chevron_left</mat-icon></button>
+    }
+    <div class="view-tabs" #vbar (scroll)="updateViewArrows(vbar)">
     <button type="button" class="view-tab" [class.active]="view === 'overview'" (click)="setView('overview')"><mat-icon>space_dashboard</mat-icon>Overview</button>
     <button type="button" class="view-tab" [class.active]="view === 'devices'" (click)="setView('devices')"><mat-icon>developer_board</mat-icon>Devices<span class="count">{{ devices.length }}</span></button>
     <button type="button" class="view-tab" [class.active]="view === 'jobs'" (click)="setView('jobs')"><mat-icon>work_history</mat-icon>Jobs@if (runningJobs) { <span class="count run">{{ runningJobs }}</span> }</button>
     <button type="button" class="view-tab" [class.active]="view === 'channels'" (click)="setView('channels')"><mat-icon>alt_route</mat-icon>Channels</button>
+  </div>
+    @if (vtCanRight) {
+      <button type="button" class="tab-arrow right" aria-label="Scroll right" (click)="scrollTabs(1, vbar)"><mat-icon>chevron_right</mat-icon></button>
+    }
   </div>
 
   @if (view === 'overview') {

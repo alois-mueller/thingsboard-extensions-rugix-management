@@ -23,6 +23,7 @@
   }
 
   // ---- view tabs (top menu)
+  .view-tabs-wrap { position: relative; flex: none; .tab-arrow { height: 100%; } }
   .view-tabs {
     flex: none;
     display: flex;
@@ -835,7 +836,22 @@
   :host .overview { padding-left: 16px; }
 }
 
+@container rugix (max-width: 760px) {
+  :host .rugix-filters { flex-wrap: wrap; overflow: visible; padding: 0 16px 8px; }
+  :host .rugix-filters .range.fleet-range { margin-left: 0; }
+  :host .fleet-table { min-width: 0; }
+  :host .fleet-table .lc-dur, :host .fleet-table .lc-id,
+  :host .fleet-table tbody td:nth-child(5), :host .fleet-table tbody td:nth-child(6) { display: none; }
+  :host .fleet-table .lc-time { width: 118px; }
+  :host .fleet-table .lc-status { width: 104px; }
+  :host .fleet-table tbody td:first-child { white-space: normal; }
+}
+
 @container rugix (max-width: 600px) {
+  :host .channels-intro { padding: 0 16px 12px; }
+  :host .channels-table th:nth-child(4), :host .channels-table td:nth-child(4) { display: none; }
+  :host .channels-table .ch-input { width: 104px; }
+  :host .ch-add { padding: 16px; flex-wrap: wrap; }
   .c-sm { display: none; }
   .rugix-title { font-size: 18px; padding-right: 8px; }
   :host .search-toggle { display: inline-flex; }

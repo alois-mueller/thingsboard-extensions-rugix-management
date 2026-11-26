@@ -727,6 +727,10 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       this.arrowTimer = setInterval(() => {
         this.syncFlowMode();
         this.syncDetailsLayout();
+        const vbar = this.host.nativeElement.querySelector('.view-tabs') as HTMLElement;
+        if (vbar) {
+          this.updateViewArrows(vbar);
+        }
         const bar = this.host.nativeElement.querySelector('.tabbar') as HTMLElement;
         if (bar) {
           this.updateTabArrows(bar);
@@ -1281,6 +1285,8 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   /** Select a tab and scroll it to the middle of the tab bar (clamped at both ends, so first/last stay put). */
   private arrowTimer: any;
+  vtCanLeft = false;
+  vtCanRight = false;
   tabCanLeft = false;
   tabCanRight = false;
 
@@ -1291,6 +1297,19 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       this.ngZone.run(() => {
         this.tabCanLeft = left;
         this.tabCanRight = right;
+        this.cd.markForCheck();
+      });
+    }
+  }
+
+  /** Arrows of the main view bar (Overview / Devices / Jobs / Channels) when it does not fit. */
+  updateViewArrows(bar: HTMLElement): void {
+    const left = bar.scrollLeft > 2;
+    const right = bar.scrollLeft + bar.clientWidth < bar.scrollWidth - 2;
+    if (left !== this.vtCanLeft || right !== this.vtCanRight) {
+      this.ngZone.run(() => {
+        this.vtCanLeft = left;
+        this.vtCanRight = right;
         this.cd.markForCheck();
       });
     }
