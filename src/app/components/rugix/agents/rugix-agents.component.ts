@@ -24,9 +24,9 @@ import {
   RugixStatsRange,
   RugixWidgetSettings
 } from '../models/rugix.models';
-import { RugixDaemonFeature, RugixJobEvent } from '../models/rugix.models';
+import { RugixDaemonFeature, RugixJobEvent, RugixJobState } from '../models/rugix.models';
 import { RugixDonutSegment } from '../charts/rugix-donut.component';
-import { formatDateTime, fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots } from '../models/rugix-parse';
+import { foldJobEvent, formatDateTime, fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots } from '../models/rugix-parse';
 import { REVPI_ICON } from '../models/rugix-icons';
 import { RugixJobHandle, RugixRpcService } from '../services/rugix-rpc.service';
 import {
@@ -100,6 +100,41 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   busy = new Set<string>();
   searchOpen = false;
   tabIndex = 0;
+
+  // ---- current job per device (folded from the latest jobEvent of each update)
+  private jobStates = new Map<string, RugixJobState>();
+  private jobSeeding = new Set<string>();
+
+  private trackJob(d: RugixDevice): void {
+    const ev = d.lastJobEvent;
+    let st = this.jobStates.get(d.id);
+    if (ev && ev.ts > (st?.ts || 0)) {
+      st = foldJobEvent(st, ev);
+      if (st) {
+        this.jobStates.set(d.id, st);
+      }
+    }
+    d.job = st;
+    // we joined in the middle of a job: only progress/output events seen, load the history to learn the title/status
+    if (st?.partial && !this.jobSeeding.has(st.id)) {
+      this.jobSeeding.add(st.id);
+      this.rpc.loadJobEvents(this.settings, d, 500, Date.now() - 24 * 3600000).subscribe(events => {
+        let rebuilt: RugixJobState | undefined;
+        for (const e of [...events].sort((a, b) => a.ts - b.ts).filter(e => e.jobId === st.id)) {
+          rebuilt = foldJobEvent(rebuilt, e);
+        }
+        const cur = this.jobStates.get(d.id);
+        if (rebuilt && (!cur || cur.id === rebuilt.id)) {
+          this.jobStates.set(d.id, {...rebuilt, ts: Math.max(rebuilt.ts, cur?.ts || 0), progress: cur?.progress ?? rebuilt.progress});
+          this.onDataUpdated();
+        }
+      });
+    }
+  }
+
+  isJobActive(d: RugixDevice): boolean {
+    return d.job?.status === 'running' || d.job?.status === 'queued';
+  }
 
   // ---- fleet overview
   /** Selected view per widget; survives a re-initialisation of the widget (e.g. refresh -> updateAliases). */
@@ -180,14 +215,14 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
           push(d, 'warning', 'update', `Running boot group ${d.activeGroup}, default is ${d.defaultGroup} – commit pending`);
         }
       }
-      if (d.lastJobEvent?.status === 'failed') {
-        push(d, 'error', 'job', `Job failed: ${d.lastJobEvent.failureMessage || d.lastJobEvent.title || ''}`.trim(), d.lastJobEvent.ts);
+      if (d.job?.status === 'failed') {
+        push(d, 'error', 'job', `Job failed: ${d.job.failure || d.job.title || ''}`.trim(), d.job.ts);
         if (d.active) { raise('error'); }
       }
       count[level]++;
       const v = d.hardware.osVersion || 'unknown';
       os.set(v, (os.get(v) || 0) + 1);
-      const js = d.lastJobEvent?.status;
+      const js = d.job?.status;
       if (js === 'succeeded') { jobs.succeeded++; } else if (js === 'running' || js === 'queued') { jobs.running++; }
       else if (js === 'failed') { jobs.failed++; } else { jobs.none++; }
     }
@@ -237,14 +272,27 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   jobsDays = 30;
   private jobToggled = new Set<string>();
 
-  loadJobs(force = false): void {
+  private jobsReloadTimer: any;
+
+  /** New job events while the Job log is open: reload quietly (no spinner / button flicker), at most every 1.5 s. */
+  private scheduleJobsReload(): void {
+    if (this.jobsReloadTimer) {
+      return;
+    }
+    this.jobsReloadTimer = setTimeout(() => {
+      this.jobsReloadTimer = null;
+      this.loadJobs(true, true);
+    }, 1500);
+  }
+
+  loadJobs(force = false, silent = false): void {
     const d = this.selected;
     if (!d || this.tabIndex !== this.jobsTab || (!force && this.jobsDeviceId === d.id)) {
       return;
     }
     this.jobsDeviceId = d.id;
     this.jobsLastTs = d.lastJobEvent?.ts || 0;
-    this.jobsLoading = true;
+    this.jobsLoading = !silent || !this.jobGroups.length;
     this.rpc.loadJobEvents(this.settings, d, 5000, Date.now() - this.jobsDays * 86400000).subscribe(events => {
       if (this.selectedId !== d.id) {
         return;
@@ -466,6 +514,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     clearInterval(this.arrowTimer);
+    clearTimeout(this.jobsReloadTimer);
     this.restoreClip();
     this.statsTimer?.unsubscribe();
     delete this.ctx.$scope.rugixAgentsComponent;
@@ -497,18 +546,22 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
           }
         }
         applyValue(device, item.dataKey.name, last[1], this.settings.keys, slotRaw.get(id));
+        if (item.dataKey.name === this.settings.keys.jobEvent && device.lastJobEvent && last[0]) {
+          device.lastJobEvent.ts = last[0];
+        }
       }
     }
     this.devices = Array.from(byId.values()).map(d => {
       d.slots = parseSlots(slotRaw.get(d.id));
       d.apps = mergeApps(d.apps, d.componentList);
       d.commitPending = !!d.activeGroup && !!d.defaultGroup && d.activeGroup !== d.defaultGroup;
+      this.trackJob(d);
       return d;
     }).sort((a, b) => (a.label || a.name).localeCompare(b.label || b.name));
     this.computeOverview();
     const sel = this.selected;
     if (sel && this.tabIndex === this.jobsTab && (sel.lastJobEvent?.ts || 0) !== this.jobsLastTs) {
-      this.loadJobs(true);
+      this.scheduleJobsReload();
     }
     if (this.selectedId && !byId.has(this.selectedId)) {
       this.selectedId = null;
@@ -616,7 +669,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       case 'flow': return d.bootFlow || '';
       case 'state': return d.stateStatus || '';
       case 'api': return d.apiVersion || '';
-      case 'job': return d.lastJobEvent?.status || '';
+      case 'job': return d.job?.status || '';
       default: return d.label || d.name;
     }
   }
@@ -628,7 +681,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       && (!this.pendingOnly || d.commitPending));
     const list = q ? base.filter(d =>
       [d.name, d.label, d.hardware.osVersion, d.hardware.model, d.hardware.serial, d.bootFlow, d.activeGroup,
-        d.stateStatus, d.apiVersion, d.lastJobEvent?.status, d.active ? 'online' : 'offline']
+        d.stateStatus, d.apiVersion, d.job?.status, d.job?.title, d.active ? 'online' : 'offline']
         .some(v => (v || '').toLowerCase().includes(q))) : base;
     const dir = this.sortDir === 'asc' ? 1 : -1;
     return [...list].sort((a, b) =>

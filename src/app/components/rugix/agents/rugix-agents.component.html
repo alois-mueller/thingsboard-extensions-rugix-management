@@ -112,7 +112,9 @@
                     @if (d.commitPending) { <mat-icon class="warn-icon commit-icon" matTooltipPosition="above" matTooltipClass="rugix-tip" matTooltip="Warning: Commit pending – running a non-default system. Commit to keep it, otherwise the device falls back on next boot.">warning</mat-icon> }
                     @if (d.insecure) { <mat-icon class="warn-icon insecure-icon" matTooltipPosition="above" matTooltipClass="rugix-tip" matTooltip="Warning: Rugix Ctrl security bypasses enabled (development only)">warning</mat-icon> }
                   </div>
-                  @if (d.label) { <div class="sub">{{ d.name }}</div> }
+                  @if (isJobActive(d)) {
+                    <div class="sub job-active"><span class="spin"></span>@if (d.job.progress !== null) {{{ d.job.progress | number:'1.0-0' }} % · }{{ d.job.title || 'Job running' }}</div>
+                  } @else if (d.label) { <div class="sub">{{ d.name }}</div> }
                 </div>
               </div>
             </td>
@@ -130,8 +132,12 @@
             </td>
             <td class="c-l1">{{ d.apiVersion || '—' }}</td>
             <td class="c-l1">
-              @if (d.lastJobEvent?.status) {
-                <span class="chip" [class.ok]="d.lastJobEvent.status === 'succeeded'" [class.err]="d.lastJobEvent.status === 'failed'" [class.run]="d.lastJobEvent.status === 'running' || d.lastJobEvent.status === 'queued'">{{ d.lastJobEvent.status }}</span>
+              @if (d.job && d.job.status !== 'unknown') {
+                <span class="chip" [class.ok]="d.job.status === 'succeeded'" [class.err]="d.job.status === 'failed'" [class.run]="isJobActive(d)">{{ d.job.status }}@if (isJobActive(d) && d.job.progress !== null) { · {{ d.job.progress | number:'1.0-0' }} %}</span>
+                @if (isJobActive(d) && d.job.progress !== null) {
+                  <div class="mini-bar"><span [style.width.%]="d.job.progress"></span></div>
+                }
+                @if (d.job.title) { <div class="sub job-title" [matTooltip]="d.job.title" matTooltipPosition="above" matTooltipClass="rugix-tip">{{ d.job.title }}</div> }
               } @else { — }
             </td>
             <td class="w-actions" (click)="$event.stopPropagation()">
@@ -194,6 +200,21 @@
         }
       </div>
 
+      @if (isJobActive(d)) {
+        <div class="job-banner">
+          <div class="jb-head">
+            <span class="spin"></span>
+            <b>{{ d.job.title || 'Job' }}</b>
+            <span class="pill run">{{ d.job.status }}</span>
+            <span class="flex-1"></span>
+            @if (d.job.progress !== null) { <b>{{ d.job.progress | number:'1.0-1' }} %</b> }
+            <button mat-button type="button" (click)="tabIndex = jobsTab; loadJobs()">Show log</button>
+          </div>
+          @if (d.job.progress !== null) {
+            <div class="jb-bar"><span [style.width.%]="d.job.progress"></span></div>
+          }
+        </div>
+      }
       @if (restrictionNote) { <div class="hint">{{ restrictionNote }}</div> }
       @if (d.insecure) {
         <div class="banner err insecure">

@@ -187,7 +187,7 @@
     .c-flow { width: 9%; }
     .c-state { width: 9%; }
     .c-api { width: 8%; }
-    .c-job { width: 10%; }
+    .c-job { width: 13%; }
     .w-actions { width: 56px; }
     td { overflow: hidden; text-overflow: ellipsis; }
     .device-text .name { display: flex; align-items: center; min-width: 0; }
@@ -209,6 +209,21 @@
     .lc-id { width: 150px; }
     td { overflow: hidden; text-overflow: ellipsis; }
   }
+
+  // running job: spinner, mini progress bar (table) and banner (details)
+  .spin {
+    flex: none; display: inline-block; box-sizing: border-box; width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px;
+    border: 2px solid rgba(21, 101, 192, .25); border-top-color: #1565c0; border-radius: 50%; animation: rugix-spin .8s linear infinite;
+  }
+  .sub.job-active { color: #1565c0; font-weight: 500; }
+  .chip.run { white-space: nowrap; }
+  .sub.job-title { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip.run { color: #1565c0; background: rgba(33, 150, 243, .12); }
+  .mini-bar { width: 90px; height: 4px; margin-top: 4px; border-radius: 2px; background: rgba(0, 0, 0, .1); overflow: hidden; span { display: block; height: 100%; background: #1565c0; transition: width .4s; } }
+  .job-banner { margin: 12px 24px 0; padding: 10px 16px; border-radius: 4px; background: rgba(33, 150, 243, .1); color: #0d47a1; }
+  .jb-head { display: flex; align-items: center; gap: 8px; min-height: 32px; .spin { margin-right: 2px; } }
+  .jb-bar { height: 6px; margin-top: 6px; border-radius: 3px; background: rgba(0, 0, 0, .12); overflow: hidden; span { display: block; height: 100%; background: #1565c0; transition: width .4s; } }
+  @keyframes rugix-spin { to { transform: rotate(360deg); } }
 
   .log-paginator { background: transparent; }
 
@@ -415,7 +430,7 @@
     border-bottom: 1px solid rgba(0, 0, 0, .12);
   }
 
-  .banner ~ .tabbar-wrap { margin-top: 12px; }
+  .banner ~ .tabbar-wrap, .job-banner ~ .tabbar-wrap { margin-top: 12px; }
 
   .tabbar-wrap {
     position: relative;

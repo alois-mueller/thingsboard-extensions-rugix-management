@@ -13,6 +13,7 @@ import {
   RugixDaemonFeatures,
   RugixDevice,
   RugixJobEvent,
+  RugixJobState,
   RugixJobStatus,
   RugixKeySettings,
   RugixSlot
@@ -418,4 +419,35 @@ export function fixMojibake(text: string): string {
   } catch {
     return text;
   }
+}
+
+
+/** Applies one job event to the running job state of a device (events must be applied in time order). */
+export function foldJobEvent(state: RugixJobState | undefined, e: RugixJobEvent): RugixJobState | undefined {
+  if (!e.jobId) {
+    return state;
+  }
+  let st = state;
+  if (!st || st.id !== e.jobId) {
+    st = {id: e.jobId, title: '', kind: '', status: 'unknown', progress: null, failure: '', ts: e.ts, partial: true};
+  } else {
+    st = {...st};
+  }
+  st.ts = Math.max(st.ts, e.ts);
+  if (e.type === 'job-changed') {
+    st.title = e.title || st.title;
+    st.kind = e.kind || st.kind;
+    st.status = e.status || st.status;
+    st.failure = e.failureMessage || st.failure;
+    st.partial = false;
+    if (st.status === 'succeeded' && st.progress !== null) {
+      st.progress = 100;
+    }
+  } else if (e.type === 'install-progress' && e.progress !== undefined && !isNaN(e.progress)) {
+    st.progress = Math.max(0, Math.min(100, e.progress));
+    if (st.status === 'unknown') {
+      st.status = 'running';
+    }
+  }
+  return st;
 }

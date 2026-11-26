@@ -243,6 +243,8 @@ export interface RugixDevice {
   commitPending: boolean;
   /** Latest `jobEvent` telemetry. */
   lastJobEvent?: RugixJobEvent;
+  /** Current / most recent job incl. progress (derived from the job events). */
+  job?: RugixJobState;
   /** ms epoch of the last known activity (offline since / last seen). */
   lastSeen?: number;
   /** ms epoch of the last change of the `active` attribute (online since / offline since). */
@@ -265,6 +267,21 @@ export interface RugixJobEvent {
   line?: string;
   stream?: string;
   message?: string;
+}
+
+/** Current / most recent job of a device, folded from the `jobEvent` telemetry stream. */
+export interface RugixJobState {
+  id: string;
+  title: string;
+  kind: string;
+  status: RugixJobStatus;
+  /** Installation progress in percent (system update / app install), `null` if not reported. */
+  progress: number | null;
+  failure: string;
+  /** Timestamp (ms) of the last event applied. */
+  ts: number;
+  /** Only part of the job's events were seen (title unknown) – the full history has to be loaded. */
+  partial?: boolean;
 }
 
 export type RugixSystemAction = 'reboot' | 'rebootSpare' | 'commit' | 'factoryReset';
