@@ -16,6 +16,8 @@ export interface RugixInstallDialogData {
   mode: 'system' | 'app';
   devices: RugixDevice[];
   settings: RugixWidgetSettings;
+  /** Channel target versions of the selected devices (firmware only): the matching package is preselected. */
+  targets?: string[];
 }
 
 export interface RugixInstallDialogResult {
@@ -108,6 +110,39 @@ export class RugixInstallDialogComponent implements OnInit {
     return names.length <= 3 ? names.join(', ') : `${names.slice(0, 2).join(', ')} +${names.length - 2} more`;
   }
 
+  /** The single channel target version of the selected devices (`undefined` when none or several). */
+  get targetVersion(): string | undefined {
+    const t = this.data.targets || [];
+    return t.length === 1 ? t[0] : undefined;
+  }
+
+  /** Firmware package matching the channel target. */
+  get targetPackage(): OtaPackageInfo | undefined {
+    return this.targetVersion ? this.packages.find(p => p.version === this.targetVersion) : undefined;
+  }
+
+  isTarget(p: OtaPackageInfo): boolean {
+    return !!this.targetVersion && p.version === this.targetVersion;
+  }
+
+  /** Hint about the channel target below the package selection. */
+  get targetNote(): { text: string; warn: boolean } | null {
+    const t = this.data.targets || [];
+    if (this.isSystem === false || !t.length || this.loadingPackages) {
+      return null;
+    }
+    if (t.length > 1) {
+      return {text: `The selected devices follow different channel targets (${t.join(', ')}) – choose the package for all of them.`, warn: true};
+    }
+    if (!this.targetPackage) {
+      return {text: `No firmware package with the channel target ${t[0]} found – add it in the Updates view or choose another one.`, warn: true};
+    }
+    if (!this.useCustomUrl && this.selectedPackage && this.selectedPackage.version !== t[0]) {
+      return {text: `This is not the channel target (${t[0]}).`, warn: true};
+    }
+    return {text: `Matches the channel target ${t[0]}.`, warn: false};
+  }
+
   get targetsTooltip(): string {
     return this.data.devices.length > 3 ? this.data.devices.map(d => d.label || d.name).join('\n') : '';
   }
@@ -130,7 +165,7 @@ export class RugixInstallDialogComponent implements OnInit {
       {ignoreLoading: true}).subscribe({
       next: page => {
         this.packages = (page.data || []).filter(p => p.type === type && !!p.url);
-        this.selectedPackage = this.packages[0] || null;
+        this.selectedPackage = this.targetPackage || this.packages[0] || null;
         this.useCustomUrl = !this.packages.length;
         this.loadingPackages = false;
       },

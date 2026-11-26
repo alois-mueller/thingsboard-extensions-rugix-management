@@ -849,6 +849,19 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   displayUrl = displayUrl;
 
+  /** Online devices that run an older version than their channel target, grouped by target version. */
+  get outdatedGroups(): { target: string; channels: string; devices: RugixDevice[] }[] {
+    const map = new Map<string, RugixDevice[]>();
+    for (const d of this.devices) {
+      if (d.active && d.firmware === 'outdated' && d.target) {
+        map.set(d.target, [...(map.get(d.target) || []), d]);
+      }
+    }
+    return Array.from(map.entries()).map(([target, devices]) => ({
+      target, devices, channels: Array.from(new Set(devices.map(d => this.channelOf(d)))).join(', ')
+    })).sort((a, b) => b.devices.length - a.devices.length);
+  }
+
   /** Release channels whose target version is this firmware package (comma separated, empty when none). */
   channelsOf(p: OtaPackageInfo): string {
     return Object.entries(this.settings.channels).filter(([, v]) => !!v && v === p.version).map(([k]) => k).join(', ');
@@ -1520,7 +1533,8 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     }
     this.dialog.open<RugixInstallDialogComponent, RugixInstallDialogData, RugixInstallDialogResult>(
       RugixInstallDialogComponent, {
-        data: {mode, devices, settings: this.settings},
+        data: {mode, devices, settings: this.settings,
+          targets: mode === 'system' ? Array.from(new Set(devices.map(d => d.target).filter((t): t is string => !!t))) : undefined},
         autoFocus: false, disableClose: true, maxWidth: '95vw'
       }).afterClosed().subscribe(result => {
       if (result?.failed?.length) {

@@ -14,8 +14,9 @@
       <mat-form-field appearance="outline" class="rugix-field">
         <mat-label>{{ isSystem ? 'Firmware package' : 'Software package' }}</mat-label>
         <mat-select [(ngModel)]="selectedPackage" name="package" [disabled]="loadingPackages || installing">
+          <mat-select-trigger>{{ selectedPackage?.title || selectedPackage?.tag }} <span class="version">– {{ selectedPackage?.version }}</span></mat-select-trigger>
           @for (p of packages; track p.id.id) {
-            <mat-option [value]="p">{{ p.title || p.tag }} <span class="version">– {{ p.version }}</span></mat-option>
+            <mat-option [value]="p">{{ p.title || p.tag }} <span class="version">– {{ p.version }}</span>@if (isTarget(p)) { <span class="target-tag">channel target</span> }</mat-option>
           }
         </mat-select>
         @if (loadingPackages) {
@@ -34,6 +35,7 @@
         }
       </mat-form-field>
     }
+    @if (targetNote; as n) { <div [class]="n.warn ? 'rugix-note' : 'rugix-note ok'">{{ n.text }}</div> }
     @if (urlProblem.error) { <div class="rugix-error">{{ urlProblem.error }}</div> }
     @if (urlProblem.warn) { <div class="rugix-note">{{ urlProblem.warn }}</div> }
     @if (packages.length) {

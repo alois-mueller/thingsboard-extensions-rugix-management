@@ -268,6 +268,19 @@
     <span class="fchip" role="button" tabindex="0" [class.on]="healthFilter === 'error'" (click)="toggleHealth('error')" (keydown.enter)="toggleHealth('error')"><span class="dot err"></span>Error · {{ fleetSummary.error }}</span>
     <span class="fchip-sep" aria-hidden="true"></span>
     <span class="fchip" role="button" tabindex="0" [class.on]="firmwareFilter" (click)="toggleFirmware()" (keydown.enter)="toggleFirmware()"><mat-icon class="fw-chip">upgrade</mat-icon>Outdated · {{ fleetSummary.outdated }}</span>
+    @if (allowed('install') && outdatedGroups.length) {
+      <span class="flex-1"></span>
+      @if (outdatedGroups.length === 1) {
+        <button mat-stroked-button type="button" class="upg-outdated" (click)="openInstall(outdatedGroups[0].devices, 'system')"><mat-icon>upgrade</mat-icon>Upgrade {{ outdatedGroups[0].devices.length }} to {{ outdatedGroups[0].target }}</button>
+      } @else {
+        <button mat-stroked-button type="button" class="upg-outdated" [matMenuTriggerFor]="outdatedMenu"><mat-icon>upgrade</mat-icon>Upgrade outdated</button>
+        <mat-menu #outdatedMenu="matMenu">
+          @for (g of outdatedGroups; track g.target) {
+            <button mat-menu-item (click)="openInstall(g.devices, 'system')"><mat-icon>system_update_alt</mat-icon>{{ g.devices.length }} {{ g.devices.length === 1 ? 'device' : 'devices' }} to {{ g.target }} ({{ g.channels }})</button>
+          }
+        </mat-menu>
+      }
+    }
     @if (filtersActive) {
       <button mat-button type="button" class="fclear" (click)="clearFilters()">Clear</button>
     }
@@ -483,6 +496,8 @@
               </div>
               <div class="kv"><span>Channel target</span>
                 <b [class.good]="d.firmware === 'current'" [class.warn]="d.firmware === 'outdated'">{{ d.target || 'not configured' }}@if (d.firmware === 'outdated') { · update available } @else if (d.firmware === 'current') { · up to date } @else if (d.firmware === 'ahead') { · device is newer }</b>
+              
+                @if (d.firmware === 'outdated' && d.active && allowed('install')) { <button mat-stroked-button type="button" class="upg-inline" (click)="openInstall([d], 'system')"><mat-icon>upgrade</mat-icon>Upgrade to {{ d.target }}</button> }
               </div>
               <div class="kv"><span>Rugix Ctrl</span><b>{{ d.hardware.rugixCtrl || '—' }}</b></div>
               <div class="kv"><span>Rugix Admin</span><b>{{ d.adminVersion || '—' }}</b></div>
