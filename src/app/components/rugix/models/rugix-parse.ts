@@ -558,6 +558,18 @@ export function channelTarget(channels: { [name: string]: string } | undefined, 
 }
 
 /** Problems of a bundle URL: `error` blocks, `warn` is a hint (plain http, credentials or a SAS token inside the URL). */
+/** Rugix accepts a backup profile name only as one plain path component. Returns an error text or null. */
+export function backupNameIssue(name: string): string | null {
+  const v = (name || '').trim();
+  if (!v) {
+    return null;
+  }
+  if (v === '.' || v === '..' || !/^[A-Za-z0-9._-]+$/.test(v)) {
+    return 'Use only letters, digits, "-", "_" and "." (no "/" or spaces).';
+  }
+  return null;
+}
+
 export function urlIssue(url: string, requireHttps = false): { error?: string; warn?: string } {
   const v = (url || '').trim();
   if (!v) {

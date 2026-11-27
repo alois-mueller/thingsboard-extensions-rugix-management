@@ -26,7 +26,7 @@ import {
 } from '../models/rugix.models';
 import { RugixAppGeneration, RugixAppInfo, RugixDaemonFeature, RugixJobEvent, RugixJobState } from '../models/rugix.models';
 import { RugixDonutSegment } from '../charts/rugix-donut.component';
-import { hashParts, isRebootJob, isTerminalStatus, channelTarget, CHANNEL_NAME, displayUrl, compareVersions, jobLabel, foldJobEvent, formatDateTime, fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots, firmwareState } from '../models/rugix-parse';
+import { backupNameIssue, hashParts, isRebootJob, isTerminalStatus, channelTarget, CHANNEL_NAME, displayUrl, compareVersions, jobLabel, foldJobEvent, formatDateTime, fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots, firmwareState } from '../models/rugix-parse';
 import { REVPI_ICON, RUGIX_LOGO } from '../models/rugix-icons';
 import { RugixJobHandle, RugixRpcService } from '../services/rugix-rpc.service';
 import {
@@ -1627,10 +1627,12 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       caution: info.caution,
       acknowledge: info.ack,
       reason: {required: this.settings.security.requireReason},
+      danger: info.action === 'factoryReset' ? {headline: `All persistent data on "${device.label || device.name}" is erased`,
+        items: ['Configuration, app data and the root filesystem overlay are reset.', 'The device reboots immediately.', 'Without a backup this cannot be undone.']} : undefined,
       typeToConfirm: info.action === 'factoryReset' ? (device.label || device.name) : undefined,
       transition: this.bootTransition(info, device),
       checkbox: info.action === 'factoryReset' ? {label: 'Keep the old state as a backup profile', checked: true} : undefined,
-      textWhenChecked: info.action === 'factoryReset' ? {label: 'Backup name (optional)'} : undefined
+      textWhenChecked: info.action === 'factoryReset' ? {label: 'Backup name (optional)', validate: backupNameIssue} : undefined
     };
     this.dialog.open<RugixConfirmDialogComponent, RugixConfirmDialogData, RugixConfirmDialogResult>(
       RugixConfirmDialogComponent, {data, autoFocus: false, maxWidth: '95vw'}).afterClosed().subscribe(result => {

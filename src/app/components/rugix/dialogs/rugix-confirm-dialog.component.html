@@ -12,17 +12,29 @@
       <span class="slot">{{ t.to }}</span>
     </div>
   }
+  @if (data.danger; as dg) {
+    <div class="rugix-danger">
+      <mat-icon>warning_amber</mat-icon>
+      <div>
+        <div class="danger-title">{{ dg.headline }}</div>
+        <ul>@for (i of dg.items; track i) { <li>{{ i }}</li> }</ul>
+      </div>
+    </div>
+  }
   @if (data.message) {
     <p class="rugix-message">{{ data.message }}</p>
   }
   @if (data.checkbox) {
-    <mat-checkbox (change)="blurSoon()" [(ngModel)]="checked">{{ data.checkbox.label }}</mat-checkbox>
-  }
-  @if (data.textWhenChecked && checked) {
-    <mat-form-field appearance="outline" class="rugix-field">
-      <mat-label>{{ data.textWhenChecked.label }}</mat-label>
-      <input matInput [(ngModel)]="text">
-    </mat-form-field>
+    <div class="rugix-option">
+      <mat-checkbox (change)="blurSoon()" [(ngModel)]="checked">{{ data.checkbox.label }}</mat-checkbox>
+      @if (data.textWhenChecked && checked) {
+        <mat-form-field appearance="outline" class="rugix-field">
+          <mat-label>{{ data.textWhenChecked.label }}</mat-label>
+          <input matInput name="backupName" maxlength="60" autocomplete="off" [(ngModel)]="text">
+          @if (textError) { <mat-hint class="rugix-hint-error">{{ textError }}</mat-hint> }
+        </mat-form-field>
+      }
+    </div>
   }
   @if (data.reason) {
     <mat-form-field appearance="outline" class="rugix-field">
@@ -31,10 +43,13 @@
     </mat-form-field>
   }
   @if (data.typeToConfirm) {
-    <mat-form-field appearance="outline" class="rugix-field">
-      <mat-label>Type "{{ data.typeToConfirm }}" to confirm</mat-label>
-      <input matInput name="typed" autocomplete="off" [(ngModel)]="typed">
-    </mat-form-field>
+    <div class="rugix-typeconfirm">
+      <div class="type-text">To confirm, type the device name <code>{{ data.typeToConfirm }}</code> below.</div>
+      <mat-form-field appearance="outline" class="rugix-field">
+        <input matInput name="typed" autocomplete="off" [placeholder]="data.typeToConfirm" aria-label="Device name" [(ngModel)]="typed">
+        @if (typed.trim() === data.typeToConfirm) { <mat-icon matSuffix class="ok-icon">check_circle</mat-icon> }
+      </mat-form-field>
+    </div>
   }
   @if (data.acknowledge) {
     <mat-checkbox (change)="blurSoon()" class="rugix-ack" [(ngModel)]="acknowledged">{{ data.acknowledge }}</mat-checkbox>
