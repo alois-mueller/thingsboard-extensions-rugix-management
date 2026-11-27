@@ -731,8 +731,7 @@
                       <td><div class="name">{{ c.id }}</div>@if (c.path) { <div class="sub path" [matTooltip]="c.path">{{ c.path }}</div> }</td>
                       <td class="nowrap">{{ c.version || '—' }}</td>
                       <td>
-                        <span class="kind" [class]="kindClass(c.kind)">{{ c.kind }}</span>
-                        @if (c.app) { <div class="sub">{{ c.app }}{{ c.generation !== undefined ? ' · gen ' + c.generation : '' }}</div> }
+                        <span class="kind" [class]="kindClass(c.kind)" [matTooltip]="c.app ? c.app + (c.generation !== undefined ? ' · gen ' + c.generation : '') : ''" matTooltipPosition="above">{{ c.kind }}</span>
                       </td>
                       <td class="c-md">
                         <div class="caps">
