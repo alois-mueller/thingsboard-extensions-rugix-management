@@ -142,6 +142,8 @@ device, turns the answers into attributes (`apps.apps`, `boot.*`, `state.*`, `sl
 nodes convert this (quotes, `True` / `False` / `None`). Strings that contain a `'` can break that conversion. The answers of a job that reboots the device may time out,
 the next scan then fills in the data.
 
+`node docs/rugix/gateway/verify-rule-chain.js docs/rugix/gateway/rugix-admin-connector.json` checks the chain scripts offline against the wire format of Rugix Admin (object, JSON text and Python text answers, error answers, job events) and against the keys of the connector mapping.
+
 Tested against the local simulator (answers as Python text, attributes kept stale on purpose): after an app activation the generation, slots and boot groups were updated within
 two seconds. Not tested with a real gateway.
 

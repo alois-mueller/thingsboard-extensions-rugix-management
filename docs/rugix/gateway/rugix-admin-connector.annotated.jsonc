@@ -130,9 +130,10 @@
         "deviceNameJsonExpression": "Testanlage_Felix_Rugix",
         "deviceTypeJsonExpression": "RevolutionPi_Rugix",
         "attributes": [
+          // <<< GEAENDERT: type string -> boolean: sonst macht das Gateway aus true den Text "True"
           {
             "key": "daemon.dangerouslyInsecure",
-            "type": "string",
+            "type": "boolean",
             "value": "${dangerouslyInsecure}"
           },
           {

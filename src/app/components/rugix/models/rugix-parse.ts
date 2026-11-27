@@ -36,7 +36,12 @@ export function parseJson<T = any>(value: any, fallback?: T): T {
 }
 
 export function toBoolean(value: any): boolean {
-  return value === true || value === 'true' || value === 1 || value === '1';
+  // the gateway turns a top-level boolean of type `string` into the Python text "True" / "False"
+  if (typeof value === 'string') {
+    const v = value.trim().toLowerCase();
+    return v === 'true' || v === '1';
+  }
+  return value === true || value === 1;
 }
 
 export function parseSlots(slots: { [name: string]: any }): RugixSlot[] {
