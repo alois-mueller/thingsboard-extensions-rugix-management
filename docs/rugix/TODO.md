@@ -31,6 +31,9 @@ Everything below is what is still open, roughly in priority order.
 - [ ] More package metadata in `rugix-meta` (see README): architecture / hardware compatibility with a warning in the install dialog, minimum running version, release date.
 - [ ] Alarms through a rule chain for failed jobs (also see CRA/IEC 62443 gaps in `COMPLIANCE.md`).
 
+- [ ] Verify the rule chain *Rugix_refresh_after_job* against a real gateway (format of the RPC answers, reboot jobs).
+- [ ] Show an app's `stopped` / `unhealthy` status in the Overview alerts, evaluate auto-commit also from the refreshed boot info.
+
 ## 3. Decisions left open
 - [ ] Block actions on a device while a job runs? Not built: a stuck "running" state would lock the device.
 - [ ] Treat "outdated" as an own status (current) or as a warning in the health filter?

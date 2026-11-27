@@ -421,6 +421,45 @@
       "httpHeaders": {
         "Content-Type": "application/json"
       }
+    },
+    {
+      "deviceNameFilter": "Testanlage_Felix_Rugix",
+      "methodFilter": "getSystemInfo",
+      "requestUrlExpression": "api/system/info",
+      "httpMethod": "GET",
+      "requestValueExpression": "{}",
+      "responseTimeout": 10,
+      "timeout": 5,
+      "tries": 1,
+      "httpHeaders": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "deviceNameFilter": "Testanlage_Felix_Rugix",
+      "methodFilter": "getApps",
+      "requestUrlExpression": "api/apps",
+      "httpMethod": "GET",
+      "requestValueExpression": "{}",
+      "responseTimeout": 10,
+      "timeout": 5,
+      "tries": 1,
+      "httpHeaders": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "deviceNameFilter": "Testanlage_Felix_Rugix",
+      "methodFilter": "getComponents",
+      "requestUrlExpression": "api/components",
+      "httpMethod": "GET",
+      "requestValueExpression": "{}",
+      "responseTimeout": 10,
+      "timeout": 5,
+      "tries": 1,
+      "httpHeaders": {
+        "Content-Type": "application/json"
+      }
     }
   ]
 }

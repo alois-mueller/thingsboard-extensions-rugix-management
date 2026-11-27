@@ -125,6 +125,26 @@ dashboard access), so restrict who may open the dashboard or send RPC as well.
 
 Offline devices show "offline since" (timestamp of the `active` attribute, or the optional `lastActivityTime` data key); online devices show "online since" on hover.
 
+## Rule chain: refresh after jobs
+
+The gateway connector polls Rugix Admin with a scan period (`/api/apps` every 60 s, `/api/system/info` and `/api/components` every 600 s). After
+an install or action, attributes like the app generation, boot groups or slots stay old until the next scan. To refresh them as soon as a job has
+finished successfully:
+
+1. Add the three RPCs `getSystemInfo`, `getApps` and `getComponents` to the connector (see [gateway/rugix-admin-connector.json](gateway/rugix-admin-connector.json)).
+2. Import [gateway/Rugix_refresh_after_job.rulechain.json](gateway/Rugix_refresh_after_job.rulechain.json) as a new rule chain *Rugix_refresh_after_job*.
+3. In the rule chain that handles the Rugix devices (the one with the *Message Type Switch*) add a **Rule Chain** node that points to *Rugix_refresh_after_job* and connect
+   *Message Type Switch* → *Rule Chain* node with the relation **Post telemetry** (keep the existing connection to *Save Timeseries*).
+
+What it does: the node *job succeeded* checks every `jobEvent` telemetry (`job-changed` with status `succeeded`). On a hit it sends the three RPCs to the
+device, turns the answers into attributes (`apps.apps`, `boot.*`, `state.*`, `slots`, `slots.<name>`, `components.*`, client scope like the connector) and telemetry
+(`boot.activeGroup`, `boot.defaultGroup`) and saves them. The gateway returns RPC answers as text, often as a Python dict (`{'apps': [...]}`); the transform
+nodes convert this (quotes, `True` / `False` / `None`). Strings that contain a `'` can break that conversion. The answers of a job that reboots the device may time out,
+the next scan then fills in the data.
+
+Tested against the local simulator (answers as Python text, attributes kept stale on purpose): after an app activation the generation, slots and boot groups were updated within
+two seconds. Not tested with a real gateway.
+
 ## Gateway connector – recommended changes
 Derived from `rugix-request-connector-v1-0`. A complete corrected connector is in [gateway/rugix-admin-connector.json](gateway/rugix-admin-connector.json) (changes marked in [gateway/rugix-admin-connector.annotated.jsonc](gateway/rugix-admin-connector.annotated.jsonc); RPC URLs are left as they were, without leading `/`):
 
@@ -137,7 +157,7 @@ Derived from `rugix-request-connector-v1-0`. A complete corrected connector is i
 | 5 | `installUpdateFromUrl` / `installAppFromUrl` have no `responseValueExpression` | Fine for this extension (it passes its own job UUID, Rugix accepts it in the path); optionally add `${job.id}` |
 | 6 | RPC URLs lack leading `/` (`api/system/...`) while mappings have it | Make consistent (`/api/...`) |
 | 7 | `jobEvent` telemetry gets one row per output line | Set a telemetry TTL / retention for the device profile |
-| 8 | `auto_commit` toggle in the old dashboard only stores an attribute | Nothing consumes it – add a rule chain (activeGroup ≠ defaultGroup & auto_commit → RPC `commit`) |
+| 8 | `auto_commit` toggle | The device details have an *Auto-commit* switch (server attribute `auto_commit`, enabling asks for confirmation). A rule chain has to consume it: after a device (re)connected and runs a different boot group than the default one it sends `commit` (see your device rule chain: delay, fetch attribute, filter, RPC) |
 | 10 | Daemon policy and Admin version are not polled | Add `GET /api/daemon` → attribute `daemon.features = ${features}` and `daemon.dangerouslyInsecure = ${dangerouslyInsecure}` (the whole response body in `daemon.features` also works) and `GET /api/info` → attribute `admin.version = ${version}` (**not** `api.version`: `/api/info` returns the version of Rugix Admin). Add the data keys `daemon.features`, `daemon.dangerouslyInsecure` and `admin.version` to the widget. Used to disable actions the daemon switched off, to show the "security bypasses enabled" warning and the Rugix Admin version |
 | 11 | No RPC for `GET /api/apps/{app}` | Add a server side RPC `appInfo` (GET `/api/apps/${params.app}`, return the response body). Used for the generations list of an app (Apps tab → click a row) incl. lifecycle state. Activating a generation uses the existing `appActivate` RPC with query `generation=<n>` |
 | 12 | Query options | Rugix Admin reads the query parameters of the install and action endpoints in camelCase (`bundleHash`, `bootGroup`, `keepOverlay`, `backupName`, ... as used by its own frontend and tests). The widget sends them in camelCase through `${params.query}`; keep `?${params.query}` in the RPC URLs |

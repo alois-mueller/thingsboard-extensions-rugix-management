@@ -1,0 +1,378 @@
+{
+  "ruleChain": {
+    "name": "Rugix_refresh_after_job",
+    "type": "CORE",
+    "firstRuleNodeId": null,
+    "root": false,
+    "debugMode": false,
+    "configuration": null,
+    "additionalInfo": {
+      "description": "After a Rugix job succeeded: read system info, apps and components from Rugix Admin (RPC) and store them as attributes / telemetry of the device. Called by a Rule Chain node from the device rule chain (relation Post telemetry)."
+    }
+  },
+  "metadata": {
+    "version": 1,
+    "firstNodeIndex": 0,
+    "nodes": [
+      {
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "job succeeded",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "JS",
+          "jsScript": "var ev = msg.jobEvent;\nif (ev === undefined || ev === null) { return false; }\nif (typeof ev === 'string') { try { ev = JSON.parse(ev); } catch (e) { return false; } }\nreturn ev.type === 'job-changed' && !!ev.job && !!ev.job.status && ev.job.status.status === 'succeeded';",
+          "tbelScript": "return true;"
+        },
+        "additionalInfo": {
+          "description": "Fires when a Rugix job finished successfully (jobEvent telemetry of the SSE connector)",
+          "layoutX": 150,
+          "layoutY": 300
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.telemetry.TbMsgAttributesNode",
+        "name": "save attributes (client scope)",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 3,
+        "configuration": {
+          "processingSettings": {
+            "type": "ON_EVERY_MESSAGE"
+          },
+          "scope": "CLIENT_SCOPE",
+          "notifyDevice": false,
+          "sendAttributesUpdatedNotification": false,
+          "updateAttributesOnlyOnValueChange": true
+        },
+        "additionalInfo": {
+          "description": "Same scope as the attributes of the gateway connector",
+          "layoutX": 1100,
+          "layoutY": 300
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.telemetry.TbMsgTimeseriesNode",
+        "name": "save telemetry",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 1,
+        "configuration": {
+          "defaultTTL": 0,
+          "useServerTs": false,
+          "processingSettings": {
+            "type": "ON_EVERY_MESSAGE"
+          }
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 1100,
+          "layoutY": 500
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.transform.TbTransformMsgNode",
+        "name": "create rpc getSystemInfo",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "JS",
+          "jsScript": "var _msg = {};\nvar _metadata = {};\n\n_msg.method = \"getSystemInfo\";\n_msg.params = \"null\";\n\n_metadata.oneway = \"false\";\n_metadata.deviceType = metadata.deviceType;\n_metadata.deviceName = metadata.deviceName;\n_metadata.expirationTime = String(Date.now() + 60000);\n\n_metadata.requestUUID = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n    var r = Math.floor(Math.random() * 16);\n    var v = c === 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n});\n\nreturn {\n    msg: _msg,\n    metadata: _metadata,\n    msgType: \"RPC_CALL_FROM_SERVER_TO_DEVICE\"\n};",
+          "tbelScript": "return {msg: msg, metadata: metadata, msgType: msgType};"
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 400,
+          "layoutY": 150
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.rpc.TbSendRPCRequestNode",
+        "name": "rpc getSystemInfo",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "timeoutInSeconds": 60
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 650,
+          "layoutY": 150
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.transform.TbTransformMsgNode",
+        "name": "system info to attributes",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "JS",
+          "jsScript": "function norm(v) {\n    if (typeof v !== 'string') { return v; }\n    try { return JSON.parse(v); } catch (e) {\n        return JSON.parse(v.replace(/\\bTrue\\b/g, 'true').replace(/\\bFalse\\b/g, 'false').replace(/\\bNone\\b/g, 'null').replace(/'/g, '\"'));\n    }\n}\nvar r = norm(msg.result !== undefined ? msg.result : msg);\nif (r && typeof r === 'object' && !Array.isArray(r) && r.result !== undefined && Object.keys(r).length === 1) { r = norm(r.result); }\nvar a = {};\nif (r.boot) { a['boot.bootFlow'] = r.boot.bootFlow; a['boot.groups'] = r.boot.groups; }\nif (r.state) { a['state.status'] = r.state.status; a['state.dataPartition'] = r.state.dataPartition; a['state.message'] = r.state.message; a['state.ephemeral'] = r.state.ephemeral; }\nif (r.slots) { a['slots'] = r.slots; for (var s in r.slots) { a['slots.' + s] = r.slots[s]; } }\nvar out = {};\nfor (var k in a) { if (a[k] !== undefined && a[k] !== null) { out[k] = a[k]; } }\nreturn { msg: out, metadata: metadata, msgType: \"POST_ATTRIBUTES_REQUEST\" };",
+          "tbelScript": "return {msg: msg, metadata: metadata, msgType: msgType};"
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 900,
+          "layoutY": 100
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.transform.TbTransformMsgNode",
+        "name": "boot groups to telemetry",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "JS",
+          "jsScript": "function norm(v) {\n    if (typeof v !== 'string') { return v; }\n    try { return JSON.parse(v); } catch (e) {\n        return JSON.parse(v.replace(/\\bTrue\\b/g, 'true').replace(/\\bFalse\\b/g, 'false').replace(/\\bNone\\b/g, 'null').replace(/'/g, '\"'));\n    }\n}\nvar r = norm(msg.result !== undefined ? msg.result : msg);\nif (r && typeof r === 'object' && !Array.isArray(r) && r.result !== undefined && Object.keys(r).length === 1) { r = norm(r.result); }\nvar t = {};\nif (r.boot) { t['boot.activeGroup'] = r.boot.activeGroup; t['boot.defaultGroup'] = r.boot.defaultGroup; }\nvar out = {};\nfor (var k in t) { if (t[k] !== undefined && t[k] !== null) { out[k] = t[k]; } }\nreturn { msg: out, metadata: metadata, msgType: \"POST_TELEMETRY_REQUEST\" };",
+          "tbelScript": "return {msg: msg, metadata: metadata, msgType: msgType};"
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 900,
+          "layoutY": 200
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.transform.TbTransformMsgNode",
+        "name": "create rpc getApps",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "JS",
+          "jsScript": "var _msg = {};\nvar _metadata = {};\n\n_msg.method = \"getApps\";\n_msg.params = \"null\";\n\n_metadata.oneway = \"false\";\n_metadata.deviceType = metadata.deviceType;\n_metadata.deviceName = metadata.deviceName;\n_metadata.expirationTime = String(Date.now() + 60000);\n\n_metadata.requestUUID = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n    var r = Math.floor(Math.random() * 16);\n    var v = c === 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n});\n\nreturn {\n    msg: _msg,\n    metadata: _metadata,\n    msgType: \"RPC_CALL_FROM_SERVER_TO_DEVICE\"\n};",
+          "tbelScript": "return {msg: msg, metadata: metadata, msgType: msgType};"
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 400,
+          "layoutY": 300
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.rpc.TbSendRPCRequestNode",
+        "name": "rpc getApps",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "timeoutInSeconds": 60
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 650,
+          "layoutY": 300
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.transform.TbTransformMsgNode",
+        "name": "apps to attributes",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "JS",
+          "jsScript": "function norm(v) {\n    if (typeof v !== 'string') { return v; }\n    try { return JSON.parse(v); } catch (e) {\n        return JSON.parse(v.replace(/\\bTrue\\b/g, 'true').replace(/\\bFalse\\b/g, 'false').replace(/\\bNone\\b/g, 'null').replace(/'/g, '\"'));\n    }\n}\nvar r = norm(msg.result !== undefined ? msg.result : msg);\nif (r && typeof r === 'object' && !Array.isArray(r) && r.result !== undefined && Object.keys(r).length === 1) { r = norm(r.result); }\nvar a = {};\na['apps.apps'] = Array.isArray(r) ? r : r.apps;\nvar out = {};\nfor (var k in a) { if (a[k] !== undefined && a[k] !== null) { out[k] = a[k]; } }\nreturn { msg: out, metadata: metadata, msgType: \"POST_ATTRIBUTES_REQUEST\" };",
+          "tbelScript": "return {msg: msg, metadata: metadata, msgType: msgType};"
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 900,
+          "layoutY": 300
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.transform.TbTransformMsgNode",
+        "name": "create rpc getComponents",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "JS",
+          "jsScript": "var _msg = {};\nvar _metadata = {};\n\n_msg.method = \"getComponents\";\n_msg.params = \"null\";\n\n_metadata.oneway = \"false\";\n_metadata.deviceType = metadata.deviceType;\n_metadata.deviceName = metadata.deviceName;\n_metadata.expirationTime = String(Date.now() + 60000);\n\n_metadata.requestUUID = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n    var r = Math.floor(Math.random() * 16);\n    var v = c === 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n});\n\nreturn {\n    msg: _msg,\n    metadata: _metadata,\n    msgType: \"RPC_CALL_FROM_SERVER_TO_DEVICE\"\n};",
+          "tbelScript": "return {msg: msg, metadata: metadata, msgType: msgType};"
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 400,
+          "layoutY": 450
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.rpc.TbSendRPCRequestNode",
+        "name": "rpc getComponents",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "timeoutInSeconds": 60
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 650,
+          "layoutY": 450
+        }
+      },
+      {
+        "type": "org.thingsboard.rule.engine.transform.TbTransformMsgNode",
+        "name": "components to attributes",
+        "debugSettings": {
+          "failuresEnabled": true,
+          "allEnabled": false,
+          "allEnabledUntil": 0
+        },
+        "singletonMode": false,
+        "queueName": null,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "JS",
+          "jsScript": "function norm(v) {\n    if (typeof v !== 'string') { return v; }\n    try { return JSON.parse(v); } catch (e) {\n        return JSON.parse(v.replace(/\\bTrue\\b/g, 'true').replace(/\\bFalse\\b/g, 'false').replace(/\\bNone\\b/g, 'null').replace(/'/g, '\"'));\n    }\n}\nvar r = norm(msg.result !== undefined ? msg.result : msg);\nif (r && typeof r === 'object' && !Array.isArray(r) && r.result !== undefined && Object.keys(r).length === 1) { r = norm(r.result); }\nvar a = {};\na['components.roots'] = r.roots; a['components.components'] = r.components; a['components.consistent'] = r.consistent; a['components.problems'] = r.problems;\nvar out = {};\nfor (var k in a) { if (a[k] !== undefined && a[k] !== null) { out[k] = a[k]; } }\nreturn { msg: out, metadata: metadata, msgType: \"POST_ATTRIBUTES_REQUEST\" };",
+          "tbelScript": "return {msg: msg, metadata: metadata, msgType: msgType};"
+        },
+        "additionalInfo": {
+          "description": "",
+          "layoutX": 900,
+          "layoutY": 450
+        }
+      }
+    ],
+    "connections": [
+      {
+        "fromIndex": 0,
+        "toIndex": 3,
+        "type": "True"
+      },
+      {
+        "fromIndex": 3,
+        "toIndex": 4,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 4,
+        "toIndex": 5,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 4,
+        "toIndex": 6,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 5,
+        "toIndex": 1,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 6,
+        "toIndex": 2,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 0,
+        "toIndex": 7,
+        "type": "True"
+      },
+      {
+        "fromIndex": 7,
+        "toIndex": 8,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 8,
+        "toIndex": 9,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 9,
+        "toIndex": 1,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 0,
+        "toIndex": 10,
+        "type": "True"
+      },
+      {
+        "fromIndex": 10,
+        "toIndex": 11,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 11,
+        "toIndex": 12,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 12,
+        "toIndex": 1,
+        "type": "Success"
+      }
+    ],
+    "ruleChainConnections": null
+  }
+}
