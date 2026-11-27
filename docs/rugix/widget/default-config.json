@@ -46,6 +46,12 @@
           "settings": {}
         },
         {
+          "name": "daemon.dangerouslyInsecure",
+          "type": "attribute",
+          "label": "daemon.dangerouslyInsecure",
+          "settings": {}
+        },
+        {
           "name": "admin.version",
           "type": "attribute",
           "label": "admin.version",

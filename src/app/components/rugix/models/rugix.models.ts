@@ -84,6 +84,8 @@ export interface RugixKeySettings {
   dataPartition: string;
   apiVersion: string;
   daemonFeatures: string;
+  /** Optional separate attribute with the `dangerouslyInsecure` flag of `GET /api/daemon`. */
+  daemonInsecure: string;
   /** Optional: Rugix Admin build version (`GET /api/info` → `version`). */
   adminVersion: string;
   components: string;
@@ -143,6 +145,7 @@ export const DEFAULT_RUGIX_SETTINGS: RugixWidgetSettings = {
     dataPartition: 'state.dataPartition',
     apiVersion: 'api.version',
     daemonFeatures: 'daemon.features',
+    daemonInsecure: 'daemon.dangerouslyInsecure',
     adminVersion: 'admin.version',
     components: 'components.components',
     componentsConsistent: 'components.consistent',

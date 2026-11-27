@@ -260,6 +260,8 @@ export function applyValue(device: RugixDevice, key: string, raw: any, keys: Rug
     if (daemon.insecure !== undefined) {
       device.insecure = daemon.insecure;
     }
+  } else if (key === keys.daemonInsecure) {
+    device.insecure = toBoolean(raw);
   } else if (key === keys.channel) {
     // device-controlled value: only plain channel names (never keys like "constructor" or "__proto__")
     const name = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
