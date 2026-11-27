@@ -128,7 +128,7 @@
     <div class="rugix-labeled">
       <div class="lbl">Reason / ticket id{{ reasonRequired ? '' : ' (optional)' }}</div>
       <mat-form-field appearance="outline" class="rugix-field" subscriptSizing="dynamic">
-        <input matInput name="reason" maxlength="200" autocomplete="off" aria-label="Reason / ticket id" placeholder="e.g. TICKET-1234" [(ngModel)]="reason" [disabled]="installing">
+        <input matInput name="reason" maxlength="200" autocomplete="off" aria-label="Reason / ticket id" placeholder="e.g. ticket number or short reason" [(ngModel)]="reason" [disabled]="installing">
       </mat-form-field>
     </div>
     @if (bulkRequired) {
