@@ -1165,6 +1165,55 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     });
   }
 
+  autoCommitBusy = false;
+
+  /** Switch the automatic commit of a device (a rule chain commits a new system after the device reconnected). */
+  setAutoCommit(d: RugixDevice, enabled: boolean): void {
+    if (this.autoCommitBusy || !this.allowed('power')) {
+      return;
+    }
+    const apply = (reason?: string) => {
+      this.autoCommitBusy = true;
+      this.rpc.setAutoCommit(this.settings, d, enabled).pipe(takeUntil(this.destroy$)).subscribe({
+        next: () => {
+          d.autoCommit = enabled;
+          this.record(d, enabled ? 'autoCommitOn' : 'autoCommitOff', reason);
+          this.autoCommitBusy = false;
+          this.cd.markForCheck();
+          this.ctx.detectChanges();
+        },
+        error: err => {
+          this.autoCommitBusy = false;
+          this.ctx.showErrorToast(`Could not change auto-commit: ${err?.message || err}`);
+          d.autoCommit = !enabled;
+          this.cd.markForCheck();
+        }
+      });
+    };
+    if (!enabled) {
+      apply();
+      return;
+    }
+    this.dialog.open<RugixConfirmDialogComponent, RugixConfirmDialogData, RugixConfirmDialogResult>(
+      RugixConfirmDialogComponent, {
+        data: {
+          title: 'Enable auto-commit',
+          message: `"${d.label || d.name}" is committed automatically when it runs a different boot group than the default one after it reconnected. The previous system is then no longer the fallback.`,
+          confirmLabel: 'Enable auto-commit', caution: true,
+          reason: {required: this.settings.security.requireReason},
+          acknowledge: 'I understand that a new system is committed without a manual check.'
+        },
+        autoFocus: false, restoreFocus: true, maxWidth: '95vw'
+      }).afterClosed().subscribe(r => {
+      if (r) {
+        apply(r.reason);
+      } else {
+        // the toggle already moved: show the stored state again
+        this.cd.markForCheck();
+      }
+    });
+  }
+
   toggleHealth(h: 'healthy' | 'warning' | 'error'): void {
     this.healthFilter = this.healthFilter === h ? '' : h;
     this.pageIndex = 0;

@@ -209,6 +209,12 @@ export class RugixRpcService {
     return this.attributeService.saveEntityAttributes(entityId, AttributeScope.SERVER_SCOPE, [{key: settings.keys.channel, value: channel}]);
   }
 
+  /** Enable / disable the automatic commit (server-scope attribute of the device, evaluated by a rule chain). */
+  setAutoCommit(settings: RugixWidgetSettings, device: RugixDevice, enabled: boolean): Observable<any> {
+    const entityId = {entityType: EntityType.DEVICE, id: device.id} as EntityId;
+    return this.attributeService.saveEntityAttributes(entityId, AttributeScope.SERVER_SCOPE, [{key: settings.keys.autoCommit, value: enabled}]);
+  }
+
   /** Record who changed what (best effort): server attribute of the device, ThingsBoard keeps its own audit log as well. */
   recordChange(settings: RugixWidgetSettings, device: RugixDevice, entry: { action: string; user: string; reason?: string; detail?: string }): Observable<any> {
     const key = settings.security.changeAttribute;

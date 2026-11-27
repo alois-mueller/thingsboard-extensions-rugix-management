@@ -575,6 +575,8 @@
             <div class="kv"><span>Boot flow</span><b>{{ d.bootFlow || '—' }}</b></div>
             <div class="kv"><span>Active group</span><b>{{ d.activeGroup || '—' }}</b></div>
             <div class="kv"><span>Default group</span><b>{{ d.defaultGroup || '—' }}</b></div>
+            <div class="kv"><span>Auto-commit</span>
+              <b class="ac"><mat-slide-toggle [checked]="!!d.autoCommit" [disabled]="autoCommitBusy || !allowed('power')" (change)="setAutoCommit(d, $event.checked)" aria-label="Auto-commit"></mat-slide-toggle><span class="ac-text">{{ d.autoCommit ? 'on' : 'off' }}</span></b></div>
             <div class="kv"><span>Boot groups</span><b>{{ d.bootGroups.join(', ') || '—' }}</b></div>
             <div class="kv"><span>State management</span><b [class.good]="d.stateStatus === 'active'" [class.bad]="d.stateStatus === 'error'">{{ d.stateStatus || '—' }}</b></div>
             @if (d.stateMessage && d.stateStatus === 'error') { <div class="kv"><span>State message</span><b class="bad">{{ d.stateMessage }}</b></div> }
@@ -649,7 +651,7 @@
                     <td><b>{{ a.name }}</b></td>
                     <td class="nowrap">{{ a.version || '—' }}</td>
                     <td>{{ a.generation ?? '—' }}</td>
-                    <td><span class="pill" [class.ok]="appStatusLabel(a.status) === 'running'" [class.warn]="appStatusLabel(a.status) === 'unhealthy'" [class.err]="appStatusLabel(a.status) === 'failed'" [matTooltip]="appStatusMessage(a.status)">{{ appStatusLabel(a.status) }}</span></td>
+                    <td><span class="pill" [class.ok]="appStatusLabel(a.status) === 'running'" [class.warn]="appStatusLabel(a.status) === 'unhealthy'" [class.err]="appStatusLabel(a.status) === 'failed' || appStatusLabel(a.status) === 'stopped'" [matTooltip]="appStatusMessage(a.status)">{{ appStatusLabel(a.status) }}</span></td>
                     <td class="c-md">{{ a.orchestrator || '—' }}</td>
                     <td class="w-actions" (click)="$event.stopPropagation()">
                       <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="App actions" [disabled]="blocked(d, 'install', 'app_lifecycle')"><mat-icon>more_vert</mat-icon></button>

@@ -64,6 +64,12 @@
           "settings": {}
         },
         {
+          "name": "auto_commit",
+          "type": "attribute",
+          "label": "auto_commit",
+          "settings": {}
+        },
+        {
           "name": "admin.version",
           "type": "attribute",
           "label": "admin.version",

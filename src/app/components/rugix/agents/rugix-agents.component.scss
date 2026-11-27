@@ -159,6 +159,7 @@
     background-color: #c62828; color: #fff;
     &:disabled { background-color: rgba(0, 0, 0, .12); color: rgba(0, 0, 0, .38); }
   }
+  .kv b.ac { display: inline-flex; align-items: center; gap: 8px; font-weight: 400; }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   button:focus-visible, a:focus-visible, .fchip:focus-visible, .alert-row:focus-visible, .ch-opt:focus-visible { outline: 2px solid #305680; outline-offset: 2px; }
   tr[tabindex]:focus-visible { outline: 2px solid #305680; outline-offset: -2px; }

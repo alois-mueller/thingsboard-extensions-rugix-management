@@ -104,6 +104,8 @@ export interface RugixKeySettings {
   slotsAll: string;
   /** Error message of the state management (`state.message` of `GET /api/system/info`). */
   stateMessage: string;
+  /** Server attribute that enables the automatic commit of a new system (consumed by a rule chain). */
+  autoCommit: string;
 }
 
 /** Live job stream (gateway SSE connector). */
@@ -161,7 +163,8 @@ export const DEFAULT_RUGIX_SETTINGS: RugixWidgetSettings = {
     channel: 'rugix.channel',
     slotPrefix: 'slots.',
     slotsAll: 'slots',
-    stateMessage: 'state.message'
+    stateMessage: 'state.message',
+    autoCommit: 'auto_commit'
   },
   access: {
     install: ['SYS_ADMIN', 'TENANT_ADMIN', 'CUSTOMER_USER'],
@@ -271,6 +274,8 @@ export interface RugixDevice {
   defaultGroup?: string;
   stateStatus?: string;
   stateMessage?: string;
+  /** `auto_commit` server attribute (undefined = not set). */
+  autoCommit?: boolean;
   dataPartition?: string;
   apiVersion?: string;
   features?: any;

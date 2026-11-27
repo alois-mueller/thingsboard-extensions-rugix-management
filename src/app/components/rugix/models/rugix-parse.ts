@@ -249,6 +249,8 @@ export function applyValue(device: RugixDevice, key: string, raw: any, keys: Rug
   } else if (key === keys.stateStatus) {
     // devices report 'Active' / 'active' inconsistently
     device.stateStatus = typeof raw === 'string' ? raw.trim().toLowerCase() : raw;
+  } else if (key === keys.autoCommit) {
+    device.autoCommit = toBoolean(raw);
   } else if (key === keys.stateMessage) {
     device.stateMessage = typeof raw === 'string' && raw.trim() ? raw.trim() : undefined;
   } else if (key === keys.slotsAll) {
