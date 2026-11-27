@@ -83,21 +83,27 @@
         <tbody>
           @for (p of pkgList; track p.id.id) {
             <tr class="static-row">
-              <td><b>{{ p.title || p.version }}</b>@if (p.tag) { <div class="sub">{{ p.tag }}</div> }@if (pkgInfo(p); as info) {
-                @if (info.text) { <div class="sub">{{ info.text }}</div> }
-                @if (info.meta.signed !== undefined || info.meta.security || info.meta.size !== undefined || info.meta.notes) {
-                  <div class="pk-badges">
-                    @if (info.meta.signed === true) { <span class="pk-badge ok" matTooltip="The bundle is signed" matTooltipPosition="above" matTooltipClass="rugix-tip">signed</span> }
-                    @if (info.meta.signed === false) { <span class="pk-badge bad" matTooltip="The bundle is not signed" matTooltipPosition="above" matTooltipClass="rugix-tip">unsigned</span> }
+              <td>
+                @if (pkgInfo(p); as info) {
+                  <div class="pk-title">
+                    <b class="pk-name">{{ p.title || p.version }}</b>
+                    @if (info.meta.signed === true) { <mat-icon class="pk-ic ok" matTooltip="Signed bundle" matTooltipPosition="above" matTooltipClass="rugix-tip" aria-label="Signed bundle">verified_user</mat-icon> }
+                    @if (info.meta.signed === false) { <mat-icon class="pk-ic bad" matTooltip="Unsigned bundle" matTooltipPosition="above" matTooltipClass="rugix-tip" aria-label="Unsigned bundle">gpp_bad</mat-icon> }
                     @if (info.meta.security) {
-                      @if (info.meta.advisory) { <a class="pk-badge sec" [href]="info.meta.advisory" target="_blank" rel="noopener noreferrer" matTooltip="Security update – open advisory" matTooltipPosition="above" matTooltipClass="rugix-tip">security update</a> }
-                      @else { <span class="pk-badge sec">security update</span> }
+                      @if (info.meta.advisory) { <a class="pk-sec" [href]="info.meta.advisory" target="_blank" rel="noopener noreferrer" matTooltip="Open the advisory" matTooltipPosition="above" matTooltipClass="rugix-tip"><mat-icon>shield</mat-icon>Security</a> }
+                      @else { <span class="pk-sec"><mat-icon>shield</mat-icon>Security</span> }
                     }
-                    @if (info.meta.size !== undefined) { <span class="pk-badge">{{ formatBytes(info.meta.size) }}</span> }
-                    @if (info.meta.notes) { <a class="pk-badge" [href]="info.meta.notes" target="_blank" rel="noopener noreferrer">release notes</a> }
                   </div>
+                  @if (p.tag) { <div class="sub">{{ p.tag }}</div> }
+                  @if (info.text) { <div class="sub">{{ info.text }}</div> }
+                  @if (info.meta.size !== undefined || info.meta.notes) {
+                    <div class="pk-meta">
+                      @if (info.meta.size !== undefined) { <span><mat-icon>save</mat-icon>{{ formatBytes(info.meta.size) }}</span> }
+                      @if (info.meta.notes) { <a [href]="info.meta.notes" target="_blank" rel="noopener noreferrer"><mat-icon>article</mat-icon>Release notes</a> }
+                    </div>
+                  }
                 }
-              } </td>
+              </td>
               <td class="nowrap">{{ p.version }}</td>
               @if (view === 'updates') { <td class="pk-chan nowrap">{{ channelsOf(p) || '—' }}</td> }
               <td class="pk-url">
