@@ -24,13 +24,18 @@
     min-height: 52px;
   }
 
-  .rugix-plain-title {
+  .rugix-plain-title,
+  .rugix-plain-title.mat-mdc-dialog-title {
     margin: 0;
+    padding: 0;
+    flex: 1 1 auto;
     font-size: 20px;
     line-height: 28px;
     font-weight: 500;
     letter-spacing: .15px;
   }
+
+  .rugix-plain-title.mat-mdc-dialog-title::before { display: none; }
 
   .rugix-targets {
     display: flex;
@@ -41,10 +46,13 @@
     background: rgba(0, 0, 0, .04);
     font-size: 13px;
     min-width: 0;
+    color: rgba(0, 0, 0, .75);
 
-    mat-icon { flex: none; width: 18px; height: 18px; font-size: 18px; color: rgba(0, 0, 0, .54); }
+    mat-icon { flex: none; width: 18px; height: 18px; font-size: 18px; color: rgba(0, 0, 0, .62); }
     .targets-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   }
+
+  button:focus-visible, a:focus-visible { outline: 2px solid #305680; outline-offset: 2px; }
 
   .rugix-advanced-toggle {
     display: inline-flex;
@@ -94,7 +102,7 @@
     border-radius: 6px;
     background: rgba(0, 0, 0, .04);
 
-    .caption { flex: 1 1 auto; font-size: 12px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: rgba(0, 0, 0, .54); }
+    .caption { flex: 1 1 auto; font-size: 12px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: rgba(0, 0, 0, .66); }
     .slot {
       min-width: 40px; padding: 4px 12px; text-align: center; border-radius: 6px;
       border: 1px solid rgba(0, 0, 0, .2); background: #fff;
@@ -187,9 +195,9 @@
   }
 
   .rugix-fixed {
-    display: flex; align-items: center; gap: 10px; padding: 12px 16px; border: 1px solid rgba(0, 0, 0, .2); border-radius: 6px; background: #fff;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 12px 16px; border: 1px solid rgba(0, 0, 0, .2); border-radius: 6px; background: #fff;
     mat-icon { flex: none; color: rgba(0, 0, 0, .54); }
-    .fixed-text { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .fixed-text { flex: 1 1 140px; min-width: 0; overflow-wrap: anywhere; }
   }
 
   .rugix-danger {
@@ -210,13 +218,13 @@
   .rugix-labeled {
     display: flex; flex-direction: column; gap: 6px;
     .lbl { font-size: 14px; line-height: 20px; }
-    code { padding: 1px 6px; border-radius: 4px; background: rgba(0, 0, 0, .06); font: 500 13px 'Roboto Mono', monospace; }
+    code { padding: 1px 6px; border-radius: 4px; color: rgba(0, 0, 0, .87); background: rgba(0, 0, 0, .06); font: 500 13px 'Roboto Mono', monospace; }
   }
 
   .rugix-typeconfirm {
     display: flex; flex-direction: column; gap: 6px;
     .type-text { font-size: 14px; line-height: 20px; }
-    code { padding: 1px 6px; border-radius: 4px; background: rgba(0, 0, 0, .06); font: 500 13px 'Roboto Mono', monospace; user-select: all; }
+    code { padding: 1px 6px; border-radius: 4px; color: rgba(0, 0, 0, .87); background: rgba(0, 0, 0, .06); font: 500 13px 'Roboto Mono', monospace; user-select: all; }
     .ok-icon { color: #198038; }
   }
 
@@ -298,16 +306,25 @@
 
 // amber 'caution' button (warns before risky but reversible actions)
 .caution {
-  --mdc-filled-button-container-color: #ef6c00;
+  --mdc-filled-button-container-color: #b45309;
   --mdc-filled-button-label-text-color: #fff;
-  --mat-button-filled-container-color: #ef6c00;
+  --mat-button-filled-container-color: #b45309;
   --mat-button-filled-label-text-color: #fff;
-  --mat-filled-button-container-color: #ef6c00;
+  --mat-filled-button-container-color: #b45309;
   --mat-filled-button-label-text-color: #fff;
-  background-color: #ef6c00;
+  background-color: #b45309;
   color: #fff;
 }
 
+.mat-mdc-unelevated-button.mat-warn {
+  --mdc-filled-button-container-color: #c62828;
+  --mat-button-filled-container-color: #c62828;
+  --mat-filled-button-container-color: #c62828;
+  --mdc-filled-button-label-text-color: #fff;
+  background-color: #c62828;
+  color: #fff;
+}
+.mat-mdc-unelevated-button.mat-warn:disabled { background-color: rgba(0, 0, 0, .12); color: rgba(0, 0, 0, .38); }
 .caution:disabled, .caution[disabled] {
   --mdc-filled-button-disabled-container-color: rgba(0, 0, 0, .12);
   --mat-button-filled-disabled-container-color: rgba(0, 0, 0, .12);

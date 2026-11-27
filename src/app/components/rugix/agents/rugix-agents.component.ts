@@ -165,7 +165,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       RugixConfirmDialogComponent, {
         data: {title: `Activate generation ${g.number}`, message: '', confirmLabel: 'Activate', caution: true,
           acknowledge: `I understand that generation ${g.number} of app "${app.name}" becomes the active generation.`},
-        autoFocus: false, maxWidth: '95vw'
+        autoFocus: false, restoreFocus: true, maxWidth: '95vw'
       }).afterClosed().subscribe(r => {
       if (r) {
         this.track(d, `Activate ${app.name} (generation ${g.number})`, this.rpc.appAction(this.settings, d, 'appActivate', app.name, {generation: g.number}));
@@ -970,7 +970,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       return;
     }
     this.dialog.open<RugixPackageDialogComponent, RugixPackageDialogData, boolean>(RugixPackageDialogComponent, {
-      data: {type: this.pkgType as OtaUpdateType.FIRMWARE | OtaUpdateType.SOFTWARE, pkg, requireHttps: this.settings.security.requireHttps}, autoFocus: false, maxWidth: '95vw', width: '520px'
+      data: {type: this.pkgType as OtaUpdateType.FIRMWARE | OtaUpdateType.SOFTWARE, pkg, requireHttps: this.settings.security.requireHttps}, autoFocus: false, restoreFocus: true, maxWidth: '95vw', width: '520px'
     }).afterClosed().subscribe(saved => saved && this.loadPackages());
   }
 
@@ -985,7 +985,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
         message: `Remove "${pkg.title || pkg.version}" (${pkg.version}) from ThingsBoard?${used.length ? ` The ${used.join(', ')} channel still targets this version.` : ''}`,
         confirmLabel: 'Remove', warn: true,
         acknowledge: 'I understand that the package is deleted and can no longer be installed from here.'
-      }, autoFocus: false, maxWidth: '95vw'
+      }, autoFocus: false, restoreFocus: true, maxWidth: '95vw'
     }).afterClosed().subscribe(r => r && this.rpc.deletePackage(pkg.id.id).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => this.loadPackages(),
       error: err => this.ctx.showErrorToast(`Could not remove: ${err?.error?.message || err?.message || err}`)
@@ -1141,7 +1141,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
           acknowledge: 'I understand that the firmware status of this device is evaluated against the new channel.',
           transition: {from, to: channel, caption: 'Channel'}
         },
-        autoFocus: false, maxWidth: '95vw'
+        autoFocus: false, restoreFocus: true, maxWidth: '95vw'
       }).afterClosed().subscribe(r => r && this.applyChannel(d, channel));
   }
 
@@ -1621,7 +1621,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       RugixInstallDialogComponent, {
         data: {mode, devices, settings: this.settings,
           targets: mode === 'system' ? Array.from(new Set(devices.map(d => d.target).filter((t): t is string => !!t))) : undefined},
-        autoFocus: false, disableClose: true, maxWidth: '95vw'
+        autoFocus: false, restoreFocus: true, disableClose: true, maxWidth: '95vw'
       }).afterClosed().subscribe(result => {
       if (result?.failed?.length) {
         this.ctx.showErrorToast(`Could not start on ${result.failed.map(f => f.device.label || f.device.name).join(', ')}: ${result.failed[0].message}`, 'top', 'left');
@@ -1669,7 +1669,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       textWhenChecked: info.action === 'factoryReset' ? {label: 'Backup name (optional)', validate: backupNameIssue} : undefined
     };
     this.dialog.open<RugixConfirmDialogComponent, RugixConfirmDialogData, RugixConfirmDialogResult>(
-      RugixConfirmDialogComponent, {data, autoFocus: false, maxWidth: '95vw'}).afterClosed().subscribe(result => {
+      RugixConfirmDialogComponent, {data, autoFocus: false, restoreFocus: true, maxWidth: '95vw'}).afterClosed().subscribe(result => {
       if (!result) {
         return;
       }
@@ -1696,7 +1696,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       RugixConfirmDialogComponent, {
         data: {title: `${label} app`, message: `${label} app "${app.name}" on "${device.label || device.name}"?`,
           confirmLabel: label, warn, acknowledge: ack[action], reason: {required: this.settings.security.requireReason}},
-        autoFocus: false, maxWidth: '95vw'
+        autoFocus: false, restoreFocus: true, maxWidth: '95vw'
       }).afterClosed().subscribe(r => {
       if (r) {
         this.record(device, action, r.reason, app.name);
@@ -1713,7 +1713,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       RugixConfirmDialogComponent, {
         data: {title: 'Clean up all apps', message: `Remove unused generations of all apps on "${device.label || device.name}"?`,
           confirmLabel: 'Clean up', warn: true, acknowledge: 'I understand that old app generations are removed permanently.'},
-        autoFocus: false, maxWidth: '95vw'
+        autoFocus: false, restoreFocus: true, maxWidth: '95vw'
       }).afterClosed().subscribe(r => r && this.track(device, 'App garbage collection',
       this.rpc.appsGarbageCollect(this.settings, device)));
   }
@@ -1727,7 +1727,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   openJob(device: RugixDevice, jobId: string, title: string, since = Date.now() - 5000): void {
     this.dialog.open<RugixJobDialogComponent, RugixJobDialogData>(RugixJobDialogComponent, {
       data: {device, settings: this.settings, jobId, title, since},
-      autoFocus: false, maxWidth: '95vw'
+      autoFocus: false, restoreFocus: true, maxWidth: '95vw'
     });
   }
 

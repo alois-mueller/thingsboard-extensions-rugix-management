@@ -1,6 +1,6 @@
 <form (ngSubmit)="install()">
   <div class="rugix-plain-header">
-    <h2 class="rugix-plain-title">{{ isSystem ? 'Upgrade Firmware' : 'Install App' }}</h2>
+    <h2 mat-dialog-title class="rugix-plain-title">{{ isSystem ? 'Upgrade Firmware' : 'Install App' }}</h2>
     <span class="flex-1"></span>
     <button mat-icon-button type="button" (click)="cancel()" [disabled]="installing" aria-label="Close"><mat-icon>close</mat-icon></button>
   </div>
@@ -128,7 +128,7 @@
     <div class="rugix-labeled">
       <div class="lbl">Reason / ticket id{{ reasonRequired ? '' : ' (optional)' }}</div>
       <mat-form-field appearance="outline" class="rugix-field" subscriptSizing="dynamic">
-        <input matInput name="reason" maxlength="200" autocomplete="off" aria-label="Reason / ticket id" placeholder="e.g. ticket number or short reason" [(ngModel)]="reason" [disabled]="installing">
+        <input matInput name="reason" maxlength="200" autocomplete="off" aria-label="Reason / ticket id" placeholder="Ticket number or reason" [(ngModel)]="reason" [disabled]="installing">
       </mat-form-field>
     </div>
     @if (bulkRequired) {

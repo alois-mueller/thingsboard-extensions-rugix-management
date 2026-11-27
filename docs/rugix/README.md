@@ -73,6 +73,12 @@ The channel of a device is its server-scope attribute `rugix.channel` (add it as
 ### Updates and Apps (OTA packages)
 The two views list and manage ThingsBoard OTA packages (*Firmware* → Updates, *Software* → Apps). A package needs a title, version, device profile and an **external bundle URL** (Rugix pulls the bundle itself, uploaded files cannot be installed). ThingsBoard treats title, version, tag and URL as immutable and only allows changing the description, so *Edit* replaces the package (removes and re-adds it, restoring the old one if adding fails) when one of those fields changes. Users in `access.packages` (default `TENANT_ADMIN`) can add / edit / remove, everybody else sees the lists read-only. Removing a firmware version that a channel still targets shows a warning.
 
+### Accessibility and small screens
+
+Tested with Playwright in Chromium (phone and tablet profiles from 320 px, see `local-test/e2e`): no horizontal overflow, touch targets of at
+least 24 px, no axe-core violations in any view, panel or dialog, full keyboard use (Enter / Space / Escape, visible focus ring, dialogs trap focus and
+return it to the opening button). Not covered: real devices, Safari, screen reader pass.
+
 ### Package metadata (`rugix-meta`)
 
 ThingsBoard has no fields for the signature state or release information of an OTA package, so the widget keeps them in the
