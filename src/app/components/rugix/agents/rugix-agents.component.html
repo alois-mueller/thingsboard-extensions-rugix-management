@@ -735,14 +735,14 @@
                       </td>
                       <td class="c-md">
                         <div class="caps">
-                          @for (x of c.provides; track $index) { <span class="cap" [matTooltip]="'provides'">{{ capabilityLabel(x) }}</span> }
+                          @for (x of c.provides; track $index) { <span class="cap" [matTooltip]="'provides: ' + capabilityLabel(x)" matTooltipPosition="above">{{ capabilityLabel(x) }}</span> }
                           @if (!c.provides.length) { — }
                         </div>
                       </td>
                       <td class="c-md">
                         <div class="caps">
                           @for (x of c.requires; track $index) {
-                            <span class="cap req" [class.bad]="isUnsatisfied(d, x.id)" [matTooltip]="isUnsatisfied(d, x.id) ? 'not provided by any component' : 'requires'">{{ capabilityLabel(x) }}</span>
+                            <span class="cap req" [class.bad]="isUnsatisfied(d, x.id)" [matTooltip]="(isUnsatisfied(d, x.id) ? 'not provided by any component: ' : 'requires: ') + capabilityLabel(x)" matTooltipPosition="above">{{ capabilityLabel(x) }}</span>
                           }
                           @if (!c.requires.length) { — }
                         </div>
