@@ -1168,8 +1168,11 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   autoCommitBusy = false;
 
   /** Switch the automatic commit of a device (a rule chain commits a new system after the device reconnected). */
-  setAutoCommit(d: RugixDevice, enabled: boolean): void {
+  setAutoCommit(d: RugixDevice, enabled: boolean, toggle?: { checked: boolean }): void {
+    // the switch already moved: put it back to the stored state when nothing is saved
+    const revert = () => { if (toggle) { toggle.checked = !!d.autoCommit; } this.cd.markForCheck(); };
     if (this.autoCommitBusy || !this.allowed('power')) {
+      revert();
       return;
     }
     const apply = (reason?: string) => {
@@ -1185,8 +1188,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
         error: err => {
           this.autoCommitBusy = false;
           this.ctx.showErrorToast(`Could not change auto-commit: ${err?.message || err}`);
-          d.autoCommit = !enabled;
-          this.cd.markForCheck();
+          revert();
         }
       });
     };
@@ -1208,8 +1210,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       if (r) {
         apply(r.reason);
       } else {
-        // the toggle already moved: show the stored state again
-        this.cd.markForCheck();
+        revert();
       }
     });
   }
