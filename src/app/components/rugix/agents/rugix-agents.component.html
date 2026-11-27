@@ -577,6 +577,7 @@
             <div class="kv"><span>Default group</span><b>{{ d.defaultGroup || '—' }}</b></div>
             <div class="kv"><span>Boot groups</span><b>{{ d.bootGroups.join(', ') || '—' }}</b></div>
             <div class="kv"><span>State management</span><b [class.good]="d.stateStatus === 'active'" [class.bad]="d.stateStatus === 'error'">{{ d.stateStatus || '—' }}</b></div>
+            @if (d.stateMessage && d.stateStatus === 'error') { <div class="kv"><span>State message</span><b class="bad">{{ d.stateMessage }}</b></div> }
             <div class="kv"><span>Data partition</span><b>{{ d.dataPartition || '—' }}</b></div>
             <div class="kv"><span>Active slot</span><b>{{ slotCount(d) }}</b></div>
             <div class="kv"><span>Components consistent</span>

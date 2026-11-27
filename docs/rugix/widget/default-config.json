@@ -28,6 +28,18 @@
           "settings": {}
         },
         {
+          "name": "state.message",
+          "type": "attribute",
+          "label": "state.message",
+          "settings": {}
+        },
+        {
+          "name": "slots",
+          "type": "attribute",
+          "label": "slots",
+          "settings": {}
+        },
+        {
           "name": "state.dataPartition",
           "type": "attribute",
           "label": "state.dataPartition",

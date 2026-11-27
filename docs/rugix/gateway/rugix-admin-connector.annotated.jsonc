@@ -41,6 +41,17 @@
             "type": "string",
             "value": "${state.dataPartition}"
           },
+          // <<< GEAENDERT: NEU: Fehlertext und Ephemeral-Flag des State-Managements (nur bei state.status = error)
+          {
+            "key": "state.message",
+            "type": "string",
+            "value": "${state.message}"
+          },
+          {
+            "key": "state.ephemeral",
+            "type": "string",
+            "value": "${state.ephemeral}"
+          },
           {
             "key": "slots.boot-a",
             "type": "json",
@@ -60,6 +71,12 @@
             "key": "slots.system-b",
             "type": "json",
             "value": "${slots.system-b}"
+          },
+          // <<< GEAENDERT: NEU: alle Slots als ein Attribut (deckt Slots ohne eigenes Mapping ab, z.B. andere Namen)
+          {
+            "key": "slots",
+            "type": "json",
+            "value": "${slots}"
           }
         ],
         "telemetry": [

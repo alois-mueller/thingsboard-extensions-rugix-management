@@ -42,6 +42,16 @@
             "value": "${state.dataPartition}"
           },
           {
+            "key": "state.message",
+            "type": "string",
+            "value": "${state.message}"
+          },
+          {
+            "key": "state.ephemeral",
+            "type": "string",
+            "value": "${state.ephemeral}"
+          },
+          {
             "key": "slots.boot-a",
             "type": "json",
             "value": "${slots.boot-a}"
@@ -60,6 +70,11 @@
             "key": "slots.system-b",
             "type": "json",
             "value": "${slots.system-b}"
+          },
+          {
+            "key": "slots",
+            "type": "json",
+            "value": "${slots}"
           }
         ],
         "telemetry": [

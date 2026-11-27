@@ -249,6 +249,13 @@ export function applyValue(device: RugixDevice, key: string, raw: any, keys: Rug
   } else if (key === keys.stateStatus) {
     // devices report 'Active' / 'active' inconsistently
     device.stateStatus = typeof raw === 'string' ? raw.trim().toLowerCase() : raw;
+  } else if (key === keys.stateMessage) {
+    device.stateMessage = typeof raw === 'string' && raw.trim() ? raw.trim() : undefined;
+  } else if (key === keys.slotsAll) {
+    const all = parseJson<any>(raw, {});
+    if (all && typeof all === 'object' && !Array.isArray(all)) {
+      Object.keys(all).forEach(name => { slotRaw[name] = all[name]; });
+    }
   } else if (key === keys.dataPartition) {
     device.dataPartition = raw;
   } else if (key === keys.apiVersion) {

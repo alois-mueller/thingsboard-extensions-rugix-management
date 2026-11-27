@@ -100,6 +100,10 @@ export interface RugixKeySettings {
   /** Optional device attribute with the release channel of the device (`stable` / `testing`). */
   channel: string;
   slotPrefix: string;
+  /** Optional attribute with the whole `slots` object of `GET /api/system/info` (covers slots that have no own key). */
+  slotsAll: string;
+  /** Error message of the state management (`state.message` of `GET /api/system/info`). */
+  stateMessage: string;
 }
 
 /** Live job stream (gateway SSE connector). */
@@ -155,7 +159,9 @@ export const DEFAULT_RUGIX_SETTINGS: RugixWidgetSettings = {
     machineStats: 'machineStats',
     lastActivityTime: 'lastActivityTime',
     channel: 'rugix.channel',
-    slotPrefix: 'slots.'
+    slotPrefix: 'slots.',
+    slotsAll: 'slots',
+    stateMessage: 'state.message'
   },
   access: {
     install: ['SYS_ADMIN', 'TENANT_ADMIN', 'CUSTOMER_USER'],
@@ -264,6 +270,7 @@ export interface RugixDevice {
   activeGroup?: string;
   defaultGroup?: string;
   stateStatus?: string;
+  stateMessage?: string;
   dataPartition?: string;
   apiVersion?: string;
   features?: any;
