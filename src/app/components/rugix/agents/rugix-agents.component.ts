@@ -26,7 +26,7 @@ import {
 } from '../models/rugix.models';
 import { RugixAppGeneration, RugixAppInfo, RugixDaemonFeature, RugixJobEvent, RugixJobState } from '../models/rugix.models';
 import { RugixDonutSegment } from '../charts/rugix-donut.component';
-import { channelTarget, CHANNEL_NAME, displayUrl, compareVersions, jobLabel, foldJobEvent, formatDateTime, fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots, firmwareState } from '../models/rugix-parse';
+import { splitDescription, backupNameIssue, hashParts, isRebootJob, isTerminalStatus, channelTarget, CHANNEL_NAME, displayUrl, compareVersions, jobLabel, foldJobEvent, formatDateTime, fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots, firmwareState } from '../models/rugix-parse';
 import { REVPI_ICON, RUGIX_LOGO } from '../models/rugix-icons';
 import { RugixJobHandle, RugixRpcService } from '../services/rugix-rpc.service';
 import {
@@ -165,7 +165,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       RugixConfirmDialogComponent, {
         data: {title: `Activate generation ${g.number}`, message: '', confirmLabel: 'Activate', caution: true,
           acknowledge: `I understand that generation ${g.number} of app "${app.name}" becomes the active generation.`},
-        autoFocus: false, maxWidth: '95vw'
+        autoFocus: false, restoreFocus: true, maxWidth: '95vw'
       }).afterClosed().subscribe(r => {
       if (r) {
         this.track(d, `Activate ${app.name} (generation ${g.number})`, this.rpc.appAction(this.settings, d, 'appActivate', app.name, {generation: g.number}));
@@ -293,6 +293,9 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   private jobStates = new Map<string, RugixJobState>();
   private jobSeeding = new Set<string>();
 
+  private verifyTimers = new Map<string, any>();
+  private streamRestarts = new Map<string, { n: number; at: number }>();
+
   private trackJob(d: RugixDevice): void {
     const ev = d.lastJobEvent;
     let st = this.jobStates.get(d.id);
@@ -319,6 +322,53 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
         }
       });
     }
+    // fast jobs (commit, reboot): only the newest `jobEvent` value is delivered, so the final status can be missed – look at the whole log
+    if (st && this.isJobActive(d)) {
+      this.scheduleVerify(d.id, 2500);
+    }
+  }
+
+  private scheduleVerify(deviceId: string, delay: number): void {
+    if (this.verifyTimers.has(deviceId)) {
+      return;
+    }
+    this.verifyTimers.set(deviceId, setTimeout(() => {
+      this.verifyTimers.delete(deviceId);
+      this.verifyJob(deviceId);
+    }, delay));
+  }
+
+  /** Fold all events of the running job (the log is complete even when the latest-value subscription skipped events). */
+  private verifyJob(deviceId: string): void {
+    const d = this.devices.find(x => x.id === deviceId);
+    const st = this.jobStates.get(deviceId);
+    if (!d || !st || isTerminalStatus(st.status)) {
+      return;
+    }
+    this.rpc.loadJobEvents(this.settings, d, 500, Date.now() - 24 * 3600000).pipe(takeUntil(this.destroy$)).subscribe(events => {
+      let rebuilt: RugixJobState | undefined;
+      for (const e of [...events].sort((a, b) => a.ts - b.ts).filter(e => e.jobId === st.id)) {
+        rebuilt = foldJobEvent(rebuilt, e);
+      }
+      const cur = this.jobStates.get(deviceId);
+      if (!cur || cur.id !== st.id) {
+        return;
+      }
+      if (rebuilt && (rebuilt.status !== cur.status || (rebuilt.progress ?? -1) !== (cur.progress ?? -1))) {
+        this.jobStates.set(deviceId, {...rebuilt, ts: Math.max(rebuilt.ts, cur.ts), progress: rebuilt.progress ?? cur.progress});
+        this.onDataUpdated();
+      }
+      const now = this.jobStates.get(deviceId);
+      if (now && !isTerminalStatus(now.status)) {
+        // a rebooting device drops the event stream; ask the gateway for the job's events again once the device answers
+        const r = this.streamRestarts.get(now.id) || {n: 0, at: 0};
+        if (isRebootJob(now) && d.active && Date.now() - now.ts > 8000 && r.n < 4 && Date.now() - r.at > 25000) {
+          this.streamRestarts.set(now.id, {n: r.n + 1, at: Date.now()});
+          this.rpc.startJobStream(this.settings, d, now.id).pipe(takeUntil(this.destroy$)).subscribe({error: () => undefined});
+        }
+        this.scheduleVerify(deviceId, 8000);
+      }
+    });
   }
 
   isJobActive(d: RugixDevice): boolean {
@@ -359,10 +409,11 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   setView(v: 'overview' | 'devices' | 'jobs' | 'updates' | 'apps' | 'channels'): void {
     this.view = v;
+    this.selectedPkgId = null;
     RugixAgentsComponent.lastView.set(this.widgetKey, v);
     setTimeout(() => this.centerView(true));
     this.syncFleet();
-    if (v === 'overview') {
+    if (v === 'overview' || v === 'updates' || v === 'apps') {
       this.closeDetails();
     }
   }
@@ -716,7 +767,10 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
-    if (this.selectedId && !this.dialog.openDialogs.length) {
+    if (this.selectedPkgId && !this.dialog.openDialogs.length) {
+      this.closePkg();
+      this.cd.markForCheck();
+    } else if (this.selectedId && !this.dialog.openDialogs.length) {
       this.closeDetails();
       this.cd.markForCheck();
     }
@@ -753,6 +807,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     clearInterval(this.arrowTimer);
+    this.verifyTimers.forEach(t => clearTimeout(t));
     clearTimeout(this.jobsReloadTimer);
     this.fleetTimer?.unsubscribe();
     this.destroy$.next();
@@ -849,6 +904,37 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   displayUrl = displayUrl;
 
+  selectedPkgId: string | null = null;
+
+  get selectedPkg(): OtaPackageInfo | undefined {
+    return this.selectedPkgId ? this.packagesAll.find(p => p.id.id === this.selectedPkgId) : undefined;
+  }
+
+  selectPkg(p: OtaPackageInfo): void {
+    this.selectedPkgId = this.selectedPkgId === p.id.id ? null : p.id.id;
+    setTimeout(() => this.syncDetailsLayout());
+  }
+
+  closePkg(): void {
+    this.selectedPkgId = null;
+    setTimeout(() => this.syncDetailsLayout());
+  }
+
+  private metaCache = new Map<string, ReturnType<typeof splitDescription>>();
+
+  /** Readable description text and metadata of a package (parsed once per description). */
+  pkgInfo(p: OtaPackageInfo): ReturnType<typeof splitDescription> {
+    const desc: string = p.additionalInfo?.description || '';
+    const key = p.id.id + '\u0000' + desc;
+    let v = this.metaCache.get(key);
+    if (!v) {
+      v = splitDescription(desc);
+      this.metaCache.set(key, v);
+    }
+    return v;
+  }
+  hashParts = hashParts;
+
   /** Online devices that run an older version than their channel target, grouped by target version. */
   get outdatedGroups(): { target: string; channels: string; devices: RugixDevice[] }[] {
     const map = new Map<string, RugixDevice[]>();
@@ -884,7 +970,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       return;
     }
     this.dialog.open<RugixPackageDialogComponent, RugixPackageDialogData, boolean>(RugixPackageDialogComponent, {
-      data: {type: this.pkgType as OtaUpdateType.FIRMWARE | OtaUpdateType.SOFTWARE, pkg}, autoFocus: false, maxWidth: '95vw', width: '520px'
+      data: {type: this.pkgType as OtaUpdateType.FIRMWARE | OtaUpdateType.SOFTWARE, pkg, requireHttps: this.settings.security.requireHttps}, autoFocus: false, restoreFocus: true, maxWidth: '95vw', width: '520px'
     }).afterClosed().subscribe(saved => saved && this.loadPackages());
   }
 
@@ -899,7 +985,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
         message: `Remove "${pkg.title || pkg.version}" (${pkg.version}) from ThingsBoard?${used.length ? ` The ${used.join(', ')} channel still targets this version.` : ''}`,
         confirmLabel: 'Remove', warn: true,
         acknowledge: 'I understand that the package is deleted and can no longer be installed from here.'
-      }, autoFocus: false, maxWidth: '95vw'
+      }, autoFocus: false, restoreFocus: true, maxWidth: '95vw'
     }).afterClosed().subscribe(r => r && this.rpc.deletePackage(pkg.id.id).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => this.loadPackages(),
       error: err => this.ctx.showErrorToast(`Could not remove: ${err?.error?.message || err?.message || err}`)
@@ -1055,7 +1141,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
           acknowledge: 'I understand that the firmware status of this device is evaluated against the new channel.',
           transition: {from, to: channel, caption: 'Channel'}
         },
-        autoFocus: false, maxWidth: '95vw'
+        autoFocus: false, restoreFocus: true, maxWidth: '95vw'
       }).afterClosed().subscribe(r => r && this.applyChannel(d, channel));
   }
 
@@ -1075,6 +1161,56 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
         this.channelSaving = false;
         this.ctx.showErrorToast(`Could not set channel: ${err?.message || err}`);
         this.cd.markForCheck();
+      }
+    });
+  }
+
+  autoCommitBusy = false;
+
+  /** Switch the automatic commit of a device (a rule chain commits a new system after the device reconnected). */
+  setAutoCommit(d: RugixDevice, enabled: boolean, toggle?: { checked: boolean }): void {
+    // the switch already moved: put it back to the stored state when nothing is saved
+    const revert = () => { if (toggle) { toggle.checked = !!d.autoCommit; } this.cd.markForCheck(); };
+    if (this.autoCommitBusy || !this.allowed('power')) {
+      revert();
+      return;
+    }
+    const apply = (reason?: string) => {
+      this.autoCommitBusy = true;
+      this.rpc.setAutoCommit(this.settings, d, enabled).pipe(takeUntil(this.destroy$)).subscribe({
+        next: () => {
+          d.autoCommit = enabled;
+          this.record(d, enabled ? 'autoCommitOn' : 'autoCommitOff', reason);
+          this.autoCommitBusy = false;
+          this.cd.markForCheck();
+          this.ctx.detectChanges();
+        },
+        error: err => {
+          this.autoCommitBusy = false;
+          this.ctx.showErrorToast(`Could not change auto-commit: ${err?.message || err}`);
+          revert();
+        }
+      });
+    };
+    if (!enabled) {
+      apply();
+      return;
+    }
+    this.dialog.open<RugixConfirmDialogComponent, RugixConfirmDialogData, RugixConfirmDialogResult>(
+      RugixConfirmDialogComponent, {
+        data: {
+          title: 'Enable auto-commit',
+          message: `"${d.label || d.name}" is committed automatically when it runs a different boot group than the default one after it reconnected. The previous system is then no longer the fallback.`,
+          confirmLabel: 'Enable auto-commit', caution: true,
+          reason: {required: this.settings.security.requireReason},
+          acknowledge: 'I understand that a new system is committed without a manual check.'
+        },
+        autoFocus: false, restoreFocus: true, maxWidth: '95vw'
+      }).afterClosed().subscribe(r => {
+      if (r) {
+        apply(r.reason);
+      } else {
+        revert();
       }
     });
   }
@@ -1287,7 +1423,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     const panel = root.querySelector('.rugix-details') as HTMLElement;
     const backdrop = root.querySelector('.rugix-backdrop') as HTMLElement;
     const grid = root.closest('gridster') as HTMLElement;
-    if (!panel || !grid || !this.selectedId) {
+    if (!panel || !grid || !(this.selectedId || this.selectedPkgId)) {
       this.restoreClip();
       return;
     }
@@ -1535,12 +1671,13 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       RugixInstallDialogComponent, {
         data: {mode, devices, settings: this.settings,
           targets: mode === 'system' ? Array.from(new Set(devices.map(d => d.target).filter((t): t is string => !!t))) : undefined},
-        autoFocus: false, disableClose: true, maxWidth: '95vw'
+        autoFocus: false, restoreFocus: true, disableClose: true, maxWidth: '95vw'
       }).afterClosed().subscribe(result => {
       if (result?.failed?.length) {
         this.ctx.showErrorToast(`Could not start on ${result.failed.map(f => f.device.label || f.device.name).join(', ')}: ${result.failed[0].message}`, 'top', 'left');
       }
       if (result?.jobs?.length) {
+        result.jobs.forEach(j => this.record(j.device, mode === 'system' ? 'installUpdate' : 'installApp', result.reason));
         this.ctx.showSuccessToast(`Installation started on ${result.jobs.length} device(s).`, 3000, 'top', 'left');
         if (result.jobs.length === 1) {
           this.openJob(result.jobs[0].device, result.jobs[0].handle.jobId, mode === 'system' ? 'Upgrade Firmware' : 'Install App');
@@ -1573,15 +1710,20 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       warn: info.warn,
       caution: info.caution,
       acknowledge: info.ack,
+      reason: {required: this.settings.security.requireReason},
+      danger: info.action === 'factoryReset' ? {headline: `All persistent data on "${device.label || device.name}" is erased`,
+        items: ['Configuration, app data and the root filesystem overlay are reset.', 'The device reboots immediately.', 'Without a backup this cannot be undone.']} : undefined,
+      typeToConfirm: info.action === 'factoryReset' ? (device.label || device.name) : undefined,
       transition: this.bootTransition(info, device),
       checkbox: info.action === 'factoryReset' ? {label: 'Keep the old state as a backup profile', checked: true} : undefined,
-      textWhenChecked: info.action === 'factoryReset' ? {label: 'Backup name (optional)'} : undefined
+      textWhenChecked: info.action === 'factoryReset' ? {label: 'Backup name (optional)', validate: backupNameIssue} : undefined
     };
     this.dialog.open<RugixConfirmDialogComponent, RugixConfirmDialogData, RugixConfirmDialogResult>(
-      RugixConfirmDialogComponent, {data, autoFocus: false, maxWidth: '95vw'}).afterClosed().subscribe(result => {
+      RugixConfirmDialogComponent, {data, autoFocus: false, restoreFocus: true, maxWidth: '95vw'}).afterClosed().subscribe(result => {
       if (!result) {
         return;
       }
+      this.record(device, info.action, result.reason);
       this.track(device, info.label, this.rpc.systemAction(this.settings, device, info.action,
         {backup: result.checked, backupName: result.text || undefined}));
     });
@@ -1603,10 +1745,14 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     this.dialog.open<RugixConfirmDialogComponent, RugixConfirmDialogData, RugixConfirmDialogResult>(
       RugixConfirmDialogComponent, {
         data: {title: `${label} app`, message: `${label} app "${app.name}" on "${device.label || device.name}"?`,
-          confirmLabel: label, warn, acknowledge: ack[action]},
-        autoFocus: false, maxWidth: '95vw'
-      }).afterClosed().subscribe(r => r && this.track(device, `${label} ${app.name}`,
-      this.rpc.appAction(this.settings, device, action, app.name)));
+          confirmLabel: label, warn, acknowledge: ack[action], reason: {required: this.settings.security.requireReason}},
+        autoFocus: false, restoreFocus: true, maxWidth: '95vw'
+      }).afterClosed().subscribe(r => {
+      if (r) {
+        this.record(device, action, r.reason, app.name);
+        this.track(device, `${label} ${app.name}`, this.rpc.appAction(this.settings, device, action, app.name));
+      }
+    });
   }
 
   garbageCollectApps(device: RugixDevice): void {
@@ -1617,15 +1763,21 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       RugixConfirmDialogComponent, {
         data: {title: 'Clean up all apps', message: `Remove unused generations of all apps on "${device.label || device.name}"?`,
           confirmLabel: 'Clean up', warn: true, acknowledge: 'I understand that old app generations are removed permanently.'},
-        autoFocus: false, maxWidth: '95vw'
+        autoFocus: false, restoreFocus: true, maxWidth: '95vw'
       }).afterClosed().subscribe(r => r && this.track(device, 'App garbage collection',
       this.rpc.appsGarbageCollect(this.settings, device)));
+  }
+
+  /** Remember who started which change on the device (best effort, ThingsBoard keeps its own audit log too). */
+  private record(device: RugixDevice, action: string, reason?: string, detail?: string): void {
+    const user = (this.ctx.currentUser as any)?.sub || (this.ctx.currentUser as any)?.userId || '';
+    this.rpc.recordChange(this.settings, device, {action, user, reason: reason || undefined, detail}).subscribe();
   }
 
   openJob(device: RugixDevice, jobId: string, title: string, since = Date.now() - 5000): void {
     this.dialog.open<RugixJobDialogComponent, RugixJobDialogData>(RugixJobDialogComponent, {
       data: {device, settings: this.settings, jobId, title, since},
-      autoFocus: false, maxWidth: '95vw'
+      autoFocus: false, restoreFocus: true, maxWidth: '95vw'
     });
   }
 

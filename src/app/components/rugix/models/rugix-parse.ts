@@ -36,7 +36,12 @@ export function parseJson<T = any>(value: any, fallback?: T): T {
 }
 
 export function toBoolean(value: any): boolean {
-  return value === true || value === 'true' || value === 1 || value === '1';
+  // the gateway turns a top-level boolean of type `string` into the Python text "True" / "False"
+  if (typeof value === 'string') {
+    const v = value.trim().toLowerCase();
+    return v === 'true' || v === '1';
+  }
+  return value === true || value === 1;
 }
 
 export function parseSlots(slots: { [name: string]: any }): RugixSlot[] {
@@ -247,7 +252,17 @@ export function applyValue(device: RugixDevice, key: string, raw: any, keys: Rug
   } else if (key === keys.defaultGroup) {
     device.defaultGroup = raw;
   } else if (key === keys.stateStatus) {
-    device.stateStatus = raw;
+    // devices report 'Active' / 'active' inconsistently
+    device.stateStatus = typeof raw === 'string' ? raw.trim().toLowerCase() : raw;
+  } else if (key === keys.autoCommit) {
+    device.autoCommit = toBoolean(raw);
+  } else if (key === keys.stateMessage) {
+    device.stateMessage = typeof raw === 'string' && raw.trim() ? raw.trim() : undefined;
+  } else if (key === keys.slotsAll) {
+    const all = parseJson<any>(raw, {});
+    if (all && typeof all === 'object' && !Array.isArray(all)) {
+      Object.keys(all).forEach(name => { slotRaw[name] = all[name]; });
+    }
   } else if (key === keys.dataPartition) {
     device.dataPartition = raw;
   } else if (key === keys.apiVersion) {
@@ -259,6 +274,8 @@ export function applyValue(device: RugixDevice, key: string, raw: any, keys: Rug
     if (daemon.insecure !== undefined) {
       device.insecure = daemon.insecure;
     }
+  } else if (key === keys.daemonInsecure) {
+    device.insecure = toBoolean(raw);
   } else if (key === keys.channel) {
     // device-controlled value: only plain channel names (never keys like "constructor" or "__proto__")
     const name = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
@@ -472,7 +489,10 @@ export function foldJobEvent(state: RugixJobState | undefined, e: RugixJobEvent)
   if (e.type === 'job-changed') {
     st.title = e.title || st.title;
     st.kind = e.kind || st.kind;
-    st.status = e.status || st.status;
+    // a finished job stays finished, whatever order late or replayed events arrive in
+    if (!(isTerminalStatus(st.status) && e.status && !isTerminalStatus(e.status))) {
+      st.status = e.status || st.status;
+    }
     st.failure = e.failureMessage || st.failure;
     st.partial = false;
     if (st.status === 'succeeded' && st.progress !== null) {
@@ -554,7 +574,73 @@ export function channelTarget(channels: { [name: string]: string } | undefined, 
 }
 
 /** Problems of a bundle URL: `error` blocks, `warn` is a hint (plain http, credentials or a SAS token inside the URL). */
-export function urlIssue(url: string): { error?: string; warn?: string } {
+/**
+ * Package metadata kept in the OTA package description (ThingsBoard has no field for it, and the description is the only
+ * part of a package that can be changed later). Format: free text, then a last line `rugix-meta: {json}`.
+ */
+export interface RugixPackageMeta {
+  /** Size of the bundle in bytes. */
+  size?: number;
+  /** The bundle is signed (`false` = known to be unsigned). */
+  signed?: boolean;
+  /** The update fixes security issues. */
+  security?: boolean;
+  /** Link to the advisory of a security update. */
+  advisory?: string;
+  /** Link to the release notes. */
+  notes?: string;
+}
+
+const META_PREFIX = 'rugix-meta:';
+
+/** Split a package description into the readable text and the validated metadata (invalid fields are dropped). */
+export function splitDescription(description: string | undefined): { text: string; meta: RugixPackageMeta } {
+  const lines = (description || '').split('\n');
+  let idx = -1;
+  lines.forEach((l, i) => { if (l.trim().startsWith(META_PREFIX)) { idx = i; } });
+  if (idx < 0) {
+    return {text: (description || '').trim(), meta: {}};
+  }
+  const meta: RugixPackageMeta = {};
+  try {
+    const raw = JSON.parse(lines[idx].trim().slice(META_PREFIX.length));
+    if (raw && typeof raw === 'object') {
+      if (typeof raw.size === 'number' && isFinite(raw.size) && raw.size >= 0) { meta.size = raw.size; }
+      if (typeof raw.signed === 'boolean') { meta.signed = raw.signed; }
+      if (typeof raw.security === 'boolean') { meta.security = raw.security; }
+      for (const k of ['advisory', 'notes'] as const) {
+        if (typeof raw[k] === 'string' && raw[k] && /^https?:\/\//i.test(raw[k]) && !urlIssue(raw[k]).error) { meta[k] = raw[k]; }
+      }
+    }
+  } catch { /* not valid JSON: keep the line out of the text, ignore the metadata */ }
+  return {text: lines.filter((_, i) => i !== idx).join('\n').trim(), meta};
+}
+
+/** Inverse of `splitDescription`; empty metadata adds no line. */
+export function joinDescription(text: string, meta: RugixPackageMeta): string {
+  const clean: RugixPackageMeta = {};
+  if (meta.size !== undefined && meta.size !== null && isFinite(meta.size) && meta.size >= 0) { clean.size = Math.round(meta.size); }
+  if (meta.signed !== undefined) { clean.signed = meta.signed; }
+  if (meta.security) { clean.security = true; }
+  if (meta.security && meta.advisory?.trim()) { clean.advisory = meta.advisory.trim(); }
+  if (meta.notes?.trim()) { clean.notes = meta.notes.trim(); }
+  const t = (text || '').split('\n').filter(l => !l.trim().startsWith(META_PREFIX)).join('\n').trim();
+  return Object.keys(clean).length ? `${t}${t ? '\n' : ''}${META_PREFIX} ${JSON.stringify(clean)}` : t;
+}
+
+/** Rugix accepts a backup profile name only as one plain path component. Returns an error text or null. */
+export function backupNameIssue(name: string): string | null {
+  const v = (name || '').trim();
+  if (!v) {
+    return null;
+  }
+  if (v === '.' || v === '..' || !/^[A-Za-z0-9._-]+$/.test(v)) {
+    return 'Use only letters, digits, "-", "_" and "." (no "/" or spaces).';
+  }
+  return null;
+}
+
+export function urlIssue(url: string, requireHttps = false): { error?: string; warn?: string } {
   const v = (url || '').trim();
   if (!v) {
     return {};
@@ -571,10 +657,25 @@ export function urlIssue(url: string): { error?: string; warn?: string } {
   if (u.username || u.password || /(^|&)(sig|token|access_token|x-amz-signature)=/i.test(u.search.slice(1))) {
     return {warn: 'The URL contains a credential or access token. Everybody who can read this entry (and the audit log) can see it – let a proxy or the gateway add it instead.'};
   }
+  if (u.protocol === 'http:' && requireHttps) {
+    return {error: 'Plain http is not allowed (the download would not be encrypted). Use https.'};
+  }
   return u.protocol === 'http:' ? {warn: 'Plain http: the download is not encrypted. Use https if possible.'} : {};
 }
 
 /** URL without query string and fragment, for display (keeps SAS tokens off the screen). */
 export function displayUrl(url: string): string {
   return (url || '').replace(/[?#].*$/, '');
+}
+
+/** Split a slot hash into algorithm and digest: key `sha512_256` with value `sha512-256:ee39…` shows once as `sha512-256` / `ee39…`. */
+export function hashParts(key: string, value: any): { algo: string; digest: string } {
+  const v = String(value ?? '');
+  const m = /^([a-z0-9_-]+):(.+)$/i.exec(v);
+  return m ? {algo: m[1], digest: m[2]} : {algo: String(key).replace(/_/g, '-'), digest: v};
+}
+
+/** Reboot jobs: the device restarts right away, so their events often arrive late. */
+export function isRebootJob(st: { title?: string; kind?: string } | undefined): boolean {
+  return /reboot/i.test(`${st?.title || ''} ${st?.kind || ''}`);
 }

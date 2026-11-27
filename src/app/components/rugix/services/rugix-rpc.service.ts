@@ -144,7 +144,8 @@ export class RugixRpcService {
   static buildQuery(options: { [key: string]: any }): string {
     return Object.keys(options || {})
       .filter(k => options[k] !== undefined && options[k] !== null && options[k] !== '')
-      .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(String(options[k]))}`)
+      // Rugix Admin reads the query parameters in camelCase (`bundleHash`, `keepOverlay`, `backupName`, ...)
+      .map(k => `${encodeURIComponent(k.replace(/_([a-z])/g, (_, c) => c.toUpperCase()))}=${encodeURIComponent(String(options[k]))}`)
       .join('&');
   }
 
@@ -206,6 +207,25 @@ export class RugixRpcService {
   setChannel(settings: RugixWidgetSettings, device: RugixDevice, channel: string): Observable<any> {
     const entityId = {entityType: EntityType.DEVICE, id: device.id} as EntityId;
     return this.attributeService.saveEntityAttributes(entityId, AttributeScope.SERVER_SCOPE, [{key: settings.keys.channel, value: channel}]);
+  }
+
+  /** Enable / disable the automatic commit (server-scope attribute of the device, evaluated by a rule chain). */
+  setAutoCommit(settings: RugixWidgetSettings, device: RugixDevice, enabled: boolean): Observable<any> {
+    const entityId = {entityType: EntityType.DEVICE, id: device.id} as EntityId;
+    return this.attributeService.saveEntityAttributes(entityId, AttributeScope.SERVER_SCOPE, [{key: settings.keys.autoCommit, value: enabled}]);
+  }
+
+  /** Record who changed what (best effort): server attribute of the device, ThingsBoard keeps its own audit log as well. */
+  recordChange(settings: RugixWidgetSettings, device: RugixDevice, entry: { action: string; user: string; reason?: string; detail?: string }): Observable<any> {
+    const key = settings.security.changeAttribute;
+    if (!key) {
+      return of(null);
+    }
+    const entityId = {entityType: EntityType.DEVICE, id: device.id} as EntityId;
+    const value = {...entry, at: new Date().toISOString()};
+    return this.attributeService.saveEntityAttributes(entityId, AttributeScope.SERVER_SCOPE, [{key, value}], {ignoreErrors: true, ignoreLoading: true}).pipe(
+      catchError(() => of(null))
+    );
   }
 
   /** Channel configuration stored as tenant server attribute (`null` when not stored or not readable). */

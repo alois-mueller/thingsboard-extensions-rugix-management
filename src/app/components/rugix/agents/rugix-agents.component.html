@@ -5,12 +5,12 @@
       <button type="button" class="tab-arrow left" aria-label="Scroll left" (click)="scrollTabs(-1, vbar)"><mat-icon>chevron_left</mat-icon></button>
     }
     <div class="view-tabs" #vbar (scroll)="updateViewArrows(vbar)">
-    <button type="button" class="view-tab" [class.active]="view === 'overview'" (click)="setView('overview')"><mat-icon>space_dashboard</mat-icon>Overview</button>
-    <button type="button" class="view-tab" [class.active]="view === 'devices'" (click)="setView('devices')"><mat-icon>developer_board</mat-icon>Devices<span class="count">{{ devices.length }}</span></button>
-    <button type="button" class="view-tab" [class.active]="view === 'jobs'" (click)="setView('jobs')"><mat-icon>work_history</mat-icon>Jobs@if (runningJobs) { <span class="count run">{{ runningJobs }}</span> }</button>
-    <button type="button" class="view-tab" [class.active]="view === 'updates'" (click)="setView('updates')"><mat-icon>system_update_alt</mat-icon>Updates</button>
-    <button type="button" class="view-tab" [class.active]="view === 'apps'" (click)="setView('apps')"><mat-icon>apps</mat-icon>Apps</button>
-    <button type="button" class="view-tab" [class.active]="view === 'channels'" (click)="setView('channels')"><mat-icon>alt_route</mat-icon>Channels</button>
+    <button type="button" class="view-tab" [class.active]="view === 'overview'" [attr.aria-current]="view === 'overview' ? 'page' : null" (click)="setView('overview')"><mat-icon>space_dashboard</mat-icon>Overview</button>
+    <button type="button" class="view-tab" [class.active]="view === 'devices'" [attr.aria-current]="view === 'devices' ? 'page' : null" (click)="setView('devices')"><mat-icon>developer_board</mat-icon>Devices<span class="count">{{ devices.length }}</span></button>
+    <button type="button" class="view-tab" [class.active]="view === 'jobs'" [attr.aria-current]="view === 'jobs' ? 'page' : null" (click)="setView('jobs')"><mat-icon>work_history</mat-icon>Jobs@if (runningJobs) { <span class="count run">{{ runningJobs }}</span> }</button>
+    <button type="button" class="view-tab" [class.active]="view === 'updates'" [attr.aria-current]="view === 'updates' ? 'page' : null" (click)="setView('updates')"><mat-icon>system_update_alt</mat-icon>Updates</button>
+    <button type="button" class="view-tab" [class.active]="view === 'apps'" [attr.aria-current]="view === 'apps' ? 'page' : null" (click)="setView('apps')"><mat-icon>apps</mat-icon>Apps</button>
+    <button type="button" class="view-tab" [class.active]="view === 'channels'" [attr.aria-current]="view === 'channels' ? 'page' : null" (click)="setView('channels')"><mat-icon>alt_route</mat-icon>Channels</button>
   </div>
     @if (vtCanRight) {
       <button type="button" class="tab-arrow right" aria-label="Scroll right" (click)="scrollTabs(1, vbar)"><mat-icon>chevron_right</mat-icon></button>
@@ -42,7 +42,7 @@
       <div class="alerts-card">
         <div class="donut-title">Recent alerts <span class="alert-count">{{ alerts.length }}</span></div>
         @for (a of shownAlerts; track $index) {
-          <div class="alert-row" (click)="openAlert(a)" role="button" tabindex="0" (keydown.enter)="openAlert(a)">
+          <div class="alert-row" (click)="openAlert(a)" role="button" tabindex="0" (keydown.enter)="openAlert(a)" (keydown.space)="$event.preventDefault(); openAlert(a)">
             <mat-icon [class]="'alert-icon ' + a.severity">{{ alertIcon(a) }}</mat-icon>
             <span class="alert-device">{{ a.device }}</span>
             <span class="alert-cat">{{ a.category }}</span>
@@ -72,41 +72,35 @@
       <button mat-icon-button type="button" (click)="loadPackages()" [disabled]="pkgLoading" matTooltip="Refresh" aria-label="Refresh"><mat-icon>refresh</mat-icon></button>
     </div>
     @if (pkgLoading) { <mat-progress-bar mode="indeterminate"></mat-progress-bar> }
-    <div class="rugix-table-wrap">
+    <div class="rugix-table-wrap" tabindex="0">
       <p class="channels-intro">
         @if (view === 'apps') { App bundles that can be installed on devices (<i>Install App</i>). } @else { Firmware bundles that can be installed on devices (<i>Upgrade Firmware</i>) and chosen as target version of a release channel. }
         They are ThingsBoard OTA packages that point to an external bundle URL.
         @if (!canEditPackages) { Packages are managed by tenant administrators. }
       </p>
       <table class="rugix-table pkg-table">
-        <thead><tr><th>Title</th><th>Version</th>@if (view === 'updates') { <th class="pk-chan">Active channel</th> }<th class="pk-tag">Tag</th><th class="pk-url">Bundle URL</th><th class="pk-added">Added</th><th class="w-actions"></th></tr></thead>
+        <thead><tr><th>Title</th><th>Version</th>@if (view === 'updates') { <th class="pk-chan">Active channel</th> }<th class="pk-url">Bundle URL</th><th class="pk-added">Added</th><th class="w-chev"><span class="sr-only">Open details</span></th></tr></thead>
         <tbody>
           @for (p of pkgList; track p.id.id) {
-            <tr class="static-row">
-              <td><b>{{ p.title || p.version }}</b>@if (p.additionalInfo?.description) { <div class="sub">{{ p.additionalInfo.description }}</div> }</td>
+            <tr [class.selected]="p.id.id === selectedPkgId" tabindex="0" (click)="selectPkg(p)" (keydown.enter)="selectPkg(p)" (keydown.space)="$event.preventDefault(); selectPkg(p)">
+              <td>
+                @if (pkgInfo(p); as info) {
+                  <div class="pk-title">
+                    <b class="pk-name">{{ p.title || p.version }}</b>
+                    @if (info.meta.signed === true) { <mat-icon class="pk-ic ok" matTooltip="Signed bundle" matTooltipPosition="above" matTooltipClass="rugix-tip" aria-label="Signed bundle">verified_user</mat-icon> }
+                    @if (info.meta.signed === false) { <mat-icon class="pk-ic bad" matTooltip="Unsigned bundle" matTooltipPosition="above" matTooltipClass="rugix-tip" aria-label="Unsigned bundle">gpp_bad</mat-icon> }
+                    @if (info.meta.security) { <mat-icon class="pk-ic sec" matTooltip="Security update" matTooltipPosition="above" matTooltipClass="rugix-tip" aria-label="Security update">shield</mat-icon> }
+                  </div>
+                }
+              </td>
               <td class="nowrap">{{ p.version }}</td>
               @if (view === 'updates') { <td class="pk-chan nowrap">{{ channelsOf(p) || '—' }}</td> }
-              <td class="pk-tag">{{ p.tag || '—' }}</td>
-              <td class="pk-url">
-                @if (p.url) {
-                  <div class="pk-urlbox">
-                    <span class="pk-link" [matTooltip]="displayUrl(p.url)" matTooltipPosition="above" matTooltipClass="rugix-tip">{{ displayUrl(p.url) }}</span>
-                    <button mat-icon-button type="button" class="copy-btn" matTooltip="Copy URL" matTooltipPosition="above" matTooltipClass="rugix-tip" aria-label="Copy bundle URL" (click)="copy(p.url)"><mat-icon>{{ copied === p.url ? 'check' : 'content_copy' }}</mat-icon></button>
-                  </div>
-                } @else {
-                  <span class="sub" matTooltip="Uploaded file – Rugix needs an external URL to pull a bundle" matTooltipPosition="above" matTooltipClass="rugix-tip">uploaded file</span>
-                }
-              </td>
+              <td class="pk-url"><span class="pk-link">{{ p.url ? displayUrl(p.url) : 'uploaded file' }}</span></td>
               <td class="pk-added nowrap">{{ p.createdTime ? fmt(p.createdTime) : '—' }}</td>
-              <td class="w-actions">
-                @if (canEditPackages) {
-                  <button mat-icon-button type="button" (click)="openPackage(p)" matTooltip="Edit" [attr.aria-label]="'Edit ' + (p.title || p.version)"><mat-icon>edit</mat-icon></button>
-                  <button mat-icon-button type="button" (click)="deletePackage(p)" matTooltip="Remove" [attr.aria-label]="'Remove ' + (p.title || p.version)"><mat-icon>delete</mat-icon></button>
-                }
-              </td>
+              <td class="w-chev"><mat-icon>chevron_right</mat-icon></td>
             </tr>
           } @empty {
-            <tr class="static-row"><td [attr.colspan]="view === 'updates' ? 7 : 6" class="empty-row">{{ pkgLoading ? 'Loading…' : (view === 'apps' ? 'No apps yet.' : 'No firmware updates yet.') }}{{ canEditPackages && !pkgLoading ? ' Use "Add" to register a bundle URL.' : '' }}</td></tr>
+            <tr class="static-row"><td [attr.colspan]="view === 'updates' ? 6 : 5" class="empty-row">{{ pkgLoading ? 'Loading…' : (view === 'apps' ? 'No apps yet.' : 'No firmware updates yet.') }}{{ canEditPackages && !pkgLoading ? ' Use "Add" to register a bundle URL.' : '' }}</td></tr>
           }
         </tbody>
       </table>
@@ -123,7 +117,7 @@
         <button mat-flat-button color="primary" type="button" [disabled]="!chDirty || !chValid || chSaving" (click)="saveChannels()"><mat-icon>save</mat-icon>Save</button>
       }
     </div>
-    <div class="rugix-table-wrap">
+    <div class="rugix-table-wrap" tabindex="0">
       <p class="channels-intro">A release channel targets an Edge OS version, chosen from the firmware updates in the <b>Updates</b> view. Devices follow the channel in their attribute <code>{{ settings.keys.channel }}</code> (default: <b>{{ settings.defaultChannel }}</b>) and are flagged as outdated when they run an older version.
         @if (canEditChannels) {
           @if (chSource === 'tenant') { Stored as tenant attribute <code>{{ settings.channelsAttribute }}</code>. } @else { Not saved yet, showing the widget settings – save to store the channels as tenant attribute <code>{{ settings.channelsAttribute }}</code>. }
@@ -132,7 +126,7 @@
         }
       </p>
       <table class="rugix-table channels-table">
-        <thead><tr><th>Channel</th><th>Target version</th><th>Devices</th><th>Up to date</th><th>Outdated</th><th class="w-actions">Default</th><th class="w-actions"></th></tr></thead>
+        <thead><tr><th>Channel</th><th>Target version</th><th>Devices</th><th>Up to date</th><th>Outdated</th><th class="w-actions">Default</th><th class="w-actions"><span class="sr-only">Actions</span></th></tr></thead>
         <tbody>
           @for (c of chDraft; track c.name) {
             <tr class="static-row">
@@ -194,17 +188,17 @@
     </div>
 
     <div class="rugix-filters">
-      <span class="fchip" role="button" tabindex="0" [class.on]="fleetStatus === ''" (click)="fleetStatus = ''; fleetPageIndex = 0" (keydown.enter)="fleetStatus = ''; fleetPageIndex = 0">All</span>
-      <span class="fchip" role="button" tabindex="0" [class.on]="fleetStatus === 'running'" (click)="fleetStatus = 'running'; fleetPageIndex = 0" (keydown.enter)="fleetStatus = 'running'; fleetPageIndex = 0"><span class="spin"></span>Running · {{ fleetCount('running') }}</span>
-      <span class="fchip" role="button" tabindex="0" [class.on]="fleetStatus === 'failed'" (click)="fleetStatus = 'failed'; fleetPageIndex = 0" (keydown.enter)="fleetStatus = 'failed'; fleetPageIndex = 0"><mat-icon class="bad">error</mat-icon>Failed · {{ fleetCount('failed') }}</span>
-      <span class="fchip" role="button" tabindex="0" [class.on]="fleetStatus === 'succeeded'" (click)="fleetStatus = 'succeeded'; fleetPageIndex = 0" (keydown.enter)="fleetStatus = 'succeeded'; fleetPageIndex = 0"><mat-icon class="good">check_circle</mat-icon>Succeeded · {{ fleetCount('succeeded') }}</span>
+      <span class="fchip" role="button" [attr.aria-pressed]="fleetStatus === ''" tabindex="0" [class.on]="fleetStatus === ''" (click)="fleetStatus = ''; fleetPageIndex = 0" (keydown.enter)="fleetStatus = ''; fleetPageIndex = 0" (keydown.space)="$event.preventDefault(); fleetStatus = ''; fleetPageIndex = 0">All</span>
+      <span class="fchip" role="button" [attr.aria-pressed]="fleetStatus === 'running'" tabindex="0" [class.on]="fleetStatus === 'running'" (click)="fleetStatus = 'running'; fleetPageIndex = 0" (keydown.enter)="fleetStatus = 'running'; fleetPageIndex = 0" (keydown.space)="$event.preventDefault(); fleetStatus = 'running'; fleetPageIndex = 0"><span class="spin"></span>Running · {{ fleetCount('running') }}</span>
+      <span class="fchip" role="button" [attr.aria-pressed]="fleetStatus === 'failed'" tabindex="0" [class.on]="fleetStatus === 'failed'" (click)="fleetStatus = 'failed'; fleetPageIndex = 0" (keydown.enter)="fleetStatus = 'failed'; fleetPageIndex = 0" (keydown.space)="$event.preventDefault(); fleetStatus = 'failed'; fleetPageIndex = 0"><mat-icon class="bad">error</mat-icon>Failed · {{ fleetCount('failed') }}</span>
+      <span class="fchip" role="button" [attr.aria-pressed]="fleetStatus === 'succeeded'" tabindex="0" [class.on]="fleetStatus === 'succeeded'" (click)="fleetStatus = 'succeeded'; fleetPageIndex = 0" (keydown.enter)="fleetStatus = 'succeeded'; fleetPageIndex = 0" (keydown.space)="$event.preventDefault(); fleetStatus = 'succeeded'; fleetPageIndex = 0"><mat-icon class="good">check_circle</mat-icon>Succeeded · {{ fleetCount('succeeded') }}</span>
       <span class="range fleet-range">
         @for (n of [1, 7, 30]; track n) { <button type="button" [class.active]="fleetDays === n" (click)="setFleetDays(n)">{{ n === 1 ? '24 h' : n + ' d' }}</button> }
       </span>
     </div>
     @if (fleetLoading) { <mat-progress-bar mode="indeterminate"></mat-progress-bar> }
 
-    <div class="rugix-table-wrap">
+    <div class="rugix-table-wrap" tabindex="0">
       <table class="rugix-table fleet-table">
         <thead><tr><th class="lc-time">Started</th><th class="fj-dev">Device</th><th class="fj-job">Job</th><th class="lc-status">Status</th><th class="lc-dur">Duration</th><th class="lc-id">Job ID</th></tr></thead>
         <tbody>
@@ -233,6 +227,22 @@
       <span class="rugix-title">{{ settings.title }}</span>
       <span class="fleet-summary"><span class="fs">{{ devices.length }} {{ devices.length === 1 ? 'device' : 'devices' }}</span></span>
       <span class="flex-1"></span>
+      @if (allowed('install') && outdatedGroups.length) {
+        @if (outdatedGroups.length === 1) {
+          <button mat-flat-button color="primary" type="button" class="upg-outdated" [matTooltip]="'Upgrade ' + outdatedGroups[0].devices.length + ' outdated ' + (outdatedGroups[0].devices.length === 1 ? 'device' : 'devices') + ' to ' + outdatedGroups[0].target" (click)="openInstall(outdatedGroups[0].devices, 'system')">
+            <mat-icon>upgrade</mat-icon><span class="lbl">Upgrade {{ outdatedGroups[0].devices.length }} to {{ outdatedGroups[0].target }}</span>
+          </button>
+        } @else {
+          <button mat-flat-button color="primary" type="button" class="upg-outdated" matTooltip="Upgrade outdated devices" [matMenuTriggerFor]="outdatedMenu">
+            <mat-icon>upgrade</mat-icon><span class="lbl">Upgrade outdated</span>
+          </button>
+          <mat-menu #outdatedMenu="matMenu">
+            @for (g of outdatedGroups; track g.target) {
+              <button mat-menu-item (click)="openInstall(g.devices, 'system')"><mat-icon>system_update_alt</mat-icon>{{ g.devices.length }} {{ g.devices.length === 1 ? 'device' : 'devices' }} to {{ g.target }} ({{ g.channels }})</button>
+            }
+          </mat-menu>
+        }
+      }
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="rugix-search" [class.open]="searchOpen">
         <mat-icon matPrefix>search</mat-icon>
         <input matInput placeholder="Search devices" [(ngModel)]="search" (ngModelChange)="onSearch()" #searchInput>
@@ -240,10 +250,10 @@
           <button matSuffix mat-icon-button type="button" aria-label="Clear search" (click)="search = ''; onSearch()"><mat-icon>close</mat-icon></button>
         }
       </mat-form-field>
-      <button mat-icon-button type="button" class="search-toggle" (click)="toggleSearch()" matTooltip="Search">
+      <button mat-icon-button type="button" class="search-toggle" (click)="toggleSearch()" matTooltip="Search" aria-label="Search">
         <mat-icon>{{ searchOpen ? 'close' : 'search' }}</mat-icon>
       </button>
-      <button mat-icon-button type="button" (click)="refresh()" matTooltip="Refresh"><mat-icon>refresh</mat-icon></button>
+      <button mat-icon-button type="button" (click)="refresh()" matTooltip="Refresh" aria-label="Refresh"><mat-icon>refresh</mat-icon></button>
     } @else {
       <span class="rugix-title">{{ checked.size }} selected</span>
       <span class="flex-1"></span>
@@ -253,41 +263,28 @@
       <button mat-flat-button color="primary" type="button" [disabled]="!checkedOnline.length || !allowed('install')" [matTooltip]="checkedOnline.length < checked.size ? 'Only online devices are updated' : ''" (click)="openInstall(checkedOnline, 'app')">
         <mat-icon>apps</mat-icon><span class="lbl">Install App</span>
       </button>
-      <button mat-icon-button type="button" (click)="clearSelection()" matTooltip="Clear selection"><mat-icon>close</mat-icon></button>
+      <button mat-icon-button type="button" (click)="clearSelection()" matTooltip="Clear selection" aria-label="Clear selection"><mat-icon>close</mat-icon></button>
     }
   </div>
 
   <!-- ===== filters ===== -->
   <div class="rugix-filters">
-    <span class="fchip" role="button" tabindex="0" [class.on]="statusFilter === 'all'" (click)="setStatusFilter('all')" (keydown.enter)="setStatusFilter('all')">All · {{ devices.length }}</span>
-    <span class="fchip" role="button" tabindex="0" [class.on]="statusFilter === 'online'" (click)="setStatusFilter('online')" (keydown.enter)="setStatusFilter('online')"><span class="dot ok"></span>Online · {{ fleetSummary.online }}</span>
-    <span class="fchip" role="button" tabindex="0" [class.on]="statusFilter === 'offline'" (click)="setStatusFilter('offline')" (keydown.enter)="setStatusFilter('offline')"><span class="dot"></span>Offline · {{ fleetSummary.offline }}</span>
+    <span class="fchip" role="button" [attr.aria-pressed]="statusFilter === 'all'" tabindex="0" [class.on]="statusFilter === 'all'" (click)="setStatusFilter('all')" (keydown.enter)="setStatusFilter('all')" (keydown.space)="$event.preventDefault(); setStatusFilter('all')">All · {{ devices.length }}</span>
+    <span class="fchip" role="button" [attr.aria-pressed]="statusFilter === 'online'" tabindex="0" [class.on]="statusFilter === 'online'" (click)="setStatusFilter('online')" (keydown.enter)="setStatusFilter('online')" (keydown.space)="$event.preventDefault(); setStatusFilter('online')"><span class="dot ok"></span>Online · {{ fleetSummary.online }}</span>
+    <span class="fchip" role="button" [attr.aria-pressed]="statusFilter === 'offline'" tabindex="0" [class.on]="statusFilter === 'offline'" (click)="setStatusFilter('offline')" (keydown.enter)="setStatusFilter('offline')" (keydown.space)="$event.preventDefault(); setStatusFilter('offline')"><span class="dot"></span>Offline · {{ fleetSummary.offline }}</span>
     <span class="fchip-sep" aria-hidden="true"></span>
-    <span class="fchip" role="button" tabindex="0" [class.on]="healthFilter === 'healthy'" (click)="toggleHealth('healthy')" (keydown.enter)="toggleHealth('healthy')"><span class="dot ok"></span>Healthy · {{ fleetSummary.healthy }}</span>
-    <span class="fchip" role="button" tabindex="0" [class.on]="healthFilter === 'warning'" (click)="toggleHealth('warning')" (keydown.enter)="toggleHealth('warning')"><span class="dot warn"></span>Warning · {{ fleetSummary.warning }}</span>
-    <span class="fchip" role="button" tabindex="0" [class.on]="healthFilter === 'error'" (click)="toggleHealth('error')" (keydown.enter)="toggleHealth('error')"><span class="dot err"></span>Error · {{ fleetSummary.error }}</span>
+    <span class="fchip" role="button" [attr.aria-pressed]="healthFilter === 'healthy'" tabindex="0" [class.on]="healthFilter === 'healthy'" (click)="toggleHealth('healthy')" (keydown.enter)="toggleHealth('healthy')" (keydown.space)="$event.preventDefault(); toggleHealth('healthy')"><span class="dot ok"></span>Healthy · {{ fleetSummary.healthy }}</span>
+    <span class="fchip" role="button" [attr.aria-pressed]="healthFilter === 'warning'" tabindex="0" [class.on]="healthFilter === 'warning'" (click)="toggleHealth('warning')" (keydown.enter)="toggleHealth('warning')" (keydown.space)="$event.preventDefault(); toggleHealth('warning')"><span class="dot warn"></span>Warning · {{ fleetSummary.warning }}</span>
+    <span class="fchip" role="button" [attr.aria-pressed]="healthFilter === 'error'" tabindex="0" [class.on]="healthFilter === 'error'" (click)="toggleHealth('error')" (keydown.enter)="toggleHealth('error')" (keydown.space)="$event.preventDefault(); toggleHealth('error')"><span class="dot err"></span>Error · {{ fleetSummary.error }}</span>
     <span class="fchip-sep" aria-hidden="true"></span>
-    <span class="fchip" role="button" tabindex="0" [class.on]="firmwareFilter" (click)="toggleFirmware()" (keydown.enter)="toggleFirmware()"><mat-icon class="fw-chip">upgrade</mat-icon>Outdated · {{ fleetSummary.outdated }}</span>
-    @if (allowed('install') && outdatedGroups.length) {
-      <span class="flex-1"></span>
-      @if (outdatedGroups.length === 1) {
-        <button mat-stroked-button type="button" class="upg-outdated" (click)="openInstall(outdatedGroups[0].devices, 'system')"><mat-icon>upgrade</mat-icon>Upgrade {{ outdatedGroups[0].devices.length }} to {{ outdatedGroups[0].target }}</button>
-      } @else {
-        <button mat-stroked-button type="button" class="upg-outdated" [matMenuTriggerFor]="outdatedMenu"><mat-icon>upgrade</mat-icon>Upgrade outdated</button>
-        <mat-menu #outdatedMenu="matMenu">
-          @for (g of outdatedGroups; track g.target) {
-            <button mat-menu-item (click)="openInstall(g.devices, 'system')"><mat-icon>system_update_alt</mat-icon>{{ g.devices.length }} {{ g.devices.length === 1 ? 'device' : 'devices' }} to {{ g.target }} ({{ g.channels }})</button>
-          }
-        </mat-menu>
-      }
-    }
+    <span class="fchip" role="button" [attr.aria-pressed]="firmwareFilter" tabindex="0" [class.on]="firmwareFilter" (click)="toggleFirmware()" (keydown.enter)="toggleFirmware()" (keydown.space)="$event.preventDefault(); toggleFirmware()"><mat-icon class="fw-chip">upgrade</mat-icon>Outdated · {{ fleetSummary.outdated }}</span>
     @if (filtersActive) {
       <button mat-button type="button" class="fclear" (click)="clearFilters()">Clear</button>
     }
   </div>
 
   <!-- ===== table ===== -->
-  <div class="rugix-table-wrap">
+  <div class="rugix-table-wrap" tabindex="0">
     <table class="rugix-table main-table">
       <thead>
         <tr>
@@ -300,14 +297,14 @@
           <th class="sortable c-l2 c-state" [class.sorted]="sortKey === 'state'" tabindex="0" role="button" (click)="sortBy('state')" (keydown.enter)="sortBy('state')">State<mat-icon class="sort-icon">{{ sortKey === 'state' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
           <th class="sortable c-l1 c-api" [class.sorted]="sortKey === 'api'" tabindex="0" role="button" (click)="sortBy('api')" (keydown.enter)="sortBy('api')">Rugix API<mat-icon class="sort-icon">{{ sortKey === 'api' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
           <th class="sortable c-l1 c-job" [class.sorted]="sortKey === 'job'" tabindex="0" role="button" (click)="sortBy('job')" (keydown.enter)="sortBy('job')">Last job<mat-icon class="sort-icon">{{ sortKey === 'job' && sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon></th>
-          <th class="w-actions"></th>
+          <th class="w-actions"><span class="sr-only">Actions</span></th>
         </tr>
       </thead>
       <tbody>
         @for (d of page; track trackById($index, d)) {
-          <tr [class.selected]="d.id === selectedId" tabindex="0" (click)="select(d)" (keydown.enter)="select(d)">
+          <tr [class.selected]="d.id === selectedId" tabindex="0" (click)="select(d)" (keydown.enter)="select(d)" (keydown.space)="$event.preventDefault(); select(d)">
             <td class="w-check" (click)="$event.stopPropagation()">
-              <mat-checkbox [checked]="checked.has(d.id)" (change)="toggle(d); releaseFocus()" [attr.aria-label]="'Select ' + (d.label || d.name)"></mat-checkbox>
+              <mat-checkbox [checked]="checked.has(d.id)" (change)="toggle(d); releaseFocus()" [aria-label]="'Select ' + (d.label || d.name)"></mat-checkbox>
             </td>
             <td>
               <div class="device">
@@ -327,7 +324,7 @@
               </div>
             </td>
             <td>
-              <span class="status" [class]="statusClass(d)" [matTooltip]="d.active ? (d.stateSince ? 'Online since ' + fmt(d.stateSince) : '') : (d.lastSeen ? 'Offline since ' + fmt(d.lastSeen) : '')" matTooltipPosition="above" matTooltipClass="rugix-tip"><span class="dot"></span>{{ d.active ? 'Online' : 'Offline' }}</span>
+              <span class="status" [class]="statusClass(d)" [matTooltip]="d.active ? (d.stateSince ? 'Online since ' + fmt(d.stateSince) : '') : (d.lastSeen ? 'Offline since ' + fmt(d.lastSeen) : '')" matTooltipPosition="above" matTooltipClass="rugix-tip"><span class="dot"></span><span class="st-text">{{ d.active ? 'Online' : 'Offline' }}</span></span>
               @if (!d.active && d.lastSeen) { <div class="sub">{{ ago(d.lastSeen) }}</div> }
             </td>
             <td class="nowrap">{{ d.hardware.osVersion || '—' }}</td>
@@ -384,6 +381,64 @@
 
   }
 
+
+  <!-- ===== package details ===== -->
+  @if ((view === 'updates' || view === 'apps') && selectedPkg; as p) {
+    <div class="rugix-backdrop" tabindex="-1" (click)="closePkg()" (keydown.escape)="closePkg()"></div>
+    <div class="rugix-details pkg-details">
+      @if (pkgInfo(p); as info) {
+        <mat-toolbar color="primary" class="details-toolbar">
+          <div class="details-title">
+            <span>{{ p.title || p.version }}</span>
+            <span class="details-sub">{{ view === 'apps' ? 'App' : 'Firmware update' }} · {{ p.version }}</span>
+          </div>
+          <span class="flex-1"></span>
+          @if (info.meta.signed === true) { <span class="status-chip online"><span class="dot"></span><span class="st-text">Signed</span></span> }
+          @if (info.meta.signed === false) { <span class="status-chip"><span class="dot"></span><span class="st-text">Unsigned</span></span> }
+          <button mat-icon-button type="button" (click)="closePkg()" aria-label="Close details"><mat-icon>close</mat-icon></button>
+        </mat-toolbar>
+        <div class="details-buttons">
+          <button mat-flat-button color="primary" type="button" (click)="copy(p.url || '')" [disabled]="!p.url"><mat-icon>{{ copied === p.url ? 'check' : 'content_copy' }}</mat-icon>Copy URL</button>
+          @if (canEditPackages) {
+            <button mat-flat-button color="primary" type="button" (click)="openPackage(p)"><mat-icon>edit</mat-icon>Edit</button>
+            <button mat-flat-button color="warn" type="button" (click)="deletePackage(p)"><mat-icon>delete</mat-icon>Remove</button>
+          }
+        </div>
+        @if (info.meta.security) {
+          <div class="pk-secbox">
+            <mat-icon>shield</mat-icon>
+            <span>Security update.@if (info.meta.advisory) { <a [href]="info.meta.advisory" target="_blank" rel="noopener noreferrer">Open the advisory</a> }</span>
+          </div>
+        }
+        <div class="group-box">
+          <div class="group-title">Package</div>
+          <div class="tab-body grid tight">
+            <div class="kv"><span>Title</span><b>{{ p.title || '—' }}</b></div>
+            <div class="kv"><span>Version</span><b>{{ p.version }}</b></div>
+            <div class="kv"><span>Tag</span><b>{{ p.tag || '—' }}</b></div>
+            <div class="kv"><span>Added</span><b>{{ p.createdTime ? fmt(p.createdTime) : '—' }}</b></div>
+            @if (view === 'updates') { <div class="kv"><span>Active channel</span><b>{{ channelsOf(p) || '—' }}</b></div> }
+            <div class="kv"><span>Size</span><b>{{ info.meta.size !== undefined ? formatBytes(info.meta.size) : '—' }}</b></div>
+            <div class="kv"><span>Signature</span><b [class.good]="info.meta.signed === true" [class.bad]="info.meta.signed === false">{{ info.meta.signed === true ? 'Signed' : (info.meta.signed === false ? 'Unsigned' : 'Unknown') }}</b></div>
+            <div class="kv"><span>Release notes</span><b>@if (info.meta.notes) { <a [href]="info.meta.notes" target="_blank" rel="noopener noreferrer">Open</a> } @else { — }</b></div>
+          </div>
+        </div>
+        <div class="group-box">
+          <div class="group-title">Bundle URL</div>
+          <div class="tab-body">
+            @if (p.url) { <div class="kv"><b class="mono">{{ displayUrl(p.url) }}</b></div> } @else { <span class="sub">Uploaded file – Rugix needs an external URL to pull a bundle.</span> }
+          </div>
+        </div>
+        @if (info.text) {
+          <div class="group-box">
+            <div class="group-title">Description</div>
+            <div class="tab-body"><div class="pk-desc">{{ info.text }}</div></div>
+          </div>
+        }
+      }
+    </div>
+  }
+
   <!-- ===== details ===== -->
   @if (selected; as d) {
     <div class="rugix-backdrop" tabindex="-1" (click)="closeDetails()" (keydown.escape)="closeDetails()"></div>
@@ -395,7 +450,7 @@
           <span class="details-sub">Rugix device details</span>
         </div>
         <span class="flex-1"></span>
-        <span class="status-chip" [class.online]="d.active"><span class="dot"></span>{{ d.active ? 'Online' : 'Offline' }}</span>
+        <span class="status-chip" [class.online]="d.active"><span class="dot"></span><span class="st-text">{{ d.active ? 'Online' : 'Offline' }}</span></span>
         <button mat-icon-button type="button" (click)="closeDetails()" aria-label="Close details"><mat-icon>close</mat-icon></button>
       </mat-toolbar>
       <div class="details-buttons">
@@ -463,7 +518,7 @@
         }
         <div class="tabbar" #bar (scroll)="updateTabArrows(bar)">
           @for (tb of tabLabels(d); track tb.i) {
-            <button type="button" class="tab" [class.active]="tabIndex === tb.i" (click)="selectTab(tb.i, $event)">{{ tb.label }}</button>
+            <button type="button" class="tab" [class.active]="tabIndex === tb.i" [attr.aria-current]="tabIndex === tb.i ? 'page' : null" (click)="selectTab(tb.i, $event)">{{ tb.label }}</button>
           }
         </div>
         @if (tabCanRight) {
@@ -496,8 +551,6 @@
               </div>
               <div class="kv"><span>Channel target</span>
                 <b [class.good]="d.firmware === 'current'" [class.warn]="d.firmware === 'outdated'">{{ d.target || 'not configured' }}@if (d.firmware === 'outdated') { · update available } @else if (d.firmware === 'current') { · up to date } @else if (d.firmware === 'ahead') { · device is newer }</b>
-              
-                @if (d.firmware === 'outdated' && d.active && allowed('install')) { <button mat-stroked-button type="button" class="upg-inline" (click)="openInstall([d], 'system')"><mat-icon>upgrade</mat-icon>Upgrade to {{ d.target }}</button> }
               </div>
               <div class="kv"><span>Rugix Ctrl</span><b>{{ d.hardware.rugixCtrl || '—' }}</b></div>
               <div class="kv"><span>Rugix Admin</span><b>{{ d.adminVersion || '—' }}</b></div>
@@ -522,8 +575,11 @@
             <div class="kv"><span>Boot flow</span><b>{{ d.bootFlow || '—' }}</b></div>
             <div class="kv"><span>Active group</span><b>{{ d.activeGroup || '—' }}</b></div>
             <div class="kv"><span>Default group</span><b>{{ d.defaultGroup || '—' }}</b></div>
+            <div class="kv"><span>Auto-commit</span>
+              <b class="ac"><mat-slide-toggle [checked]="!!d.autoCommit" [disabled]="autoCommitBusy || !allowed('power')" (change)="setAutoCommit(d, $event.checked, $event.source)" aria-label="Auto-commit"></mat-slide-toggle><span class="ac-text">{{ d.autoCommit ? 'on' : 'off' }}</span></b></div>
             <div class="kv"><span>Boot groups</span><b>{{ d.bootGroups.join(', ') || '—' }}</b></div>
             <div class="kv"><span>State management</span><b [class.good]="d.stateStatus === 'active'" [class.bad]="d.stateStatus === 'error'">{{ d.stateStatus || '—' }}</b></div>
+            @if (d.stateMessage && d.stateStatus === 'error') { <div class="kv"><span>State message</span><b class="bad">{{ d.stateMessage }}</b></div> }
             <div class="kv"><span>Data partition</span><b>{{ d.dataPartition || '—' }}</b></div>
             <div class="kv"><span>Active slot</span><b>{{ slotCount(d) }}</b></div>
             <div class="kv"><span>Components consistent</span>
@@ -572,7 +628,7 @@
                   <div class="sub">{{ formatBytes(s.size) }}
                     @if (s.updatedAt) { · updated {{ fmt(s.updatedAt) }} }</div>
                   @for (h of s.hashes | keyvalue; track h.key) {
-                    <div class="hash" [matTooltip]="h.value">{{ h.key }}: {{ h.value }}</div>
+                    <div class="hash" [matTooltip]="hashParts(h.key, h.value).digest">{{ hashParts(h.key, h.value).algo }}: {{ hashParts(h.key, h.value).digest }}</div>
                   }
                 </div>
               } @empty { <div class="empty">No slot information.</div> }
@@ -587,7 +643,7 @@
               <button mat-stroked-button [disabled]="blocked(d, 'install', 'app_lifecycle')" (click)="garbageCollectApps(d)"><mat-icon>cleaning_services</mat-icon>Clean up all apps</button>
             </div>
             <table class="rugix-table compact apps-table">
-              <thead><tr><th class="w-exp"></th><th>App</th><th>Version</th><th>Generation</th><th>Status</th><th class="c-md">Orchestrator</th><th class="w-actions"></th></tr></thead>
+              <thead><tr><th class="w-exp"><span class="sr-only">Expand</span></th><th>App</th><th>Version</th><th>Generation</th><th>Status</th><th class="c-md">Orchestrator</th><th class="w-actions"><span class="sr-only">Actions</span></th></tr></thead>
               <tbody>
                 @for (a of d.apps; track a.name) {
                   <tr class="job-row" [class.open]="isAppOpen(d, a)" tabindex="0" (click)="toggleApp(d, a)" (keydown.enter)="toggleApp(d, a)">
@@ -595,7 +651,7 @@
                     <td><b>{{ a.name }}</b></td>
                     <td class="nowrap">{{ a.version || '—' }}</td>
                     <td>{{ a.generation ?? '—' }}</td>
-                    <td><span class="pill" [class.ok]="appStatusLabel(a.status) === 'running'" [class.warn]="appStatusLabel(a.status) === 'unhealthy'" [class.err]="appStatusLabel(a.status) === 'failed'" [matTooltip]="appStatusMessage(a.status)">{{ appStatusLabel(a.status) }}</span></td>
+                    <td><span class="pill" [class.ok]="appStatusLabel(a.status) === 'running'" [class.warn]="appStatusLabel(a.status) === 'unhealthy'" [class.err]="appStatusLabel(a.status) === 'failed' || appStatusLabel(a.status) === 'stopped'" [matTooltip]="appStatusMessage(a.status)">{{ appStatusLabel(a.status) }}</span></td>
                     <td class="c-md">{{ a.orchestrator || '—' }}</td>
                     <td class="w-actions" (click)="$event.stopPropagation()">
                       <button mat-icon-button [matMenuTriggerFor]="appMenu" aria-label="App actions" [disabled]="blocked(d, 'install', 'app_lifecycle')"><mat-icon>more_vert</mat-icon></button>
@@ -668,7 +724,7 @@
                 {{ d.componentsConsistent === undefined ? 'consistency unknown' : (d.componentsConsistent ? 'consistent' : 'inconsistent') }}
               </span>
             </div>
-            <div class="rugix-table-wrap">
+            <div class="rugix-table-wrap" tabindex="0">
               <table class="rugix-table compact">
                 <thead><tr><th>Component</th><th>Version</th><th>Source</th><th class="c-md">Provides</th><th class="c-md">Requires</th></tr></thead>
                 <tbody>
@@ -677,19 +733,18 @@
                       <td><div class="name">{{ c.id }}</div>@if (c.path) { <div class="sub path" [matTooltip]="c.path">{{ c.path }}</div> }</td>
                       <td class="nowrap">{{ c.version || '—' }}</td>
                       <td>
-                        <span class="kind" [class]="kindClass(c.kind)">{{ c.kind }}</span>
-                        @if (c.app) { <div class="sub">{{ c.app }}{{ c.generation !== undefined ? ' · gen ' + c.generation : '' }}</div> }
+                        <span class="kind" [class]="kindClass(c.kind)" [matTooltip]="c.app ? c.app + (c.generation !== undefined ? ' · gen ' + c.generation : '') : ''" matTooltipPosition="above">{{ c.kind }}</span>
                       </td>
                       <td class="c-md">
                         <div class="caps">
-                          @for (x of c.provides; track $index) { <span class="cap" [matTooltip]="'provides'">{{ capabilityLabel(x) }}</span> }
+                          @for (x of c.provides; track $index) { <span class="cap" [matTooltip]="'provides: ' + capabilityLabel(x)" matTooltipPosition="above">{{ capabilityLabel(x) }}</span> }
                           @if (!c.provides.length) { — }
                         </div>
                       </td>
                       <td class="c-md">
                         <div class="caps">
                           @for (x of c.requires; track $index) {
-                            <span class="cap req" [class.bad]="isUnsatisfied(d, x.id)" [matTooltip]="isUnsatisfied(d, x.id) ? 'not provided by any component' : 'requires'">{{ capabilityLabel(x) }}</span>
+                            <span class="cap req" [class.bad]="isUnsatisfied(d, x.id)" [matTooltip]="(isUnsatisfied(d, x.id) ? 'not provided by any component: ' : 'requires: ') + capabilityLabel(x)" matTooltipPosition="above">{{ capabilityLabel(x) }}</span>
                           }
                           @if (!c.requires.length) { — }
                         </div>
@@ -769,9 +824,9 @@
               <div class="empty"><mat-spinner diameter="24" style="margin: 0 auto"></mat-spinner></div>
             }
             @if (!jobsLoading || jobGroups.length) {
-              <div class="rugix-table-wrap audit-wrap">
+              <div class="rugix-table-wrap audit-wrap" tabindex="0">
                 <table class="rugix-table compact log-table">
-                  <thead><tr><th class="w-exp"></th><th class="lc-time">Started</th><th>Job</th><th class="lc-status">Status</th><th class="lc-dur">Duration</th><th class="lc-id">Job ID</th></tr></thead>
+                  <thead><tr><th class="w-exp"><span class="sr-only">Expand</span></th><th class="lc-time">Started</th><th>Job</th><th class="lc-status">Status</th><th class="lc-dur">Duration</th><th class="lc-id">Job ID</th></tr></thead>
                   <tbody>
                     @for (j of jobPage; track j.id; let i = $index) {
                       <tr class="job-row" [class.open]="jobOpen(j)" (click)="toggleJob(j)">
@@ -781,7 +836,7 @@
                         <td><span class="pill" [class.ok]="j.status === 'succeeded'" [class.err]="j.status === 'failed'" [class.run]="j.status === 'running' || j.status === 'queued'">{{ j.status }}</span></td>
                         <td class="nowrap">{{ jobDuration(j) || '—' }}</td>
                         <td class="job-id-cell" [matTooltip]="j.id"><span class="id-text">{{ j.id }}</span>
-                          <button mat-icon-button type="button" class="copy" matTooltip="Copy job id" (click)="$event.stopPropagation(); copy(j.id)"><mat-icon>content_copy</mat-icon></button>
+                          <button mat-icon-button type="button" class="copy" matTooltip="Copy job id" aria-label="Copy job id" (click)="$event.stopPropagation(); copy(j.id)"><mat-icon>content_copy</mat-icon></button>
                         </td>
                       </tr>
                       @if (jobOpen(j)) {
@@ -829,7 +884,7 @@
             } @else if (auditError) {
               <div class="banner err"><mat-icon>error_outline</mat-icon><span>{{ auditError }}</span></div>
             } @else {
-              <div class="rugix-table-wrap audit-wrap">
+              <div class="rugix-table-wrap audit-wrap" tabindex="0">
                 <table class="rugix-table compact log-table">
                   <thead><tr><th class="lc-time">Time</th><th class="lc-user">User</th><th class="lc-action">Action</th><th class="lc-status">Status</th><th>Details</th></tr></thead>
                   <tbody>

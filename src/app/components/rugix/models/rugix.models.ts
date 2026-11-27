@@ -15,12 +15,25 @@ export interface RugixWidgetSettings {
   keys: RugixKeySettings;
   sse: RugixSseSettings;
   access: RugixAccessSettings;
+  security: RugixSecuritySettings;
   /** Release channels: channel name → Edge OS version devices on that channel should run. */
   channels: { [channel: string]: string };
   /** Channel of devices without a `channel` attribute. */
   defaultChannel: string;
   /** Tenant server attribute holding the channels edited in the Channels view (overrides `channels` / `defaultChannel`). */
   channelsAttribute: string;
+}
+
+/** Safety guards of the widget (defaults are the secure choice). */
+export interface RugixSecuritySettings {
+  /** Reject plain http bundle URLs (otherwise only a warning is shown). */
+  requireHttps: boolean;
+  /** Require a reason / ticket id for installs, reboots and factory resets. */
+  requireReason: boolean;
+  /** Installing on more devices than this needs a typed confirmation (0 = never). */
+  bulkConfirmThreshold: number;
+  /** Server attribute of the device that records who changed what (empty = do not record). */
+  changeAttribute: string;
 }
 
 /**
@@ -71,6 +84,8 @@ export interface RugixKeySettings {
   dataPartition: string;
   apiVersion: string;
   daemonFeatures: string;
+  /** Optional separate attribute with the `dangerouslyInsecure` flag of `GET /api/daemon`. */
+  daemonInsecure: string;
   /** Optional: Rugix Admin build version (`GET /api/info` → `version`). */
   adminVersion: string;
   components: string;
@@ -85,6 +100,12 @@ export interface RugixKeySettings {
   /** Optional device attribute with the release channel of the device (`stable` / `testing`). */
   channel: string;
   slotPrefix: string;
+  /** Optional attribute with the whole `slots` object of `GET /api/system/info` (covers slots that have no own key). */
+  slotsAll: string;
+  /** Error message of the state management (`state.message` of `GET /api/system/info`). */
+  stateMessage: string;
+  /** Server attribute that enables the automatic commit of a new system (consumed by a rule chain). */
+  autoCommit: string;
 }
 
 /** Live job stream (gateway SSE connector). */
@@ -130,6 +151,7 @@ export const DEFAULT_RUGIX_SETTINGS: RugixWidgetSettings = {
     dataPartition: 'state.dataPartition',
     apiVersion: 'api.version',
     daemonFeatures: 'daemon.features',
+    daemonInsecure: 'daemon.dangerouslyInsecure',
     adminVersion: 'admin.version',
     components: 'components.components',
     componentsConsistent: 'components.consistent',
@@ -139,7 +161,10 @@ export const DEFAULT_RUGIX_SETTINGS: RugixWidgetSettings = {
     machineStats: 'machineStats',
     lastActivityTime: 'lastActivityTime',
     channel: 'rugix.channel',
-    slotPrefix: 'slots.'
+    slotPrefix: 'slots.',
+    slotsAll: 'slots',
+    stateMessage: 'state.message',
+    autoCommit: 'auto_commit'
   },
   access: {
     install: ['SYS_ADMIN', 'TENANT_ADMIN', 'CUSTOMER_USER'],
@@ -148,6 +173,7 @@ export const DEFAULT_RUGIX_SETTINGS: RugixWidgetSettings = {
     channels: ['TENANT_ADMIN'],
     packages: ['TENANT_ADMIN']
   },
+  security: {requireHttps: true, requireReason: false, bulkConfirmThreshold: 5, changeAttribute: 'rugix.lastChange'},
   channels: {stable: '', testing: ''},
   defaultChannel: 'stable',
   channelsAttribute: 'rugix.channels',
@@ -169,6 +195,7 @@ export function mergeRugixSettings(settings: Partial<RugixWidgetSettings> | unde
     keys: {...DEFAULT_RUGIX_SETTINGS.keys, ...(s.keys || {})},
     sse: {...DEFAULT_RUGIX_SETTINGS.sse, ...(s.sse || {})},
     access: {...DEFAULT_RUGIX_SETTINGS.access, ...(s.access || {})},
+    security: {...DEFAULT_RUGIX_SETTINGS.security, ...(s.security || {})},
     channels: {...DEFAULT_RUGIX_SETTINGS.channels, ...(s.channels || {})}
   };
 }
@@ -246,6 +273,9 @@ export interface RugixDevice {
   activeGroup?: string;
   defaultGroup?: string;
   stateStatus?: string;
+  stateMessage?: string;
+  /** `auto_commit` server attribute (undefined = not set). */
+  autoCommit?: boolean;
   dataPartition?: string;
   apiVersion?: string;
   features?: any;

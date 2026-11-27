@@ -1,0 +1,465 @@
+{
+  "name": "rugix-admin",
+  "id": "rugix-request-connector-v1-0",
+  "host": "http://host.docker.internal:7492",
+  "SSLVerify": false,
+  "security": {
+    "type": "anonymous"
+  },
+  "mapping": [
+    {
+      "url": "/api/system/info",
+      "httpMethod": "GET",
+      "httpHeaders": {
+        "Accept": "application/json"
+      },
+      "allowRedirects": true,
+      "timeout": 10,
+      "scanPeriod": 600,
+      "converter": {
+        "type": "json",
+        "deviceNameJsonExpression": "Testanlage_Felix_Rugix",
+        "deviceTypeJsonExpression": "RevolutionPi_Rugix",
+        "attributes": [
+          {
+            "key": "boot.bootFlow",
+            "type": "string",
+            "value": "${boot.bootFlow}"
+          },
+          {
+            "key": "boot.groups",
+            "type": "json",
+            "value": "${boot.groups}"
+          },
+          {
+            "key": "state.status",
+            "type": "string",
+            "value": "${state.status}"
+          },
+          {
+            "key": "state.dataPartition",
+            "type": "string",
+            "value": "${state.dataPartition}"
+          },
+          {
+            "key": "state.message",
+            "type": "string",
+            "value": "${state.message}"
+          },
+          {
+            "key": "state.ephemeral",
+            "type": "string",
+            "value": "${state.ephemeral}"
+          },
+          {
+            "key": "slots.boot-a",
+            "type": "json",
+            "value": "${slots.boot-a}"
+          },
+          {
+            "key": "slots.boot-b",
+            "type": "json",
+            "value": "${slots.boot-b}"
+          },
+          {
+            "key": "slots.system-a",
+            "type": "json",
+            "value": "${slots.system-a}"
+          },
+          {
+            "key": "slots.system-b",
+            "type": "json",
+            "value": "${slots.system-b}"
+          },
+          {
+            "key": "slots",
+            "type": "json",
+            "value": "${slots}"
+          }
+        ],
+        "telemetry": [
+          {
+            "key": "boot.activeGroup",
+            "type": "string",
+            "value": "${boot.activeGroup}"
+          },
+          {
+            "key": "boot.defaultGroup",
+            "type": "string",
+            "value": "${boot.defaultGroup}"
+          }
+        ]
+      }
+    },
+    {
+      "url": "/api/info",
+      "httpMethod": "GET",
+      "httpHeaders": {
+        "Accept": "application/json"
+      },
+      "allowRedirects": true,
+      "timeout": 10,
+      "scanPeriod": 3600,
+      "converter": {
+        "type": "json",
+        "deviceNameJsonExpression": "Testanlage_Felix_Rugix",
+        "deviceTypeJsonExpression": "RevolutionPi_Rugix",
+        "attributes": [
+          {
+            "key": "admin.version",
+            "type": "string",
+            "value": "${version}"
+          }
+        ]
+      }
+    },
+    {
+      "url": "/api/daemon",
+      "httpMethod": "GET",
+      "httpHeaders": {
+        "Accept": "application/json"
+      },
+      "allowRedirects": true,
+      "timeout": 10,
+      "scanPeriod": 3600,
+      "converter": {
+        "type": "json",
+        "deviceNameJsonExpression": "Testanlage_Felix_Rugix",
+        "deviceTypeJsonExpression": "RevolutionPi_Rugix",
+        "attributes": [
+          {
+            "key": "daemon.dangerouslyInsecure",
+            "type": "boolean",
+            "value": "${dangerouslyInsecure}"
+          },
+          {
+            "key": "daemon.features",
+            "type": "json",
+            "value": "${features}"
+          }
+        ]
+      }
+    },
+    {
+      "url": "/api/components",
+      "httpMethod": "GET",
+      "httpHeaders": {
+        "Accept": "application/json"
+      },
+      "allowRedirects": true,
+      "timeout": 10,
+      "scanPeriod": 600,
+      "converter": {
+        "type": "json",
+        "deviceNameJsonExpression": "Testanlage_Felix_Rugix",
+        "deviceTypeJsonExpression": "RevolutionPi_Rugix",
+        "attributes": [
+          {
+            "key": "components.roots",
+            "type": "json",
+            "value": "${roots}"
+          },
+          {
+            "key": "components.components",
+            "type": "json",
+            "value": "${components}"
+          },
+          {
+            "key": "components.consistent",
+            "type": "json",
+            "value": "${consistent}"
+          },
+          {
+            "key": "components.problems",
+            "type": "json",
+            "value": "${problems}"
+          }
+        ]
+      }
+    },
+    {
+      "url": "/api/apps",
+      "httpMethod": "GET",
+      "httpHeaders": {
+        "Accept": "application/json"
+      },
+      "allowRedirects": true,
+      "timeout": 10,
+      "scanPeriod": 60,
+      "converter": {
+        "type": "json",
+        "deviceNameJsonExpression": "Testanlage_Felix_Rugix",
+        "deviceTypeJsonExpression": "RevolutionPi_Rugix",
+        "attributes": [
+          {
+            "key": "apps.apps",
+            "type": "json",
+            "value": "${apps}"
+          }
+        ]
+      }
+    }
+  ],
+  "serverSideRpc": [
+    {
+      "deviceNameFilter": "Testanlage_Felix_Rugix",
+      "methodFilter": "getbootInfo",
+      "requestUrlExpression": "/api/system/info",
+      "httpMethod": "GET",
+      "requestValueExpression": "{}",
+      "responseTimeout": 10,
+      "responseValueExpression": "${boot}",
+      "timeout": 5,
+      "tries": 1,
+      "httpHeaders": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "deviceNameFilter": "Testanlage_Felix_Rugix",
+      "methodFilter": "reboot",
+      "requestUrlExpression": "api/system/actions/reboot",
+      "httpMethod": "POST",
+      "requestValueExpression": "{}",
+      "responseTimeout": 10,
+      "responseValueExpression": "${job.id}",
+      "timeout": 5,
+      "tries": 1,
+      "httpHeaders": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "deviceNameFilter": "Testanlage_Felix_Rugix",
+      "methodFilter": "rebootSpare",
+      "requestUrlExpression": "api/system/actions/reboot-spare",
+      "httpMethod": "POST",
+      "requestValueExpression": "{}",
+      "responseTimeout": 10,
+      "responseValueExpression": "${job.id}",
+      "timeout": 5,
+      "tries": 1,
+      "httpHeaders": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "deviceNameFilter": "Testanlage_Felix_Rugix",
+      "methodFilter": "commit",
+      "requestUrlExpression": "api/system/actions/commit",
+      "httpMethod": "POST",
+      "requestValueExpression": "{}",
+      "responseTimeout": 10,
+      "responseValueExpression": "${job.id}",
+      "timeout": 5,
+      "tries": 1,
+      "httpHeaders": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "deviceNameFilter": "Testanlage_Felix_Rugix",
+      "methodFilter": "factoryReset",
+      "requestUrlExpression": "api/system/actions/factory-reset?${params.query}",
+      "httpMethod": "POST",
+      "requestValueExpression": "{}",
+      "responseTimeout": 10,
+      "responseValueExpression": "${job.id}",
+      "timeout": 5,
+      "tries": 1,
+      "httpHeaders": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "deviceNameFilter": "Testanlage_Felix_Rugix",
+      "methodFilter": "installUpdateFromUrl",
+      "requestUrlExpression": "api/system/update/${params.uuid}/url?${params.query}",
+      "httpMethod": "POST",
+      "requestValueExpression": "{\"url\":\"${params.url}\"}",
+      "responseTimeout": 10,
+      "timeout": 5,
+      "tries": 1,
+      "httpHeaders": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "deviceNameFilter": "Testanlage_Felix_Rugix",
+      "methodFilter": "installAppFromUrl",
+      "requestUrlExpression": "api/apps/install/${params.uuid}/url?${params.query}",
+      "httpMethod": "POST",
+      "requestValueExpression": "{\"url\": \"${params.url}\"}",
+      "responseTimeout": 10,
+      "timeout": 5,
+      "tries": 1,
+      "httpHeaders": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "deviceNameFilter": "Testanlage_Felix_Rugix",
+      "methodFilter": "appStart",
+      "requestUrlExpression": "api/apps/${params.app}/actions/start?${params.query}",
+      "httpMethod": "POST",
+      "requestValueExpression": "{}",
+      "responseTimeout": 10,
+      "responseValueExpression": "${job.id}",
+      "timeout": 5,
+      "tries": 1,
+      "httpHeaders": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "deviceNameFilter": "Testanlage_Felix_Rugix",
+      "methodFilter": "appStop",
+      "requestUrlExpression": "api/apps/${params.app}/actions/stop?${params.query}",
+      "httpMethod": "POST",
+      "requestValueExpression": "{}",
+      "responseTimeout": 10,
+      "responseValueExpression": "${job.id}",
+      "timeout": 5,
+      "tries": 1,
+      "httpHeaders": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "deviceNameFilter": "Testanlage_Felix_Rugix",
+      "methodFilter": "appActivate",
+      "requestUrlExpression": "api/apps/${params.app}/actions/activate?${params.query}",
+      "httpMethod": "POST",
+      "requestValueExpression": "{}",
+      "responseTimeout": 10,
+      "responseValueExpression": "${job.id}",
+      "timeout": 5,
+      "tries": 1,
+      "httpHeaders": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "deviceNameFilter": "Testanlage_Felix_Rugix",
+      "methodFilter": "appDeactivate",
+      "requestUrlExpression": "api/apps/${params.app}/actions/deactivate?${params.query}",
+      "httpMethod": "POST",
+      "requestValueExpression": "{}",
+      "responseTimeout": 10,
+      "responseValueExpression": "${job.id}",
+      "timeout": 5,
+      "tries": 1,
+      "httpHeaders": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "deviceNameFilter": "Testanlage_Felix_Rugix",
+      "methodFilter": "appRollback",
+      "requestUrlExpression": "api/apps/${params.app}/actions/rollback?${params.query}",
+      "httpMethod": "POST",
+      "requestValueExpression": "{}",
+      "responseTimeout": 10,
+      "responseValueExpression": "${job.id}",
+      "timeout": 5,
+      "tries": 1,
+      "httpHeaders": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "deviceNameFilter": "Testanlage_Felix_Rugix",
+      "methodFilter": "appRemove",
+      "requestUrlExpression": "api/apps/${params.app}/actions/remove?${params.query}",
+      "httpMethod": "POST",
+      "requestValueExpression": "{}",
+      "responseTimeout": 10,
+      "responseValueExpression": "${job.id}",
+      "timeout": 5,
+      "tries": 1,
+      "httpHeaders": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "deviceNameFilter": "Testanlage_Felix_Rugix",
+      "methodFilter": "appGc",
+      "requestUrlExpression": "api/apps/${params.app}/actions/gc?${params.query}",
+      "httpMethod": "POST",
+      "requestValueExpression": "{}",
+      "responseTimeout": 10,
+      "responseValueExpression": "${job.id}",
+      "timeout": 5,
+      "tries": 1,
+      "httpHeaders": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "deviceNameFilter": "Testanlage_Felix_Rugix",
+      "methodFilter": "appsGarbageCollect",
+      "requestUrlExpression": "api/apps/actions/gc?${params.query}",
+      "httpMethod": "POST",
+      "requestValueExpression": "{}",
+      "responseTimeout": 10,
+      "responseValueExpression": "${job.id}",
+      "timeout": 5,
+      "tries": 1,
+      "httpHeaders": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "deviceNameFilter": "Testanlage_Felix_Rugix",
+      "methodFilter": "appInfo",
+      "requestUrlExpression": "api/apps/${params.app}",
+      "httpMethod": "GET",
+      "requestValueExpression": "{}",
+      "responseTimeout": 10,
+      "timeout": 5,
+      "tries": 1,
+      "httpHeaders": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "deviceNameFilter": "Testanlage_Felix_Rugix",
+      "methodFilter": "getSystemInfo",
+      "requestUrlExpression": "api/system/info",
+      "httpMethod": "GET",
+      "requestValueExpression": "{}",
+      "responseTimeout": 10,
+      "timeout": 5,
+      "tries": 1,
+      "httpHeaders": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "deviceNameFilter": "Testanlage_Felix_Rugix",
+      "methodFilter": "getApps",
+      "requestUrlExpression": "api/apps",
+      "httpMethod": "GET",
+      "requestValueExpression": "{}",
+      "responseTimeout": 10,
+      "timeout": 5,
+      "tries": 1,
+      "httpHeaders": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "deviceNameFilter": "Testanlage_Felix_Rugix",
+      "methodFilter": "getComponents",
+      "requestUrlExpression": "api/components",
+      "httpMethod": "GET",
+      "requestValueExpression": "{}",
+      "responseTimeout": 10,
+      "timeout": 5,
+      "tries": 1,
+      "httpHeaders": {
+        "Content-Type": "application/json"
+      }
+    }
+  ]
+}

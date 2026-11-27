@@ -1,22 +1,35 @@
 <form (ngSubmit)="install()">
   <div class="rugix-plain-header">
-    <h2 class="rugix-plain-title">{{ isSystem ? 'Upgrade Firmware' : 'Install App' }}</h2>
+    <h2 mat-dialog-title class="rugix-plain-title">{{ isSystem ? 'Upgrade Firmware' : 'Install App' }}</h2>
     <span class="flex-1"></span>
     <button mat-icon-button type="button" (click)="cancel()" [disabled]="installing" aria-label="Close"><mat-icon>close</mat-icon></button>
   </div>
   <div mat-dialog-content class="rugix-dialog-content">
-    <div class="rugix-targets" [matTooltip]="targetsTooltip" matTooltipPosition="above">
-      <mat-icon>memory</mat-icon>
-      <span class="targets-text"><b>{{ data.devices.length === 1 ? 'Target' : 'Targets (' + data.devices.length + ')' }}:</b> {{ targetsSummary }}</span>
-    </div>
+    @if (data.devices.length === 1) {
+      <div class="rugix-targets">
+        <mat-icon>memory</mat-icon>
+        <span class="targets-text"><b>Target:</b> {{ targetsSummary }}</span>
+      </div>
+    } @else {
+      <div class="rugix-targets multi">
+        <mat-icon>memory</mat-icon>
+        <div class="targets-box">
+          <b>Targets ({{ data.devices.length }})</b>
+          <ul class="targets-list" tabindex="0" aria-label="Target devices">
+            @for (d of data.devices; track d.id) { <li>{{ d.label || d.name }}</li> }
+          </ul>
+        </div>
+      </div>
+    }
 
+    <ng-template #pkgSelect>
     @if (!useCustomUrl) {
       <mat-form-field appearance="outline" class="rugix-field">
         <mat-label>{{ isSystem ? 'Firmware package' : 'Software package' }}</mat-label>
         <mat-select [(ngModel)]="selectedPackage" name="package" [disabled]="loadingPackages || installing">
           <mat-select-trigger>{{ selectedPackage?.title || selectedPackage?.tag }} <span class="version">– {{ selectedPackage?.version }}</span></mat-select-trigger>
           @for (p of packages; track p.id.id) {
-            <mat-option [value]="p">{{ p.title || p.tag }} <span class="version">– {{ p.version }}</span>@if (isTarget(p)) { <span class="target-tag">channel target</span> }</mat-option>
+            <mat-option [value]="p">{{ p.title || p.tag }} <span class="version">– {{ p.version }}</span>@if (isTarget(p)) { <span class="rugix-target-tag">channel target</span> }</mat-option>
           }
         </mat-select>
         @if (loadingPackages) {
@@ -35,18 +48,32 @@
         }
       </mat-form-field>
     }
-    @if (targetNote; as n) { <div [class]="n.warn ? 'rugix-note' : 'rugix-note ok'">{{ n.text }}</div> }
-    @if (urlProblem.error) { <div class="rugix-error">{{ urlProblem.error }}</div> }
-    @if (urlProblem.warn) { <div class="rugix-note">{{ urlProblem.warn }}</div> }
     @if (packages.length) {
       <mat-checkbox (change)="blurSoon()" [(ngModel)]="useCustomUrl" name="useCustomUrl" [disabled]="installing">Enter URL manually</mat-checkbox>
     }
+    </ng-template>
 
+    @if (fixedMode) {
+      <div class="rugix-fixed">
+        <mat-icon>system_update_alt</mat-icon>
+        <span class="fixed-text"><b>Firmware:</b> {{ fixedLabel }}</span>
+        @if (!useCustomUrl && selectedPackage && isTarget(selectedPackage)) { <span class="rugix-target-tag">channel target</span> }
+      </div>
+    } @else {
+      <ng-container *ngTemplateOutlet="pkgSelect"></ng-container>
+    }
+    @if (targetNote; as n) { <div [class]="n.warn ? 'rugix-note' : 'rugix-note ok'">{{ n.text }}</div> }
+    @if (urlProblem.error) { <div class="rugix-error">{{ urlProblem.error }}</div> }
+    @if (urlProblem.warn) { <div class="rugix-note">{{ urlProblem.warn }}</div> }
     <button type="button" class="rugix-advanced-toggle" (click)="advancedOpen = !advancedOpen" [attr.aria-expanded]="advancedOpen">
       <mat-icon>{{ advancedOpen ? 'expand_less' : 'expand_more' }}</mat-icon>Advanced
     </button>
     @if (advancedOpen) {
       <div class="rugix-advanced">
+        @if (fixedMode) {
+          <div class="rugix-section-title">Firmware package</div>
+          <ng-container *ngTemplateOutlet="pkgSelect"></ng-container>
+        }
         @if (isSystem) {
           <div class="rugix-section-title">After installation</div>
           <mat-radio-group [(ngModel)]="reboot" name="reboot" class="rugix-options" [disabled]="installing">
@@ -104,10 +131,33 @@
       </div>
     }
 
+    @if (downgraded.length) {
+      <div class="rugix-note">
+        <b>Downgrade.</b> {{ downgradeText }}
+        <mat-checkbox (change)="blurSoon()" [(ngModel)]="downgradeAck" name="downgradeAck" [disabled]="installing">I want to install an older version.</mat-checkbox>
+      </div>
+    }
+    <div class="rugix-labeled">
+      <div class="lbl">Reason / ticket id{{ reasonRequired ? '' : ' (optional)' }}</div>
+      <mat-form-field appearance="outline" class="rugix-field" subscriptSizing="dynamic">
+        <input matInput name="reason" maxlength="200" autocomplete="off" aria-label="Reason / ticket id" placeholder="Ticket number or reason" [(ngModel)]="reason" [disabled]="installing">
+      </mat-form-field>
+    </div>
+    @if (bulkRequired) {
+      <div class="rugix-labeled">
+        <div class="lbl">To confirm, type the number of devices: <code>{{ data.devices.length }}</code></div>
+        <mat-form-field appearance="outline" class="rugix-field" subscriptSizing="dynamic">
+          <input matInput name="bulk" autocomplete="off" aria-label="Number of devices" [placeholder]="'' + data.devices.length" [(ngModel)]="bulkText" [disabled]="installing">
+        </mat-form-field>
+      </div>
+    }
     <div class="rugix-ack">
       <mat-checkbox (change)="blurSoon()" [(ngModel)]="acknowledged" name="ack" [disabled]="installing">{{ ackText }}</mat-checkbox>
     </div>
 
+    @if (installing) {
+      <div class="rugix-note">Waiting for the devices to accept the installation: {{ answered }} of {{ data.devices.length }} answered. Slow or offline devices can take up to {{ data.settings.rpc.timeout / 1000 }} s.</div>
+    }
     @if (error) {
       <div class="rugix-error"><mat-icon>error_outline</mat-icon><span>{{ error }}</span></div>
     }
@@ -117,7 +167,7 @@
     <button mat-button type="button" (click)="cancel()" [disabled]="installing">Cancel</button>
     <button mat-flat-button color="primary" type="submit" [disabled]="!canInstall">
       @if (installing) { <span class="btn-spinner" aria-hidden="true"></span> }
-      {{ installing ? 'Starting…' : installLabel }}
+      {{ installing ? 'Starting ' + answered + '/' + data.devices.length + '…' : installLabel }}
     </button>
   </div>
 </form>

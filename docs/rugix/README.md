@@ -68,12 +68,44 @@ Each device follows a release channel (e.g. `stable`, `testing`) that targets an
 
 Only users listed in `access.channels` (default `TENANT_ADMIN`) can save; everybody else sees the channels read-only. As long as nothing is stored, the widget settings `channels` / `defaultChannel` are used as initial values. A channel that devices still follow cannot be removed.
 
-The channel of a device is its server-scope attribute `rugix.channel` (add it as data key; devices without it use the default channel). The details panel shows the channel and its target version and lets users with the *install* permission switch the channel (with confirmation). Devices older than their channel target get an orange upgrade icon next to the device name; the **Outdated** filter chip and the *Firmware vs. channel* donut on the Overview page list them (select them and use *Upgrade Firmware* for a bulk update). *Upgrade outdated* in the filter row (one entry per target version) and *Upgrade to x.y.z* in the details panel open the install dialog with the matching firmware package preselected and marked as *channel target*; the dialog warns when no package with that version exists or when devices with different targets are mixed. Versions are compared semver-style, pre-releases sort before their release (`0.5.0-rc1 < 0.5.0`); devices newer than the channel are shown as *Ahead*.
+The channel of a device is its server-scope attribute `rugix.channel` (add it as data key; devices without it use the default channel). The details panel shows the channel and its target version and lets users with the *install* permission switch the channel (with confirmation). Devices older than their channel target get an orange upgrade icon next to the device name; the **Outdated** filter chip and the *Firmware vs. channel* donut on the Overview page list them (select them and use *Upgrade Firmware* for a bulk update). *Upgrade outdated* in the toolbar of the Devices view, next to search (one entry per target version) opens the install dialog for them. When the selected devices share one channel target, the dialog shows that firmware version as a fixed value (*channel target*); a different package or a manual URL can only be chosen under *Advanced*. Without a matching package, or when the devices have different targets, the dialog shows the package dropdown and warns. Versions are compared semver-style, pre-releases sort before their release (`0.5.0-rc1 < 0.5.0`); devices newer than the channel are shown as *Ahead*.
 
 ### Updates and Apps (OTA packages)
 The two views list and manage ThingsBoard OTA packages (*Firmware* → Updates, *Software* → Apps). A package needs a title, version, device profile and an **external bundle URL** (Rugix pulls the bundle itself, uploaded files cannot be installed). ThingsBoard treats title, version, tag and URL as immutable and only allows changing the description, so *Edit* replaces the package (removes and re-adds it, restoring the old one if adding fails) when one of those fields changes. Users in `access.packages` (default `TENANT_ADMIN`) can add / edit / remove, everybody else sees the lists read-only. Removing a firmware version that a channel still targets shows a warning.
 
+### Accessibility and small screens
+
+Tested with Playwright in Chromium (phone and tablet profiles from 320 px, see `local-test/e2e`): no horizontal overflow, touch targets of at
+least 24 px, no axe-core violations in any view, panel or dialog, full keyboard use (Enter / Space / Escape, visible focus ring, dialogs trap focus and
+return it to the opening button). Not covered: real devices, Safari, screen reader pass.
+
+### Package metadata (`rugix-meta`)
+
+ThingsBoard has no fields for the signature state or release information of an OTA package, so the widget keeps them in the
+package description (the only part that can be changed later). The description is free text; an optional last line holds JSON:
+
+```
+Fixes CVE-2026-1234.
+rugix-meta: {"size":184549376,"signed":true,"security":true,"advisory":"https://…","notes":"https://…"}
+```
+
+| Field | Meaning |
+|---|---|
+| `signed` | `true` / `false`: the bundle is (not) signed. Shown as badge `signed` / `unsigned` |
+| `size` | Bundle size in bytes |
+| `security`, `advisory` | Security update flag with a link to the advisory |
+| `notes` | Link to the release notes |
+
+All fields are optional and are edited in the *Add / Edit update* dialog (section *Details*). Invalid values and non-http(s) links
+are ignored. This is information only, not integrity protection: whoever may edit a package may change it. The signature itself is
+checked by Rugix on the device. A bundle hash is deliberately not stored because the bundles are signed.
+
 ### Security notes
+
+Safety guards can be set in the widget settings (`security`): `requireHttps` (default `true`), `requireReason`
+(default `false`), `bulkConfirmThreshold` (default `5`) and `changeAttribute` (default `rugix.lastChange`). Factory reset
+asks for the device name, a firmware older than the running one needs an extra confirmation. CRA / IEC 62443 mapping:
+[COMPLIANCE.md](COMPLIANCE.md).
 - **Device data is untrusted.** Attributes and telemetry (channel, components, job events, …) come from the devices and are only rendered as text; the channel attribute accepts plain names only and is looked up on own properties of the channel map.
 - **Bundle URLs:** only `http(s)` URLs are accepted. The dialogs warn about plain `http` and about credentials or SAS tokens (`sig=` …) inside the URL, and the Updates list shows the URL without its query string. Everything stored in ThingsBoard (OTA package, widget settings) and sent in an RPC is visible to users with access and ends up in the audit log, so do not put tokens there – let a reverse proxy or the gateway add them.
 - **Permissions are enforced by ThingsBoard, not by the widget.** `access.*` only hides buttons. Restrict who may open the dashboard, send RPC to the gateway and write tenant attributes / OTA packages.
@@ -93,8 +125,30 @@ dashboard access), so restrict who may open the dashboard or send RPC as well.
 
 Offline devices show "offline since" (timestamp of the `active` attribute, or the optional `lastActivityTime` data key); online devices show "online since" on hover.
 
+## Rule chain: refresh after jobs
+
+The gateway connector polls Rugix Admin with a scan period (`/api/apps` every 60 s, `/api/system/info` and `/api/components` every 600 s). After
+an install or action, attributes like the app generation, boot groups or slots stay old until the next scan. To refresh them as soon as a job has
+finished successfully:
+
+1. Add the three RPCs `getSystemInfo`, `getApps` and `getComponents` to the connector (see [gateway/rugix-admin-connector.json](gateway/rugix-admin-connector.json)).
+2. Import [gateway/Rugix_refresh_after_job.rulechain.json](gateway/Rugix_refresh_after_job.rulechain.json) as a new rule chain *Rugix_refresh_after_job*.
+3. In the rule chain that handles the Rugix devices (the one with the *Message Type Switch*) add a **Rule Chain** node that points to *Rugix_refresh_after_job* and connect
+   *Message Type Switch* → *Rule Chain* node with the relation **Post telemetry** (keep the existing connection to *Save Timeseries*).
+
+What it does: the node *job succeeded* checks every `jobEvent` telemetry (`job-changed` with status `succeeded`). On a hit it sends the three RPCs to the
+device, turns the answers into attributes (`apps.apps`, `boot.*`, `state.*`, `slots`, `slots.<name>`, `components.*`, client scope like the connector) and telemetry
+(`boot.activeGroup`, `boot.defaultGroup`) and saves them. The gateway returns RPC answers as text, often as a Python dict (`{'apps': [...]}`); the transform
+nodes convert this (quotes, `True` / `False` / `None`). Strings that contain a `'` can break that conversion. The answers of a job that reboots the device may time out,
+the next scan then fills in the data.
+
+`node docs/rugix/gateway/verify-rule-chain.js docs/rugix/gateway/rugix-admin-connector.json` checks the chain scripts offline against the wire format of Rugix Admin (object, JSON text and Python text answers, error answers, job events) and against the keys of the connector mapping.
+
+Tested against the local simulator (answers as Python text, attributes kept stale on purpose): after an app activation the generation, slots and boot groups were updated within
+two seconds. Not tested with a real gateway.
+
 ## Gateway connector – recommended changes
-Derived from `rugix-request-connector-v1-0`:
+Derived from `rugix-request-connector-v1-0`. A complete corrected connector is in [gateway/rugix-admin-connector.json](gateway/rugix-admin-connector.json) (changes marked in [gateway/rugix-admin-connector.annotated.jsonc](gateway/rugix-admin-connector.annotated.jsonc); RPC URLs are left as they were, without leading `/`):
 
 | # | Finding | Recommendation |
 |---|---------|----------------|
@@ -105,7 +159,8 @@ Derived from `rugix-request-connector-v1-0`:
 | 5 | `installUpdateFromUrl` / `installAppFromUrl` have no `responseValueExpression` | Fine for this extension (it passes its own job UUID, Rugix accepts it in the path); optionally add `${job.id}` |
 | 6 | RPC URLs lack leading `/` (`api/system/...`) while mappings have it | Make consistent (`/api/...`) |
 | 7 | `jobEvent` telemetry gets one row per output line | Set a telemetry TTL / retention for the device profile |
-| 8 | `auto_commit` toggle in the old dashboard only stores an attribute | Nothing consumes it – add a rule chain (activeGroup ≠ defaultGroup & auto_commit → RPC `commit`) |
-| 10 | Daemon policy and Admin version are not polled | Add `GET /api/daemon` → attribute `daemon.features = ${features}` (+ optionally `daemon.dangerouslyInsecure = ${dangerously_insecure}`; the whole response body also works) and `GET /api/info` → attribute `admin.version = ${version}`. Used to disable actions the daemon switched off, to show the "security bypasses enabled" warning and the Rugix Admin version |
+| 8 | `auto_commit` toggle | The device details have an *Auto-commit* switch (server attribute `auto_commit`, enabling asks for confirmation). A rule chain has to consume it: after a device (re)connected and runs a different boot group than the default one it sends `commit` (see your device rule chain: delay, fetch attribute, filter, RPC) |
+| 10 | Daemon policy and Admin version are not polled | Add `GET /api/daemon` → attribute `daemon.features = ${features}` and `daemon.dangerouslyInsecure = ${dangerouslyInsecure}` (the whole response body in `daemon.features` also works) and `GET /api/info` → attribute `admin.version = ${version}` (**not** `api.version`: `/api/info` returns the version of Rugix Admin). Add the data keys `daemon.features`, `daemon.dangerouslyInsecure` and `admin.version` to the widget. Used to disable actions the daemon switched off, to show the "security bypasses enabled" warning and the Rugix Admin version |
 | 11 | No RPC for `GET /api/apps/{app}` | Add a server side RPC `appInfo` (GET `/api/apps/${params.app}`, return the response body). Used for the generations list of an app (Apps tab → click a row) incl. lifecycle state. Activating a generation uses the existing `appActivate` RPC with query `generation=<n>` |
+| 12 | Query options | Rugix Admin reads the query parameters of the install and action endpoints in camelCase (`bundleHash`, `bootGroup`, `keepOverlay`, `backupName`, ... as used by its own frontend and tests). The widget sends them in camelCase through `${params.query}`; keep `?${params.query}` in the RPC URLs |
 | 9 | `anonymous` security + `SSLVerify: false` | OK for tests; protect Rugix Admin / use TLS in production |

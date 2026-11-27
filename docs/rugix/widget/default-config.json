@@ -28,6 +28,18 @@
           "settings": {}
         },
         {
+          "name": "state.message",
+          "type": "attribute",
+          "label": "state.message",
+          "settings": {}
+        },
+        {
+          "name": "slots",
+          "type": "attribute",
+          "label": "slots",
+          "settings": {}
+        },
+        {
           "name": "state.dataPartition",
           "type": "attribute",
           "label": "state.dataPartition",
@@ -43,6 +55,18 @@
           "name": "daemon.features",
           "type": "attribute",
           "label": "daemon.features",
+          "settings": {}
+        },
+        {
+          "name": "daemon.dangerouslyInsecure",
+          "type": "attribute",
+          "label": "daemon.dangerouslyInsecure",
+          "settings": {}
+        },
+        {
+          "name": "auto_commit",
+          "type": "attribute",
+          "label": "auto_commit",
           "settings": {}
         },
         {

@@ -19,13 +19,20 @@ export interface RugixConfirmDialogData {
   checkbox?: { label: string; checked?: boolean };
   /** Boot group (slot) change shown for reboots, e.g. A → B. */
   transition?: { from: string; to: string; caption?: string };
-  /** Optional free text input shown when the checkbox is checked. */
-  textWhenChecked?: { label: string };
+  /** Text the user has to type exactly (e.g. the device name) before the confirm button is enabled. */
+  typeToConfirm?: string;
+  /** Reason / ticket id field; `required` blocks the confirm button while empty. */
+  reason?: { required: boolean };
+  /** Optional free text input shown when the checkbox is checked. `validate` returns an error text or null. */
+  textWhenChecked?: { label: string; validate?: (value: string) => string | null };
+  /** Red warning banner with the consequences listed. */
+  danger?: { headline: string; items: string[] };
 }
 
 export interface RugixConfirmDialogResult {
   checked: boolean;
   text: string;
+  reason: string;
 }
 
 @Component({
@@ -38,21 +45,30 @@ export class RugixConfirmDialogComponent {
   checked = false;
   acknowledged = false;
   text = '';
+  typed = '';
+  reason = '';
 
   constructor(@Inject(MAT_DIALOG_DATA) public data: RugixConfirmDialogData,
               private dialogRef: MatDialogRef<RugixConfirmDialogComponent, RugixConfirmDialogResult>) {
     this.checked = !!data.checkbox?.checked;
   }
 
+  /** Validation error of the optional text (only while the checkbox is checked). */
+  get textError(): string | null {
+    return this.checked && this.text.trim() ? (this.data.textWhenChecked?.validate?.(this.text.trim()) ?? null) : null;
+  }
+
   get canConfirm(): boolean {
-    return !this.data.acknowledge || this.acknowledged;
+    return !this.textError && (!this.data.acknowledge || this.acknowledged)
+      && (!this.data.typeToConfirm || this.typed.trim() === this.data.typeToConfirm)
+      && (!this.data.reason?.required || !!this.reason.trim());
   }
 
   confirm(): void {
     if (!this.canConfirm) {
       return;
     }
-    this.dialogRef.close({checked: this.checked, text: this.text.trim()});
+    this.dialogRef.close({checked: this.checked, text: this.text.trim(), reason: this.reason.trim()});
   }
 
   /** A mouse click leaves the checkbox focused (round focus shadow stays on); drop the focus again. */

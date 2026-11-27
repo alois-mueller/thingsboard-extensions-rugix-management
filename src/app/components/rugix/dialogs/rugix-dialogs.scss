@@ -24,13 +24,18 @@
     min-height: 52px;
   }
 
-  .rugix-plain-title {
+  .rugix-plain-title,
+  .rugix-plain-title.mat-mdc-dialog-title {
     margin: 0;
+    padding: 0;
+    flex: 1 1 auto;
     font-size: 20px;
     line-height: 28px;
     font-weight: 500;
     letter-spacing: .15px;
   }
+
+  .rugix-plain-title.mat-mdc-dialog-title::before { display: none; }
 
   .rugix-targets {
     display: flex;
@@ -41,10 +46,18 @@
     background: rgba(0, 0, 0, .04);
     font-size: 13px;
     min-width: 0;
+    color: rgba(0, 0, 0, .75);
 
-    mat-icon { flex: none; width: 18px; height: 18px; font-size: 18px; color: rgba(0, 0, 0, .54); }
+    mat-icon { flex: none; width: 18px; height: 18px; font-size: 18px; color: rgba(0, 0, 0, .62); }
+    &.multi { align-items: flex-start; }
+    .targets-box { min-width: 0; flex: 1 1 auto; }
+    .targets-list { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0 0; padding: 0; list-style: none; max-height: 112px; overflow: auto; }
+    .targets-list li { padding: 1px 8px; border-radius: 10px; background: rgba(0, 0, 0, .07); font-size: 12px; line-height: 20px; overflow-wrap: anywhere; }
+    .targets-list:focus-visible { outline: 2px solid #305680; outline-offset: 2px; }
     .targets-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   }
+
+  button:focus-visible, a:focus-visible { outline: 2px solid #305680; outline-offset: 2px; }
 
   .rugix-advanced-toggle {
     display: inline-flex;
@@ -94,7 +107,7 @@
     border-radius: 6px;
     background: rgba(0, 0, 0, .04);
 
-    .caption { flex: 1 1 auto; font-size: 12px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: rgba(0, 0, 0, .54); }
+    .caption { flex: 1 1 auto; font-size: 12px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: rgba(0, 0, 0, .66); }
     .slot {
       min-width: 40px; padding: 4px 12px; text-align: center; border-radius: 6px;
       border: 1px solid rgba(0, 0, 0, .2); background: #fff;
@@ -186,11 +199,43 @@
     animation: rugix-spin .8s linear infinite;
   }
 
+  .rugix-fixed {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 12px 16px; border: 1px solid rgba(0, 0, 0, .2); border-radius: 6px; background: #fff;
+    mat-icon { flex: none; color: rgba(0, 0, 0, .54); }
+    .fixed-text { flex: 1 1 140px; min-width: 0; overflow-wrap: anywhere; }
+  }
+
+  .rugix-danger {
+    display: flex; gap: 12px; padding: 12px 16px; border-radius: 6px; border: 1px solid rgba(211, 47, 47, .35); background: rgba(211, 47, 47, .08); color: #8e1b1b;
+    mat-icon { flex: none; color: #d32f2f; }
+    .danger-title { font-weight: 500; font-size: 14px; margin-bottom: 4px; }
+    ul { margin: 0; padding-left: 18px; font-size: 13px; line-height: 20px; }
+  }
+
+  .rugix-option {
+    display: flex; flex-direction: column; gap: 4px; padding: 8px 12px; border: 1px solid rgba(0, 0, 0, .12); border-radius: 6px;
+    .rugix-field { margin-top: 4px; }
+    .rugix-hint-error { color: #d32f2f; }
+  }
+
+  .rugix-grid-sum { display: grid; grid-template-columns: 150px 1fr; gap: 8px; align-items: start; .rugix-hint-error { color: #d32f2f; } }
+
+  .rugix-labeled {
+    display: flex; flex-direction: column; gap: 6px;
+    .lbl { font-size: 14px; line-height: 20px; }
+    code { padding: 1px 6px; border-radius: 4px; color: rgba(0, 0, 0, .87); background: rgba(0, 0, 0, .06); font: 500 13px 'Roboto Mono', monospace; }
+  }
+
+  .rugix-typeconfirm {
+    display: flex; flex-direction: column; gap: 6px;
+    .type-text { font-size: 14px; line-height: 20px; }
+    code { padding: 1px 6px; border-radius: 4px; color: rgba(0, 0, 0, .87); background: rgba(0, 0, 0, .06); font: 500 13px 'Roboto Mono', monospace; user-select: all; }
+    .ok-icon { color: #198038; }
+  }
+
   .rugix-note { padding: 8px 12px; border-radius: 6px; font-size: 13px; line-height: 18px; background: rgba(245, 158, 11, .14); color: #8a4b00; }
 
   .rugix-note.ok { background: rgba(25, 128, 56, .1); color: #146c2e; }
-  .target-tag { margin-left: 8px; padding: 0 6px; border-radius: 8px; font-size: 11px; background: rgba(25, 128, 56, .12); color: #146c2e; }
-
   .rugix-error {
     display: flex;
     align-items: flex-start;
@@ -266,16 +311,25 @@
 
 // amber 'caution' button (warns before risky but reversible actions)
 .caution {
-  --mdc-filled-button-container-color: #ef6c00;
+  --mdc-filled-button-container-color: #b45309;
   --mdc-filled-button-label-text-color: #fff;
-  --mat-button-filled-container-color: #ef6c00;
+  --mat-button-filled-container-color: #b45309;
   --mat-button-filled-label-text-color: #fff;
-  --mat-filled-button-container-color: #ef6c00;
+  --mat-filled-button-container-color: #b45309;
   --mat-filled-button-label-text-color: #fff;
-  background-color: #ef6c00;
+  background-color: #b45309;
   color: #fff;
 }
 
+.mat-mdc-unelevated-button.mat-warn {
+  --mdc-filled-button-container-color: #c62828;
+  --mat-button-filled-container-color: #c62828;
+  --mat-filled-button-container-color: #c62828;
+  --mdc-filled-button-label-text-color: #fff;
+  background-color: #c62828;
+  color: #fff;
+}
+.mat-mdc-unelevated-button.mat-warn:disabled { background-color: rgba(0, 0, 0, .12); color: rgba(0, 0, 0, .38); }
 .caution:disabled, .caution[disabled] {
   --mdc-filled-button-disabled-container-color: rgba(0, 0, 0, .12);
   --mat-button-filled-disabled-container-color: rgba(0, 0, 0, .12);
@@ -289,4 +343,10 @@
 
 @keyframes rugix-spin {
   to { transform: rotate(360deg); }
+}
+
+// dropdown options are rendered in the overlay, outside the dialog host
+::ng-deep .rugix-target-tag {
+  display: inline-block; margin-left: 10px; padding: 0 8px; border-radius: 10px; font-size: 11px; line-height: 18px; vertical-align: middle;
+  background: rgba(25, 128, 56, .12); color: #146c2e; white-space: nowrap;
 }
