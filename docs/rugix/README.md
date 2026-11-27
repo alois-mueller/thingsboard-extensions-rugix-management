@@ -126,7 +126,7 @@ dashboard access), so restrict who may open the dashboard or send RPC as well.
 Offline devices show "offline since" (timestamp of the `active` attribute, or the optional `lastActivityTime` data key); online devices show "online since" on hover.
 
 ## Gateway connector – recommended changes
-Derived from `rugix-request-connector-v1-0`:
+Derived from `rugix-request-connector-v1-0`. A complete corrected connector is in [gateway/rugix-admin-connector.json](gateway/rugix-admin-connector.json) (changes marked in [gateway/rugix-admin-connector.annotated.jsonc](gateway/rugix-admin-connector.annotated.jsonc); RPC URLs are left as they were, without leading `/`):
 
 | # | Finding | Recommendation |
 |---|---------|----------------|
