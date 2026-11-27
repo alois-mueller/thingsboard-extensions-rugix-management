@@ -79,50 +79,25 @@
         @if (!canEditPackages) { Packages are managed by tenant administrators. }
       </p>
       <table class="rugix-table pkg-table">
-        <thead><tr><th>Title</th><th>Version</th>@if (view === 'updates') { <th class="pk-chan">Active channel</th> }<th class="pk-url">Bundle URL</th><th class="pk-added">Added</th><th class="w-actions"></th></tr></thead>
+        <thead><tr><th>Title</th><th>Version</th>@if (view === 'updates') { <th class="pk-chan">Active channel</th> }<th class="pk-url">Bundle URL</th><th class="pk-added">Added</th><th class="w-chev"></th></tr></thead>
         <tbody>
           @for (p of pkgList; track p.id.id) {
-            <tr class="static-row">
+            <tr [class.selected]="p.id.id === selectedPkgId" tabindex="0" (click)="selectPkg(p)" (keydown.enter)="selectPkg(p)">
               <td>
                 @if (pkgInfo(p); as info) {
                   <div class="pk-title">
                     <b class="pk-name">{{ p.title || p.version }}</b>
                     @if (info.meta.signed === true) { <mat-icon class="pk-ic ok" matTooltip="Signed bundle" matTooltipPosition="above" matTooltipClass="rugix-tip" aria-label="Signed bundle">verified_user</mat-icon> }
                     @if (info.meta.signed === false) { <mat-icon class="pk-ic bad" matTooltip="Unsigned bundle" matTooltipPosition="above" matTooltipClass="rugix-tip" aria-label="Unsigned bundle">gpp_bad</mat-icon> }
-                    @if (info.meta.security) {
-                      @if (info.meta.advisory) { <a class="pk-sec" [href]="info.meta.advisory" target="_blank" rel="noopener noreferrer" matTooltip="Open the advisory" matTooltipPosition="above" matTooltipClass="rugix-tip"><mat-icon>shield</mat-icon>Security</a> }
-                      @else { <span class="pk-sec"><mat-icon>shield</mat-icon>Security</span> }
-                    }
+                    @if (info.meta.security) { <mat-icon class="pk-ic sec" matTooltip="Security update" matTooltipPosition="above" matTooltipClass="rugix-tip" aria-label="Security update">shield</mat-icon> }
                   </div>
-                  @if (p.tag) { <div class="sub">{{ p.tag }}</div> }
-                  @if (info.text) { <div class="sub">{{ info.text }}</div> }
-                  @if (info.meta.size !== undefined || info.meta.notes) {
-                    <div class="pk-meta">
-                      @if (info.meta.size !== undefined) { <span><mat-icon>save</mat-icon>{{ formatBytes(info.meta.size) }}</span> }
-                      @if (info.meta.notes) { <a [href]="info.meta.notes" target="_blank" rel="noopener noreferrer"><mat-icon>article</mat-icon>Release notes</a> }
-                    </div>
-                  }
                 }
               </td>
               <td class="nowrap">{{ p.version }}</td>
               @if (view === 'updates') { <td class="pk-chan nowrap">{{ channelsOf(p) || '—' }}</td> }
-              <td class="pk-url">
-                @if (p.url) {
-                  <div class="pk-urlbox">
-                    <span class="pk-link" [matTooltip]="displayUrl(p.url)" matTooltipPosition="above" matTooltipClass="rugix-tip">{{ displayUrl(p.url) }}</span>
-                    <button mat-icon-button type="button" class="copy-btn" matTooltip="Copy URL" matTooltipPosition="above" matTooltipClass="rugix-tip" aria-label="Copy bundle URL" (click)="copy(p.url)"><mat-icon>{{ copied === p.url ? 'check' : 'content_copy' }}</mat-icon></button>
-                  </div>
-                } @else {
-                  <span class="sub" matTooltip="Uploaded file – Rugix needs an external URL to pull a bundle" matTooltipPosition="above" matTooltipClass="rugix-tip">uploaded file</span>
-                }
-              </td>
+              <td class="pk-url"><span class="pk-link">{{ p.url ? displayUrl(p.url) : 'uploaded file' }}</span></td>
               <td class="pk-added nowrap">{{ p.createdTime ? fmt(p.createdTime) : '—' }}</td>
-              <td class="w-actions">
-                @if (canEditPackages) {
-                  <button mat-icon-button type="button" (click)="openPackage(p)" matTooltip="Edit" [attr.aria-label]="'Edit ' + (p.title || p.version)"><mat-icon>edit</mat-icon></button>
-                  <button mat-icon-button type="button" (click)="deletePackage(p)" matTooltip="Remove" [attr.aria-label]="'Remove ' + (p.title || p.version)"><mat-icon>delete</mat-icon></button>
-                }
-              </td>
+              <td class="w-chev"><mat-icon>chevron_right</mat-icon></td>
             </tr>
           } @empty {
             <tr class="static-row"><td [attr.colspan]="view === 'updates' ? 6 : 5" class="empty-row">{{ pkgLoading ? 'Loading…' : (view === 'apps' ? 'No apps yet.' : 'No firmware updates yet.') }}{{ canEditPackages && !pkgLoading ? ' Use "Add" to register a bundle URL.' : '' }}</td></tr>
@@ -401,6 +376,64 @@
   </div>
   <mat-paginator showFirstLastButtons [length]="filtered.length" [pageIndex]="pageIndex" [pageSize]="pageSize" [pageSizeOptions]="[5, 10, 25, 50]" (page)="onPage($event)" hidePageSize="false"></mat-paginator>
 
+  }
+
+
+  <!-- ===== package details ===== -->
+  @if ((view === 'updates' || view === 'apps') && selectedPkg; as p) {
+    <div class="rugix-backdrop" tabindex="-1" (click)="closePkg()" (keydown.escape)="closePkg()"></div>
+    <div class="rugix-details pkg-details">
+      @if (pkgInfo(p); as info) {
+        <mat-toolbar color="primary" class="details-toolbar">
+          <div class="details-title">
+            <span>{{ p.title || p.version }}</span>
+            <span class="details-sub">{{ view === 'apps' ? 'App' : 'Firmware update' }} · {{ p.version }}</span>
+          </div>
+          <span class="flex-1"></span>
+          @if (info.meta.signed === true) { <span class="status-chip online"><span class="dot"></span>Signed</span> }
+          @if (info.meta.signed === false) { <span class="status-chip"><span class="dot"></span>Unsigned</span> }
+          <button mat-icon-button type="button" (click)="closePkg()" aria-label="Close details"><mat-icon>close</mat-icon></button>
+        </mat-toolbar>
+        <div class="details-buttons">
+          <button mat-flat-button color="primary" type="button" (click)="copy(p.url || '')" [disabled]="!p.url"><mat-icon>{{ copied === p.url ? 'check' : 'content_copy' }}</mat-icon>Copy URL</button>
+          @if (canEditPackages) {
+            <button mat-flat-button color="primary" type="button" (click)="openPackage(p)"><mat-icon>edit</mat-icon>Edit</button>
+            <button mat-flat-button color="warn" type="button" (click)="deletePackage(p)"><mat-icon>delete</mat-icon>Remove</button>
+          }
+        </div>
+        @if (info.meta.security) {
+          <div class="pk-secbox">
+            <mat-icon>shield</mat-icon>
+            <span>Security update.@if (info.meta.advisory) { <a [href]="info.meta.advisory" target="_blank" rel="noopener noreferrer">Open the advisory</a> }</span>
+          </div>
+        }
+        <div class="group-box">
+          <div class="group-title">Package</div>
+          <div class="tab-body grid tight">
+            <div class="kv"><span>Title</span><b>{{ p.title || '—' }}</b></div>
+            <div class="kv"><span>Version</span><b>{{ p.version }}</b></div>
+            <div class="kv"><span>Tag</span><b>{{ p.tag || '—' }}</b></div>
+            <div class="kv"><span>Added</span><b>{{ p.createdTime ? fmt(p.createdTime) : '—' }}</b></div>
+            @if (view === 'updates') { <div class="kv"><span>Active channel</span><b>{{ channelsOf(p) || '—' }}</b></div> }
+            <div class="kv"><span>Size</span><b>{{ info.meta.size !== undefined ? formatBytes(info.meta.size) : '—' }}</b></div>
+            <div class="kv"><span>Signature</span><b [class.good]="info.meta.signed === true" [class.bad]="info.meta.signed === false">{{ info.meta.signed === true ? 'Signed' : (info.meta.signed === false ? 'Unsigned' : 'Unknown') }}</b></div>
+            <div class="kv"><span>Release notes</span><b>@if (info.meta.notes) { <a [href]="info.meta.notes" target="_blank" rel="noopener noreferrer">Open</a> } @else { — }</b></div>
+          </div>
+        </div>
+        <div class="group-box">
+          <div class="group-title">Bundle URL</div>
+          <div class="tab-body">
+            @if (p.url) { <div class="kv"><b class="mono">{{ displayUrl(p.url) }}</b></div> } @else { <span class="sub">Uploaded file – Rugix needs an external URL to pull a bundle.</span> }
+          </div>
+        </div>
+        @if (info.text) {
+          <div class="group-box">
+            <div class="group-title">Description</div>
+            <div class="tab-body"><div class="pk-desc">{{ info.text }}</div></div>
+          </div>
+        }
+      }
+    </div>
   }
 
   <!-- ===== details ===== -->

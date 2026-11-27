@@ -409,10 +409,11 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   setView(v: 'overview' | 'devices' | 'jobs' | 'updates' | 'apps' | 'channels'): void {
     this.view = v;
+    this.selectedPkgId = null;
     RugixAgentsComponent.lastView.set(this.widgetKey, v);
     setTimeout(() => this.centerView(true));
     this.syncFleet();
-    if (v === 'overview') {
+    if (v === 'overview' || v === 'updates' || v === 'apps') {
       this.closeDetails();
     }
   }
@@ -766,7 +767,10 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
-    if (this.selectedId && !this.dialog.openDialogs.length) {
+    if (this.selectedPkgId && !this.dialog.openDialogs.length) {
+      this.closePkg();
+      this.cd.markForCheck();
+    } else if (this.selectedId && !this.dialog.openDialogs.length) {
       this.closeDetails();
       this.cd.markForCheck();
     }
@@ -899,6 +903,22 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   }
 
   displayUrl = displayUrl;
+
+  selectedPkgId: string | null = null;
+
+  get selectedPkg(): OtaPackageInfo | undefined {
+    return this.selectedPkgId ? this.packagesAll.find(p => p.id.id === this.selectedPkgId) : undefined;
+  }
+
+  selectPkg(p: OtaPackageInfo): void {
+    this.selectedPkgId = this.selectedPkgId === p.id.id ? null : p.id.id;
+    setTimeout(() => this.syncDetailsLayout());
+  }
+
+  closePkg(): void {
+    this.selectedPkgId = null;
+    setTimeout(() => this.syncDetailsLayout());
+  }
 
   private metaCache = new Map<string, ReturnType<typeof splitDescription>>();
 
@@ -1353,7 +1373,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     const panel = root.querySelector('.rugix-details') as HTMLElement;
     const backdrop = root.querySelector('.rugix-backdrop') as HTMLElement;
     const grid = root.closest('gridster') as HTMLElement;
-    if (!panel || !grid || !this.selectedId) {
+    if (!panel || !grid || !(this.selectedId || this.selectedPkgId)) {
       this.restoreClip();
       return;
     }
