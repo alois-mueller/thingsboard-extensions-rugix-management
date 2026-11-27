@@ -15,7 +15,7 @@
       },
       "allowRedirects": true,
       "timeout": 10,
-      "scanPeriod": 60,
+      "scanPeriod": 600,
       "converter": {
         "type": "json",
         "deviceNameJsonExpression": "Testanlage_Felix_Rugix",

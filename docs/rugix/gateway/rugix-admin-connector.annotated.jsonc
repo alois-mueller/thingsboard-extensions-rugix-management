@@ -8,7 +8,6 @@
   },
   "mapping": [
     {
-      // <<< GEAENDERT: scanPeriod 600 -> 60: Boot-Gruppen nach Reboot/Commit schneller aktuell
       "url": "/api/system/info",
       "httpMethod": "GET",
       "httpHeaders": {
@@ -16,7 +15,7 @@
       },
       "allowRedirects": true,
       "timeout": 10,
-      "scanPeriod": 60,
+      "scanPeriod": 600,
       "converter": {
         "type": "json",
         "deviceNameJsonExpression": "Testanlage_Felix_Rugix",

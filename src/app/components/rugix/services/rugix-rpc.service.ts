@@ -144,7 +144,8 @@ export class RugixRpcService {
   static buildQuery(options: { [key: string]: any }): string {
     return Object.keys(options || {})
       .filter(k => options[k] !== undefined && options[k] !== null && options[k] !== '')
-      .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(String(options[k]))}`)
+      // Rugix Admin reads the query parameters in camelCase (`bundleHash`, `keepOverlay`, `backupName`, ...)
+      .map(k => `${encodeURIComponent(k.replace(/_([a-z])/g, (_, c) => c.toUpperCase()))}=${encodeURIComponent(String(options[k]))}`)
       .join('&');
   }
 
