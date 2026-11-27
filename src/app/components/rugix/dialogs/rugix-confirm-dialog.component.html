@@ -24,6 +24,18 @@
       <input matInput [(ngModel)]="text">
     </mat-form-field>
   }
+  @if (data.reason) {
+    <mat-form-field appearance="outline" class="rugix-field">
+      <mat-label>Reason / ticket id{{ data.reason.required ? '' : ' (optional)' }}</mat-label>
+      <input matInput name="reason" maxlength="200" [(ngModel)]="reason">
+    </mat-form-field>
+  }
+  @if (data.typeToConfirm) {
+    <mat-form-field appearance="outline" class="rugix-field">
+      <mat-label>Type "{{ data.typeToConfirm }}" to confirm</mat-label>
+      <input matInput name="typed" autocomplete="off" [(ngModel)]="typed">
+    </mat-form-field>
+  }
   @if (data.acknowledge) {
     <mat-checkbox (change)="blurSoon()" class="rugix-ack" [(ngModel)]="acknowledged">{{ data.acknowledge }}</mat-checkbox>
   }

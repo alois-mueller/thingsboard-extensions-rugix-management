@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn lint
+      - run: yarn build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: thingsboard-extension-widgets
+          path: target/generated-resources/thingsboard-extension-widgets.js
+
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # Report known vulnerabilities of the dependencies. Fails on high / critical findings (exit code bits 8 and 16).
+      - name: yarn audit
+        run: |
+          yarn audit --groups dependencies,devDependencies --level high || code=$?
+          echo "yarn audit exit code: ${code:-0}"
+          [ $(( ${code:-0} & 24 )) -eq 0 ]
+
+  sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Software bill of materials (SPDX)
+        uses: anchore/sbom-action@v0
+        with:
+          format: spdx-json
+          output-file: sbom.spdx.json
+          artifact-name: sbom.spdx.json

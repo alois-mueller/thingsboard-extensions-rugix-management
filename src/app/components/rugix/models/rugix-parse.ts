@@ -558,7 +558,7 @@ export function channelTarget(channels: { [name: string]: string } | undefined, 
 }
 
 /** Problems of a bundle URL: `error` blocks, `warn` is a hint (plain http, credentials or a SAS token inside the URL). */
-export function urlIssue(url: string): { error?: string; warn?: string } {
+export function urlIssue(url: string, requireHttps = false): { error?: string; warn?: string } {
   const v = (url || '').trim();
   if (!v) {
     return {};
@@ -574,6 +574,9 @@ export function urlIssue(url: string): { error?: string; warn?: string } {
   }
   if (u.username || u.password || /(^|&)(sig|token|access_token|x-amz-signature)=/i.test(u.search.slice(1))) {
     return {warn: 'The URL contains a credential or access token. Everybody who can read this entry (and the audit log) can see it – let a proxy or the gateway add it instead.'};
+  }
+  if (u.protocol === 'http:' && requireHttps) {
+    return {error: 'Plain http is not allowed (the download would not be encrypted). Use https.'};
   }
   return u.protocol === 'http:' ? {warn: 'Plain http: the download is not encrypted. Use https if possible.'} : {};
 }

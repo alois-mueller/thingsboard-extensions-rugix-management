@@ -28,6 +28,9 @@ Everything below is what is still open, roughly in priority order.
 - [ ] Device onboarding / decommissioning.
 - [ ] Translations (UI is English only).
 
+- [ ] Package metadata: security update flag and advisory link; show whether a bundle is signed.
+- [ ] Alarms through a rule chain for failed jobs (also see CRA/IEC 62443 gaps in `COMPLIANCE.md`).
+
 ## 3. Decisions left open
 - [ ] Block actions on a device while a job runs? Not built: a stuck "running" state would lock the device.
 - [ ] Treat "outdated" as an own status (current) or as a warning in the health filter?
@@ -41,5 +44,7 @@ Everything below is what is still open, roughly in priority order.
 - Permissions are only hidden in the UI (`access.*`); ThingsBoard decides what is really allowed.
 
 ## 5. Quality
+- [ ] CRA / IEC 62443 process items: threat model, SAST (CodeQL), signed releases, support period, named owner for the 24 h vulnerability report, dependency license review (see `COMPLIANCE.md`).
+- [ ] Check `yarn audit` in CI: the local run in the sandbox audited 0 packages (no registry access), so the result of the CI job has not been seen yet.
 - [ ] No automated tests yet. Worth adding unit tests for `compareVersions` / `firmwareState`, `foldJobEvent` / `parseJobEvent`, `urlIssue`, `channelTarget`.
 - [ ] Browser regression script (currently ad-hoc WebDriver scripts outside the repo).

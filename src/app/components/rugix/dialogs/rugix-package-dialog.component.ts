@@ -14,6 +14,8 @@ export interface RugixPackageDialogData {
   type: OtaUpdateType.FIRMWARE | OtaUpdateType.SOFTWARE;
   /** Existing package to edit; omitted when adding. */
   pkg?: OtaPackageInfo;
+  /** Reject plain http URLs. */
+  requireHttps?: boolean;
 }
 
 /** Add an OTA package that points to an external URL, or edit title / tag / description of an existing one. */
@@ -56,12 +58,12 @@ export class RugixPackageDialogComponent implements OnInit {
   }
 
   get urlProblem(): { error?: string; warn?: string } {
-    return urlIssue(this.url);
+    return urlIssue(this.url, !!this.data.requireHttps);
   }
 
   get valid(): boolean {
     const url = this.url.trim();
-    return !!this.title.trim() && !!this.version.trim() && !!url && !urlIssue(url).error && (this.isEdit || !!this.profileId);
+    return !!this.title.trim() && !!this.version.trim() && !!url && !urlIssue(url, !!this.data.requireHttps).error && (this.isEdit || !!this.profileId);
   }
 
   /** ThingsBoard only allows changing the description of an existing package; everything else needs a replacement. */

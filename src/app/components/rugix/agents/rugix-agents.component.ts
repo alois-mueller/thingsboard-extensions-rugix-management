@@ -936,7 +936,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       return;
     }
     this.dialog.open<RugixPackageDialogComponent, RugixPackageDialogData, boolean>(RugixPackageDialogComponent, {
-      data: {type: this.pkgType as OtaUpdateType.FIRMWARE | OtaUpdateType.SOFTWARE, pkg}, autoFocus: false, maxWidth: '95vw', width: '520px'
+      data: {type: this.pkgType as OtaUpdateType.FIRMWARE | OtaUpdateType.SOFTWARE, pkg, requireHttps: this.settings.security.requireHttps}, autoFocus: false, maxWidth: '95vw', width: '520px'
     }).afterClosed().subscribe(saved => saved && this.loadPackages());
   }
 
@@ -1593,6 +1593,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
         this.ctx.showErrorToast(`Could not start on ${result.failed.map(f => f.device.label || f.device.name).join(', ')}: ${result.failed[0].message}`, 'top', 'left');
       }
       if (result?.jobs?.length) {
+        result.jobs.forEach(j => this.record(j.device, mode === 'system' ? 'installUpdate' : 'installApp', result.reason));
         this.ctx.showSuccessToast(`Installation started on ${result.jobs.length} device(s).`, 3000, 'top', 'left');
         if (result.jobs.length === 1) {
           this.openJob(result.jobs[0].device, result.jobs[0].handle.jobId, mode === 'system' ? 'Upgrade Firmware' : 'Install App');
@@ -1625,6 +1626,8 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       warn: info.warn,
       caution: info.caution,
       acknowledge: info.ack,
+      reason: {required: this.settings.security.requireReason},
+      typeToConfirm: info.action === 'factoryReset' ? (device.label || device.name) : undefined,
       transition: this.bootTransition(info, device),
       checkbox: info.action === 'factoryReset' ? {label: 'Keep the old state as a backup profile', checked: true} : undefined,
       textWhenChecked: info.action === 'factoryReset' ? {label: 'Backup name (optional)'} : undefined
@@ -1634,6 +1637,7 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
       if (!result) {
         return;
       }
+      this.record(device, info.action, result.reason);
       this.track(device, info.label, this.rpc.systemAction(this.settings, device, info.action,
         {backup: result.checked, backupName: result.text || undefined}));
     });
@@ -1655,10 +1659,14 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
     this.dialog.open<RugixConfirmDialogComponent, RugixConfirmDialogData, RugixConfirmDialogResult>(
       RugixConfirmDialogComponent, {
         data: {title: `${label} app`, message: `${label} app "${app.name}" on "${device.label || device.name}"?`,
-          confirmLabel: label, warn, acknowledge: ack[action]},
+          confirmLabel: label, warn, acknowledge: ack[action], reason: {required: this.settings.security.requireReason}},
         autoFocus: false, maxWidth: '95vw'
-      }).afterClosed().subscribe(r => r && this.track(device, `${label} ${app.name}`,
-      this.rpc.appAction(this.settings, device, action, app.name)));
+      }).afterClosed().subscribe(r => {
+      if (r) {
+        this.record(device, action, r.reason, app.name);
+        this.track(device, `${label} ${app.name}`, this.rpc.appAction(this.settings, device, action, app.name));
+      }
+    });
   }
 
   garbageCollectApps(device: RugixDevice): void {
@@ -1672,6 +1680,12 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
         autoFocus: false, maxWidth: '95vw'
       }).afterClosed().subscribe(r => r && this.track(device, 'App garbage collection',
       this.rpc.appsGarbageCollect(this.settings, device)));
+  }
+
+  /** Remember who started which change on the device (best effort, ThingsBoard keeps its own audit log too). */
+  private record(device: RugixDevice, action: string, reason?: string, detail?: string): void {
+    const user = (this.ctx.currentUser as any)?.sub || (this.ctx.currentUser as any)?.userId || '';
+    this.rpc.recordChange(this.settings, device, {action, user, reason: reason || undefined, detail}).subscribe();
   }
 
   openJob(device: RugixDevice, jobId: string, title: string, since = Date.now() - 5000): void {

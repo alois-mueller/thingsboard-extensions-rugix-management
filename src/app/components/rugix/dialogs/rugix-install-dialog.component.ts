@@ -9,7 +9,7 @@ import { OtaPackageInfo, OtaUpdateType, PageLink } from '@shared/public-api';
 import { forkJoin, Observable, of } from 'rxjs';
 import { catchError, mergeMap } from 'rxjs/operators';
 import { RugixDevice, RugixInstallOptions, RugixWidgetSettings, RUGIX_REBOOT_MODES } from '../models/rugix.models';
-import { urlIssue } from '../models/rugix-parse';
+import { compareVersions, urlIssue } from '../models/rugix-parse';
 import { RugixJobHandle, RugixRpcService } from '../services/rugix-rpc.service';
 
 export interface RugixInstallDialogData {
@@ -22,6 +22,8 @@ export interface RugixInstallDialogData {
 
 export interface RugixInstallDialogResult {
   jobs: { device: RugixDevice; handle: RugixJobHandle }[];
+  /** Reason / ticket id entered by the user. */
+  reason?: string;
   /** Devices on which the installation could not be started. */
   failed?: { device: RugixDevice; message: string }[];
 }
@@ -46,6 +48,9 @@ export class RugixInstallDialogComponent implements OnInit {
   reboot: RugixInstallOptions['reboot'] = 'yes';
   advancedOpen = false;
   acknowledged = false;
+  downgradeAck = false;
+  bulkText = '';
+  reason = '';
   bootGroup = '';
   bundleHash = '';
   keepOverlay = false;
@@ -168,11 +173,38 @@ export class RugixInstallDialogComponent implements OnInit {
   }
 
   get urlProblem(): { error?: string; warn?: string } {
-    return urlIssue(this.url);
+    return urlIssue(this.url, this.data.settings.security.requireHttps);
+  }
+
+  /** Selected devices that run a newer firmware than the selected package (a downgrade, may reintroduce fixed vulnerabilities). */
+  get downgraded(): RugixDevice[] {
+    const v = !this.useCustomUrl ? this.selectedPackage?.version : undefined;
+    if (!this.isSystem || !v) {
+      return [];
+    }
+    return this.data.devices.filter(d => (compareVersions(v, d.hardware.osVersion) ?? 0) < 0);
+  }
+
+  get downgradeText(): string {
+    const d = this.downgraded;
+    return `${d.length === 1 ? (d[0].label || d[0].name) : d.length + ' devices'} already ${d.length === 1 ? 'runs' : 'run'} a newer firmware than ${this.selectedPackage?.version}. Older versions may contain fixed vulnerabilities.`;
+  }
+
+  /** More devices than the configured threshold: the number has to be typed. */
+  get bulkRequired(): boolean {
+    const t = this.data.settings.security.bulkConfirmThreshold;
+    return t > 0 && this.data.devices.length > t;
+  }
+
+  get reasonRequired(): boolean {
+    return !!this.data.settings.security.requireReason;
   }
 
   get canInstall(): boolean {
-    return !this.installing && !!this.url && !this.urlProblem.error && this.acknowledged;
+    return !this.installing && !!this.url && !this.urlProblem.error && this.acknowledged
+      && (!this.downgraded.length || this.downgradeAck)
+      && (!this.bulkRequired || this.bulkText.trim() === String(this.data.devices.length))
+      && (!this.reasonRequired || !!this.reason.trim());
   }
 
   ngOnInit(): void {
@@ -240,7 +272,7 @@ export class RugixInstallDialogComponent implements OnInit {
         this.error = failed[0]?.message || 'Installation could not be started.';
         return;
       }
-      this.dialogRef.close({jobs, failed});
+      this.dialogRef.close({jobs, failed, reason: this.reason.trim() || undefined});
     });
   }
 

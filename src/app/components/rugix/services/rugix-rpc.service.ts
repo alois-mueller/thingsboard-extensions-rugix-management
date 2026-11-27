@@ -208,6 +208,19 @@ export class RugixRpcService {
     return this.attributeService.saveEntityAttributes(entityId, AttributeScope.SERVER_SCOPE, [{key: settings.keys.channel, value: channel}]);
   }
 
+  /** Record who changed what (best effort): server attribute of the device, ThingsBoard keeps its own audit log as well. */
+  recordChange(settings: RugixWidgetSettings, device: RugixDevice, entry: { action: string; user: string; reason?: string; detail?: string }): Observable<any> {
+    const key = settings.security.changeAttribute;
+    if (!key) {
+      return of(null);
+    }
+    const entityId = {entityType: EntityType.DEVICE, id: device.id} as EntityId;
+    const value = {...entry, at: new Date().toISOString()};
+    return this.attributeService.saveEntityAttributes(entityId, AttributeScope.SERVER_SCOPE, [{key, value}], {ignoreErrors: true, ignoreLoading: true}).pipe(
+      catchError(() => of(null))
+    );
+  }
+
   /** Channel configuration stored as tenant server attribute (`null` when not stored or not readable). */
   loadChannelConfig(settings: RugixWidgetSettings, tenantId: string): Observable<{ channels: { [name: string]: string }; defaultChannel: string } | null> {
     const entityId = {entityType: EntityType.TENANT, id: tenantId} as EntityId;

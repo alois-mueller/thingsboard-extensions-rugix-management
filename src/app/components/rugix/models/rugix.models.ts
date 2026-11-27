@@ -15,12 +15,25 @@ export interface RugixWidgetSettings {
   keys: RugixKeySettings;
   sse: RugixSseSettings;
   access: RugixAccessSettings;
+  security: RugixSecuritySettings;
   /** Release channels: channel name → Edge OS version devices on that channel should run. */
   channels: { [channel: string]: string };
   /** Channel of devices without a `channel` attribute. */
   defaultChannel: string;
   /** Tenant server attribute holding the channels edited in the Channels view (overrides `channels` / `defaultChannel`). */
   channelsAttribute: string;
+}
+
+/** Safety guards of the widget (defaults are the secure choice). */
+export interface RugixSecuritySettings {
+  /** Reject plain http bundle URLs (otherwise only a warning is shown). */
+  requireHttps: boolean;
+  /** Require a reason / ticket id for installs, reboots and factory resets. */
+  requireReason: boolean;
+  /** Installing on more devices than this needs a typed confirmation (0 = never). */
+  bulkConfirmThreshold: number;
+  /** Server attribute of the device that records who changed what (empty = do not record). */
+  changeAttribute: string;
 }
 
 /**
@@ -148,6 +161,7 @@ export const DEFAULT_RUGIX_SETTINGS: RugixWidgetSettings = {
     channels: ['TENANT_ADMIN'],
     packages: ['TENANT_ADMIN']
   },
+  security: {requireHttps: true, requireReason: false, bulkConfirmThreshold: 5, changeAttribute: 'rugix.lastChange'},
   channels: {stable: '', testing: ''},
   defaultChannel: 'stable',
   channelsAttribute: 'rugix.channels',
@@ -169,6 +183,7 @@ export function mergeRugixSettings(settings: Partial<RugixWidgetSettings> | unde
     keys: {...DEFAULT_RUGIX_SETTINGS.keys, ...(s.keys || {})},
     sse: {...DEFAULT_RUGIX_SETTINGS.sse, ...(s.sse || {})},
     access: {...DEFAULT_RUGIX_SETTINGS.access, ...(s.access || {})},
+    security: {...DEFAULT_RUGIX_SETTINGS.security, ...(s.security || {})},
     channels: {...DEFAULT_RUGIX_SETTINGS.channels, ...(s.channels || {})}
   };
 }

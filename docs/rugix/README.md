@@ -74,6 +74,11 @@ The channel of a device is its server-scope attribute `rugix.channel` (add it as
 The two views list and manage ThingsBoard OTA packages (*Firmware* → Updates, *Software* → Apps). A package needs a title, version, device profile and an **external bundle URL** (Rugix pulls the bundle itself, uploaded files cannot be installed). ThingsBoard treats title, version, tag and URL as immutable and only allows changing the description, so *Edit* replaces the package (removes and re-adds it, restoring the old one if adding fails) when one of those fields changes. Users in `access.packages` (default `TENANT_ADMIN`) can add / edit / remove, everybody else sees the lists read-only. Removing a firmware version that a channel still targets shows a warning.
 
 ### Security notes
+
+Safety guards can be set in the widget settings (`security`): `requireHttps` (default `true`), `requireReason`
+(default `false`), `bulkConfirmThreshold` (default `5`) and `changeAttribute` (default `rugix.lastChange`). Factory reset
+asks for the device name, a firmware older than the running one needs an extra confirmation. CRA / IEC 62443 mapping:
+[COMPLIANCE.md](COMPLIANCE.md).
 - **Device data is untrusted.** Attributes and telemetry (channel, components, job events, …) come from the devices and are only rendered as text; the channel attribute accepts plain names only and is looked up on own properties of the channel map.
 - **Bundle URLs:** only `http(s)` URLs are accepted. The dialogs warn about plain `http` and about credentials or SAS tokens (`sig=` …) inside the URL, and the Updates list shows the URL without its query string. Everything stored in ThingsBoard (OTA package, widget settings) and sent in an RPC is visible to users with access and ends up in the audit log, so do not put tokens there – let a reverse proxy or the gateway add them.
 - **Permissions are enforced by ThingsBoard, not by the widget.** `access.*` only hides buttons. Restrict who may open the dashboard, send RPC to the gateway and write tenant attributes / OTA packages.

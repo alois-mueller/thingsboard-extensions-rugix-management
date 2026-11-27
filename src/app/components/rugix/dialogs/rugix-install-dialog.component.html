@@ -119,6 +119,22 @@
       </div>
     }
 
+    @if (downgraded.length) {
+      <div class="rugix-note">
+        <b>Downgrade.</b> {{ downgradeText }}
+        <mat-checkbox (change)="blurSoon()" [(ngModel)]="downgradeAck" name="downgradeAck" [disabled]="installing">I want to install an older version.</mat-checkbox>
+      </div>
+    }
+    <mat-form-field appearance="outline" class="rugix-field">
+      <mat-label>Reason / ticket id{{ reasonRequired ? '' : ' (optional)' }}</mat-label>
+      <input matInput name="reason" maxlength="200" [(ngModel)]="reason" [disabled]="installing">
+    </mat-form-field>
+    @if (bulkRequired) {
+      <mat-form-field appearance="outline" class="rugix-field">
+        <mat-label>Type {{ data.devices.length }} to confirm the number of devices</mat-label>
+        <input matInput name="bulk" autocomplete="off" [(ngModel)]="bulkText" [disabled]="installing">
+      </mat-form-field>
+    }
     <div class="rugix-ack">
       <mat-checkbox (change)="blurSoon()" [(ngModel)]="acknowledged" name="ack" [disabled]="installing">{{ ackText }}</mat-checkbox>
     </div>
