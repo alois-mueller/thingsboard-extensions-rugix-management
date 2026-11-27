@@ -26,7 +26,7 @@ import {
 } from '../models/rugix.models';
 import { RugixAppGeneration, RugixAppInfo, RugixDaemonFeature, RugixJobEvent, RugixJobState } from '../models/rugix.models';
 import { RugixDonutSegment } from '../charts/rugix-donut.component';
-import { backupNameIssue, hashParts, isRebootJob, isTerminalStatus, channelTarget, CHANNEL_NAME, displayUrl, compareVersions, jobLabel, foldJobEvent, formatDateTime, fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots, firmwareState } from '../models/rugix-parse';
+import { splitDescription, backupNameIssue, hashParts, isRebootJob, isTerminalStatus, channelTarget, CHANNEL_NAME, displayUrl, compareVersions, jobLabel, foldJobEvent, formatDateTime, fixMojibake, appStatusLabel, appStatusMessage, applyValue, downsample, capabilityLabel, mergeApps, providedIds, formatBytes, newDevice, parseSlots, firmwareState } from '../models/rugix-parse';
 import { REVPI_ICON, RUGIX_LOGO } from '../models/rugix-icons';
 import { RugixJobHandle, RugixRpcService } from '../services/rugix-rpc.service';
 import {
@@ -899,6 +899,20 @@ export class RugixAgentsComponent implements OnInit, OnDestroy {
   }
 
   displayUrl = displayUrl;
+
+  private metaCache = new Map<string, ReturnType<typeof splitDescription>>();
+
+  /** Readable description text and metadata of a package (parsed once per description). */
+  pkgInfo(p: OtaPackageInfo): ReturnType<typeof splitDescription> {
+    const desc: string = p.additionalInfo?.description || '';
+    const key = p.id.id + '\u0000' + desc;
+    let v = this.metaCache.get(key);
+    if (!v) {
+      v = splitDescription(desc);
+      this.metaCache.set(key, v);
+    }
+    return v;
+  }
   hashParts = hashParts;
 
   /** Online devices that run an older version than their channel target, grouped by target version. */

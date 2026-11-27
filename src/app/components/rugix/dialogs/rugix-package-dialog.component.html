@@ -34,6 +34,34 @@
       <mat-label>Description (optional)</mat-label>
       <textarea matInput name="description" rows="2" [(ngModel)]="description" [disabled]="saving"></textarea>
     </mat-form-field>
+    <div class="rugix-section-title">Details (optional)</div>
+    <div class="rugix-grid-sum">
+      <mat-form-field appearance="outline" class="rugix-field" subscriptSizing="dynamic">
+        <mat-label>Signature</mat-label>
+        <mat-select name="signed" [(ngModel)]="signed" [disabled]="saving">
+          <mat-option value="">Unknown</mat-option>
+          <mat-option value="yes">Signed</mat-option>
+          <mat-option value="no">Unsigned</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="rugix-field" subscriptSizing="dynamic">
+        <mat-label>Size (bytes)</mat-label>
+        <input matInput type="number" min="0" name="size" [(ngModel)]="size" [disabled]="saving">
+        @if (sizeIssue) { <mat-hint class="rugix-hint-error">{{ sizeIssue }}</mat-hint> }
+      </mat-form-field>
+    </div>
+    <mat-form-field appearance="outline" class="rugix-field" subscriptSizing="dynamic">
+      <mat-label>Release notes URL</mat-label>
+      <input matInput name="notes" autocomplete="off" [(ngModel)]="notes" [disabled]="saving">
+    </mat-form-field>
+    <mat-checkbox (change)="blurSoon()" name="security" [(ngModel)]="security" [disabled]="saving">Security update</mat-checkbox>
+    @if (security) {
+      <mat-form-field appearance="outline" class="rugix-field" subscriptSizing="dynamic">
+        <mat-label>Advisory URL</mat-label>
+        <input matInput name="advisory" autocomplete="off" [(ngModel)]="advisory" [disabled]="saving">
+      </mat-form-field>
+    }
+    @if (linkIssue) { <div class="rugix-error">{{ linkIssue }}</div> }
     @if (url.trim() && urlProblem.error) { <div class="rugix-error">{{ urlProblem.error }}</div> }
     @if (urlProblem.warn) { <div class="rugix-note">{{ urlProblem.warn }}</div> }
     @if (replaces) { <div class="rugix-note">ThingsBoard cannot change title, version, tag or URL of a package, so saving replaces it (the package is removed and added again).</div> }

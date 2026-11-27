@@ -28,7 +28,7 @@ Everything below is what is still open, roughly in priority order.
 - [ ] Device onboarding / decommissioning.
 - [ ] Translations (UI is English only).
 
-- [ ] Package metadata: security update flag and advisory link; show whether a bundle is signed.
+- [ ] More package metadata in `rugix-meta` (see README): architecture / hardware compatibility with a warning in the install dialog, minimum running version, release date.
 - [ ] Alarms through a rule chain for failed jobs (also see CRA/IEC 62443 gaps in `COMPLIANCE.md`).
 
 ## 3. Decisions left open

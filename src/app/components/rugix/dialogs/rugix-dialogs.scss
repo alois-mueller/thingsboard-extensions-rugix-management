@@ -205,6 +205,8 @@
     .rugix-hint-error { color: #d32f2f; }
   }
 
+  .rugix-grid-sum { display: grid; grid-template-columns: 150px 1fr; gap: 8px; align-items: start; .rugix-hint-error { color: #d32f2f; } }
+
   .rugix-labeled {
     display: flex; flex-direction: column; gap: 6px;
     .lbl { font-size: 14px; line-height: 20px; }

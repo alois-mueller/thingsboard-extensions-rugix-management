@@ -62,7 +62,6 @@ Dates (CRA): reporting of actively exploited vulnerabilities applies since 2026-
 ## Known gaps in the widget
 
 - No staged rollouts, maintenance windows or automatic stop on failures.
-- No flag "security update" or link to an advisory on packages.
-- Bundle signature state is not shown (only the hash is displayed).
+- The signature state of a package is only what the editor entered (`rugix-meta`); the real check is done by Rugix on the device.
 - Failed jobs raise no ThingsBoard alarm.
 - The widget cannot prove who started an action; it relies on the ThingsBoard audit log and the `rugix.lastChange` attribute, which a tenant admin can overwrite.

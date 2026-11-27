@@ -73,6 +73,27 @@ The channel of a device is its server-scope attribute `rugix.channel` (add it as
 ### Updates and Apps (OTA packages)
 The two views list and manage ThingsBoard OTA packages (*Firmware* → Updates, *Software* → Apps). A package needs a title, version, device profile and an **external bundle URL** (Rugix pulls the bundle itself, uploaded files cannot be installed). ThingsBoard treats title, version, tag and URL as immutable and only allows changing the description, so *Edit* replaces the package (removes and re-adds it, restoring the old one if adding fails) when one of those fields changes. Users in `access.packages` (default `TENANT_ADMIN`) can add / edit / remove, everybody else sees the lists read-only. Removing a firmware version that a channel still targets shows a warning.
 
+### Package metadata (`rugix-meta`)
+
+ThingsBoard has no fields for the signature state or release information of an OTA package, so the widget keeps them in the
+package description (the only part that can be changed later). The description is free text; an optional last line holds JSON:
+
+```
+Fixes CVE-2026-1234.
+rugix-meta: {"size":184549376,"signed":true,"security":true,"advisory":"https://…","notes":"https://…"}
+```
+
+| Field | Meaning |
+|---|---|
+| `signed` | `true` / `false`: the bundle is (not) signed. Shown as badge `signed` / `unsigned` |
+| `size` | Bundle size in bytes |
+| `security`, `advisory` | Security update flag with a link to the advisory |
+| `notes` | Link to the release notes |
+
+All fields are optional and are edited in the *Add / Edit update* dialog (section *Details*). Invalid values and non-http(s) links
+are ignored. This is information only, not integrity protection: whoever may edit a package may change it. The signature itself is
+checked by Rugix on the device. A bundle hash is deliberately not stored because the bundles are signed.
+
 ### Security notes
 
 Safety guards can be set in the widget settings (`security`): `requireHttps` (default `true`), `requireReason`

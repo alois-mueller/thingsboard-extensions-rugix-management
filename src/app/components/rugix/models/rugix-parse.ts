@@ -558,6 +558,60 @@ export function channelTarget(channels: { [name: string]: string } | undefined, 
 }
 
 /** Problems of a bundle URL: `error` blocks, `warn` is a hint (plain http, credentials or a SAS token inside the URL). */
+/**
+ * Package metadata kept in the OTA package description (ThingsBoard has no field for it, and the description is the only
+ * part of a package that can be changed later). Format: free text, then a last line `rugix-meta: {json}`.
+ */
+export interface RugixPackageMeta {
+  /** Size of the bundle in bytes. */
+  size?: number;
+  /** The bundle is signed (`false` = known to be unsigned). */
+  signed?: boolean;
+  /** The update fixes security issues. */
+  security?: boolean;
+  /** Link to the advisory of a security update. */
+  advisory?: string;
+  /** Link to the release notes. */
+  notes?: string;
+}
+
+const META_PREFIX = 'rugix-meta:';
+
+/** Split a package description into the readable text and the validated metadata (invalid fields are dropped). */
+export function splitDescription(description: string | undefined): { text: string; meta: RugixPackageMeta } {
+  const lines = (description || '').split('\n');
+  let idx = -1;
+  lines.forEach((l, i) => { if (l.trim().startsWith(META_PREFIX)) { idx = i; } });
+  if (idx < 0) {
+    return {text: (description || '').trim(), meta: {}};
+  }
+  const meta: RugixPackageMeta = {};
+  try {
+    const raw = JSON.parse(lines[idx].trim().slice(META_PREFIX.length));
+    if (raw && typeof raw === 'object') {
+      if (typeof raw.size === 'number' && isFinite(raw.size) && raw.size >= 0) { meta.size = raw.size; }
+      if (typeof raw.signed === 'boolean') { meta.signed = raw.signed; }
+      if (typeof raw.security === 'boolean') { meta.security = raw.security; }
+      for (const k of ['advisory', 'notes'] as const) {
+        if (typeof raw[k] === 'string' && raw[k] && /^https?:\/\//i.test(raw[k]) && !urlIssue(raw[k]).error) { meta[k] = raw[k]; }
+      }
+    }
+  } catch { /* not valid JSON: keep the line out of the text, ignore the metadata */ }
+  return {text: lines.filter((_, i) => i !== idx).join('\n').trim(), meta};
+}
+
+/** Inverse of `splitDescription`; empty metadata adds no line. */
+export function joinDescription(text: string, meta: RugixPackageMeta): string {
+  const clean: RugixPackageMeta = {};
+  if (meta.size !== undefined && meta.size !== null && isFinite(meta.size) && meta.size >= 0) { clean.size = Math.round(meta.size); }
+  if (meta.signed !== undefined) { clean.signed = meta.signed; }
+  if (meta.security) { clean.security = true; }
+  if (meta.security && meta.advisory?.trim()) { clean.advisory = meta.advisory.trim(); }
+  if (meta.notes?.trim()) { clean.notes = meta.notes.trim(); }
+  const t = (text || '').split('\n').filter(l => !l.trim().startsWith(META_PREFIX)).join('\n').trim();
+  return Object.keys(clean).length ? `${t}${t ? '\n' : ''}${META_PREFIX} ${JSON.stringify(clean)}` : t;
+}
+
 /** Rugix accepts a backup profile name only as one plain path component. Returns an error text or null. */
 export function backupNameIssue(name: string): string | null {
   const v = (name || '').trim();
