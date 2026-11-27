@@ -205,6 +205,12 @@
     .rugix-hint-error { color: #d32f2f; }
   }
 
+  .rugix-labeled {
+    display: flex; flex-direction: column; gap: 6px;
+    .lbl { font-size: 14px; line-height: 20px; }
+    code { padding: 1px 6px; border-radius: 4px; background: rgba(0, 0, 0, .06); font: 500 13px 'Roboto Mono', monospace; }
+  }
+
   .rugix-typeconfirm {
     display: flex; flex-direction: column; gap: 6px;
     .type-text { font-size: 14px; line-height: 20px; }

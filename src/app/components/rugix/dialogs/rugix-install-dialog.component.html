@@ -125,15 +125,19 @@
         <mat-checkbox (change)="blurSoon()" [(ngModel)]="downgradeAck" name="downgradeAck" [disabled]="installing">I want to install an older version.</mat-checkbox>
       </div>
     }
-    <mat-form-field appearance="outline" class="rugix-field">
-      <mat-label>Reason / ticket id{{ reasonRequired ? '' : ' (optional)' }}</mat-label>
-      <input matInput name="reason" maxlength="200" [(ngModel)]="reason" [disabled]="installing">
-    </mat-form-field>
-    @if (bulkRequired) {
-      <mat-form-field appearance="outline" class="rugix-field">
-        <mat-label>Type {{ data.devices.length }} to confirm the number of devices</mat-label>
-        <input matInput name="bulk" autocomplete="off" [(ngModel)]="bulkText" [disabled]="installing">
+    <div class="rugix-labeled">
+      <div class="lbl">Reason / ticket id{{ reasonRequired ? '' : ' (optional)' }}</div>
+      <mat-form-field appearance="outline" class="rugix-field" subscriptSizing="dynamic">
+        <input matInput name="reason" maxlength="200" autocomplete="off" aria-label="Reason / ticket id" placeholder="e.g. TICKET-1234" [(ngModel)]="reason" [disabled]="installing">
       </mat-form-field>
+    </div>
+    @if (bulkRequired) {
+      <div class="rugix-labeled">
+        <div class="lbl">To confirm, type the number of devices: <code>{{ data.devices.length }}</code></div>
+        <mat-form-field appearance="outline" class="rugix-field" subscriptSizing="dynamic">
+          <input matInput name="bulk" autocomplete="off" aria-label="Number of devices" [placeholder]="'' + data.devices.length" [(ngModel)]="bulkText" [disabled]="installing">
+        </mat-form-field>
+      </div>
     }
     <div class="rugix-ack">
       <mat-checkbox (change)="blurSoon()" [(ngModel)]="acknowledged" name="ack" [disabled]="installing">{{ ackText }}</mat-checkbox>

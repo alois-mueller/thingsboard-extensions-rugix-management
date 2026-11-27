@@ -28,7 +28,7 @@
     <div class="rugix-option">
       <mat-checkbox (change)="blurSoon()" [(ngModel)]="checked">{{ data.checkbox.label }}</mat-checkbox>
       @if (data.textWhenChecked && checked) {
-        <mat-form-field appearance="outline" class="rugix-field">
+        <mat-form-field appearance="outline" class="rugix-field" subscriptSizing="dynamic">
           <mat-label>{{ data.textWhenChecked.label }}</mat-label>
           <input matInput name="backupName" maxlength="60" autocomplete="off" [(ngModel)]="text">
           @if (textError) { <mat-hint class="rugix-hint-error">{{ textError }}</mat-hint> }
@@ -37,15 +37,17 @@
     </div>
   }
   @if (data.reason) {
-    <mat-form-field appearance="outline" class="rugix-field">
-      <mat-label>Reason / ticket id{{ data.reason.required ? '' : ' (optional)' }}</mat-label>
-      <input matInput name="reason" maxlength="200" [(ngModel)]="reason">
-    </mat-form-field>
+    <div class="rugix-labeled">
+      <div class="lbl">Reason / ticket id{{ data.reason.required ? '' : ' (optional)' }}</div>
+      <mat-form-field appearance="outline" class="rugix-field" subscriptSizing="dynamic">
+        <input matInput name="reason" maxlength="200" autocomplete="off" aria-label="Reason / ticket id" placeholder="e.g. TICKET-1234" [(ngModel)]="reason">
+      </mat-form-field>
+    </div>
   }
   @if (data.typeToConfirm) {
     <div class="rugix-typeconfirm">
       <div class="type-text">To confirm, type the device name <code>{{ data.typeToConfirm }}</code> below.</div>
-      <mat-form-field appearance="outline" class="rugix-field">
+      <mat-form-field appearance="outline" class="rugix-field" subscriptSizing="dynamic">
         <input matInput name="typed" autocomplete="off" [placeholder]="data.typeToConfirm" aria-label="Device name" [(ngModel)]="typed">
         @if (typed.trim() === data.typeToConfirm) { <mat-icon matSuffix class="ok-icon">check_circle</mat-icon> }
       </mat-form-field>
