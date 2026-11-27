@@ -227,6 +227,22 @@
       <span class="rugix-title">{{ settings.title }}</span>
       <span class="fleet-summary"><span class="fs">{{ devices.length }} {{ devices.length === 1 ? 'device' : 'devices' }}</span></span>
       <span class="flex-1"></span>
+      @if (allowed('install') && outdatedGroups.length) {
+        @if (outdatedGroups.length === 1) {
+          <button mat-flat-button color="primary" type="button" class="upg-outdated" [matTooltip]="'Upgrade ' + outdatedGroups[0].devices.length + ' outdated ' + (outdatedGroups[0].devices.length === 1 ? 'device' : 'devices') + ' to ' + outdatedGroups[0].target" (click)="openInstall(outdatedGroups[0].devices, 'system')">
+            <mat-icon>upgrade</mat-icon><span class="lbl">Upgrade {{ outdatedGroups[0].devices.length }} to {{ outdatedGroups[0].target }}</span>
+          </button>
+        } @else {
+          <button mat-flat-button color="primary" type="button" class="upg-outdated" matTooltip="Upgrade outdated devices" [matMenuTriggerFor]="outdatedMenu">
+            <mat-icon>upgrade</mat-icon><span class="lbl">Upgrade outdated</span>
+          </button>
+          <mat-menu #outdatedMenu="matMenu">
+            @for (g of outdatedGroups; track g.target) {
+              <button mat-menu-item (click)="openInstall(g.devices, 'system')"><mat-icon>system_update_alt</mat-icon>{{ g.devices.length }} {{ g.devices.length === 1 ? 'device' : 'devices' }} to {{ g.target }} ({{ g.channels }})</button>
+            }
+          </mat-menu>
+        }
+      }
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="rugix-search" [class.open]="searchOpen">
         <mat-icon matPrefix>search</mat-icon>
         <input matInput placeholder="Search devices" [(ngModel)]="search" (ngModelChange)="onSearch()" #searchInput>
@@ -262,19 +278,6 @@
     <span class="fchip" role="button" [attr.aria-pressed]="healthFilter === 'error'" tabindex="0" [class.on]="healthFilter === 'error'" (click)="toggleHealth('error')" (keydown.enter)="toggleHealth('error')" (keydown.space)="$event.preventDefault(); toggleHealth('error')"><span class="dot err"></span>Error · {{ fleetSummary.error }}</span>
     <span class="fchip-sep" aria-hidden="true"></span>
     <span class="fchip" role="button" [attr.aria-pressed]="firmwareFilter" tabindex="0" [class.on]="firmwareFilter" (click)="toggleFirmware()" (keydown.enter)="toggleFirmware()" (keydown.space)="$event.preventDefault(); toggleFirmware()"><mat-icon class="fw-chip">upgrade</mat-icon>Outdated · {{ fleetSummary.outdated }}</span>
-    @if (allowed('install') && outdatedGroups.length) {
-      <span class="flex-1"></span>
-      @if (outdatedGroups.length === 1) {
-        <button mat-stroked-button type="button" class="upg-outdated" (click)="openInstall(outdatedGroups[0].devices, 'system')"><mat-icon>upgrade</mat-icon>Upgrade {{ outdatedGroups[0].devices.length }} to {{ outdatedGroups[0].target }}</button>
-      } @else {
-        <button mat-stroked-button type="button" class="upg-outdated" [matMenuTriggerFor]="outdatedMenu"><mat-icon>upgrade</mat-icon>Upgrade outdated</button>
-        <mat-menu #outdatedMenu="matMenu">
-          @for (g of outdatedGroups; track g.target) {
-            <button mat-menu-item (click)="openInstall(g.devices, 'system')"><mat-icon>system_update_alt</mat-icon>{{ g.devices.length }} {{ g.devices.length === 1 ? 'device' : 'devices' }} to {{ g.target }} ({{ g.channels }})</button>
-          }
-        </mat-menu>
-      }
-    }
     @if (filtersActive) {
       <button mat-button type="button" class="fclear" (click)="clearFilters()">Clear</button>
     }

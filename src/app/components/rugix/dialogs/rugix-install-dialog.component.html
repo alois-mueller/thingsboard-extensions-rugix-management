@@ -5,10 +5,22 @@
     <button mat-icon-button type="button" (click)="cancel()" [disabled]="installing" aria-label="Close"><mat-icon>close</mat-icon></button>
   </div>
   <div mat-dialog-content class="rugix-dialog-content">
-    <div class="rugix-targets" [matTooltip]="targetsTooltip" matTooltipPosition="above">
-      <mat-icon>memory</mat-icon>
-      <span class="targets-text"><b>{{ data.devices.length === 1 ? 'Target' : 'Targets (' + data.devices.length + ')' }}:</b> {{ targetsSummary }}</span>
-    </div>
+    @if (data.devices.length === 1) {
+      <div class="rugix-targets">
+        <mat-icon>memory</mat-icon>
+        <span class="targets-text"><b>Target:</b> {{ targetsSummary }}</span>
+      </div>
+    } @else {
+      <div class="rugix-targets multi">
+        <mat-icon>memory</mat-icon>
+        <div class="targets-box">
+          <b>Targets ({{ data.devices.length }})</b>
+          <ul class="targets-list" tabindex="0" aria-label="Target devices">
+            @for (d of data.devices; track d.id) { <li>{{ d.label || d.name }}</li> }
+          </ul>
+        </div>
+      </div>
+    }
 
     <ng-template #pkgSelect>
     @if (!useCustomUrl) {
@@ -143,6 +155,9 @@
       <mat-checkbox (change)="blurSoon()" [(ngModel)]="acknowledged" name="ack" [disabled]="installing">{{ ackText }}</mat-checkbox>
     </div>
 
+    @if (installing) {
+      <div class="rugix-note">Waiting for the devices to accept the installation: {{ answered }} of {{ data.devices.length }} answered. Slow or offline devices can take up to {{ data.settings.rpc.timeout / 1000 }} s.</div>
+    }
     @if (error) {
       <div class="rugix-error"><mat-icon>error_outline</mat-icon><span>{{ error }}</span></div>
     }
@@ -152,7 +167,7 @@
     <button mat-button type="button" (click)="cancel()" [disabled]="installing">Cancel</button>
     <button mat-flat-button color="primary" type="submit" [disabled]="!canInstall">
       @if (installing) { <span class="btn-spinner" aria-hidden="true"></span> }
-      {{ installing ? 'Starting…' : installLabel }}
+      {{ installing ? 'Starting ' + answered + '/' + data.devices.length + '…' : installLabel }}
     </button>
   </div>
 </form>

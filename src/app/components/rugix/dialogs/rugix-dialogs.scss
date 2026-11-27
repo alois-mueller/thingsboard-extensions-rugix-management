@@ -49,6 +49,11 @@
     color: rgba(0, 0, 0, .75);
 
     mat-icon { flex: none; width: 18px; height: 18px; font-size: 18px; color: rgba(0, 0, 0, .62); }
+    &.multi { align-items: flex-start; }
+    .targets-box { min-width: 0; flex: 1 1 auto; }
+    .targets-list { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0 0; padding: 0; list-style: none; max-height: 112px; overflow: auto; }
+    .targets-list li { padding: 1px 8px; border-radius: 10px; background: rgba(0, 0, 0, .07); font-size: 12px; line-height: 20px; overflow-wrap: anywhere; }
+    .targets-list:focus-visible { outline: 2px solid #305680; outline-offset: 2px; }
     .targets-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   }
 

@@ -7,7 +7,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { OtaPackageService } from '@core/public-api';
 import { OtaPackageInfo, OtaUpdateType, PageLink } from '@shared/public-api';
 import { forkJoin, Observable, of } from 'rxjs';
-import { catchError, mergeMap } from 'rxjs/operators';
+import { catchError, mergeMap, tap } from 'rxjs/operators';
 import { RugixDevice, RugixInstallOptions, RugixWidgetSettings, RUGIX_REBOOT_MODES } from '../models/rugix.models';
 import { compareVersions, urlIssue } from '../models/rugix-parse';
 import { RugixJobHandle, RugixRpcService } from '../services/rugix-rpc.service';
@@ -66,6 +66,8 @@ export class RugixInstallDialogComponent implements OnInit {
   insecureAllowMissingBlockIndex = false;
 
   installing = false;
+  /** Devices whose install request has been answered (or failed) while starting. */
+  answered = 0;
   error = '';
 
   constructor(@Inject(MAT_DIALOG_DATA) public data: RugixInstallDialogData,
@@ -229,6 +231,7 @@ export class RugixInstallDialogComponent implements OnInit {
       return;
     }
     this.installing = true;
+    this.answered = 0;
     this.error = '';
     const url = this.url;
     const num = (v: number | null) => (v === null || v === undefined || isNaN(Number(v)) ? undefined : Number(v));
@@ -261,7 +264,8 @@ export class RugixInstallDialogComponent implements OnInit {
           mergeMap(() => [{device, handle}])
         )),
         // one failing device must not hide the installs that did start on the others
-        catchError(err => of({device, error: err?.error?.message || err?.message || 'Installation could not be started.'}))
+        catchError(err => of({device, error: err?.error?.message || err?.message || 'Installation could not be started.'})),
+        tap(() => this.answered++)
       );
     });
     forkJoin(jobs$).subscribe(results => {
